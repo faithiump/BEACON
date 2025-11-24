@@ -60,7 +60,29 @@ ini_set('display_errors', '1');
  */
 
 // Path to the front controller
-define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR);
+// Determine where `index.php` currently lives so the CLI uses the correct front controller path.
+$candidates = [
+    // typical project layout: public/index.php
+    __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR,
+    // index.php in the project folder (beacon/)
+    __DIR__ . DIRECTORY_SEPARATOR,
+    // index.php moved to parent folder (one level up)
+    dirname(__DIR__) . DIRECTORY_SEPARATOR,
+];
+
+$found = false;
+foreach ($candidates as $candidate) {
+    if (is_file($candidate . 'index.php')) {
+        define('FCPATH', $candidate);
+        $found = true;
+        break;
+    }
+}
+
+if (! $found) {
+    // fallback to current directory as before
+    define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+}
 
 // Ensure the current directory is pointing to the front controller's directory
 chdir(FCPATH);
@@ -75,9 +97,27 @@ chdir(FCPATH);
  */
 
 // LOAD OUR PATHS CONFIG FILE
-// This is the line that might need to be changed, depending on your folder structure.
-require FCPATH . '../app/Config/Paths.php';
-// ^^^ Change this line if you move your application folder
+// Try several likely locations for `app/Config/Paths.php` so spark works
+// whether the app folder is at `FCPATH/app` or `FCPATH/beacon/app`.
+$pathsCandidates = [
+    FCPATH . 'app/Config/Paths.php',
+    FCPATH . 'beacon' . DIRECTORY_SEPARATOR . 'app/Config/Paths.php',
+    __DIR__ . DIRECTORY_SEPARATOR . 'app/Config/Paths.php',
+    __DIR__ . DIRECTORY_SEPARATOR . 'beacon' . DIRECTORY_SEPARATOR . 'app/Config/Paths.php',
+];
+
+$loaded = false;
+foreach ($pathsCandidates as $pc) {
+    if (is_file($pc)) {
+        require $pc;
+        $loaded = true;
+        break;
+    }
+}
+
+if (! $loaded) {
+    throw new RuntimeException('Could not locate app/Config/Paths.php. Tried: ' . implode(', ', $pathsCandidates));
+}
 
 $paths = new Paths();
 
