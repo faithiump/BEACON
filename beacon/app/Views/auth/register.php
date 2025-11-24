@@ -18,14 +18,14 @@
     <!-- Navigation Panel -->
     <nav class="auth-nav">
         <div class="nav-container">
-            <div class="nav-brand">
+            <a href="<?= base_url() ?>" class="nav-brand">
                 <span class="nav-logo">BEACON</span>
                 <span class="nav-subtitle">CSPC</span>
-            </div>
+            </a>
             <div class="nav-links">
-                <a href="/" class="nav-link">Home</a>
-                <a href="/auth/login" class="nav-link">Login</a>
-                <a href="/auth/register" class="nav-link active">Register</a>
+                <a href="<?= base_url() ?>" class="nav-link">Home</a>
+                <a href="<?= base_url('auth/login') ?>" class="nav-link">Login</a>
+                <a href="<?= base_url('auth/register') ?>" class="nav-link active">Register</a>
             </div>
         </div>
     </nav>
@@ -43,7 +43,7 @@
                 <h1 class="auth-title">Create Account!</h1>
                 <p class="auth-subtitle">Join the CSPC community and access events, announcements, and campus organizations.</p>
                 
-                <form action="/auth/register" method="POST" class="auth-form">
+                <form action="<?= base_url('auth/register') ?>" method="POST" class="auth-form">
                     <div class="form-group">
                         <label for="fullname">Full Name</label>
                         <input type="text" name="fullname" id="fullname" class="form-control" placeholder="Enter your full name" required>
@@ -54,9 +54,7 @@
                         <div class="select-wrapper">
                             <select name="role" id="role" class="form-control" required>
                                 <option value="">Select your role</option>
-                                <option value="admin">Administrator</option>
-                                <option value="faculty">Faculty Moderator</option>
-                                <option value="officer">Organization Officer</option>
+                                <option value="organization">Organization</option>
                                 <option value="student">Student</option>
                             </select>
                             <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -65,17 +63,17 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group role-dependent">
                         <label for="email">Email</label>
-                        <input type="email" name="email" id="email" class="form-control" placeholder="Email or Username" required>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="Select your role first" required>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group role-dependent">
                         <label for="password">Password</label>
                         <input type="password" name="password" id="password" class="form-control" placeholder="Enter a strong password" required>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group role-dependent">
                         <label for="confirm_password">Confirm Password</label>
                         <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Confirm your password" required>
                     </div>
@@ -98,14 +96,41 @@
                 </button>
 
                 <p class="auth-footer">
-                    Already have an account? <a href="/auth/login">Log in.</a>
+                    Already have an account? <a href="<?= base_url('auth/login') ?>">Log in.</a>
                 </p>
             </div>
         </div>
 
-        <!-- Right Side - Simple Background -->
-        <div class="auth-background"></div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const roleSelect = document.getElementById('role');
+            const roleFields = document.querySelectorAll('.role-dependent');
+            const emailInput = document.getElementById('email');
+
+            const placeholderMap = {
+                organization: 'Organization email',
+                student: 'Student email'
+            };
+
+            function toggleFields() {
+                const role = roleSelect.value;
+                roleFields.forEach(field => {
+                    field.classList.toggle('visible', !!role);
+                });
+
+                if (role && placeholderMap[role]) {
+                    emailInput.placeholder = placeholderMap[role];
+                } else {
+                    emailInput.placeholder = 'Select your role first';
+                }
+            }
+
+            toggleFields();
+            roleSelect.addEventListener('change', toggleFields);
+        });
+    </script>
 </body>
 </html>
 
