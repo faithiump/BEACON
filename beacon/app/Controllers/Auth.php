@@ -2,9 +2,27 @@
 
 namespace App\Controllers;
 
+use App\Models\UserModel;
+use App\Models\UserProfileModel;
+use App\Models\AddressModel;
+use App\Models\StudentModel;
+
 class Auth extends BaseController
 {
     protected $helpers = ['url'];
+    
+    protected $userModel;
+    protected $userProfileModel;
+    protected $addressModel;
+    protected $studentModel;
+    
+    public function __construct()
+    {
+        $this->userModel = new UserModel();
+        $this->userProfileModel = new UserProfileModel();
+        $this->addressModel = new AddressModel();
+        $this->studentModel = new StudentModel();
+    }
 
     public function login(): string
     {
@@ -73,9 +91,70 @@ class Auth extends BaseController
             return redirect()->back()->withInput()->with('errors', $validation->getErrors());
         }
 
-        // Add your registration logic here
-        // For now, just redirect to login
-        return redirect()->to(base_url('auth/login'))->with('success', 'Registration successful! Please login.');
+        // Start database transaction
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // 1. Create address record
+            $addressData = [
+                'region' => $this->request->getPost('region'),
+                'city_municipality' => $this->request->getPost('city_municipality'),
+                'barangay' => $this->request->getPost('barangay')
+            ];
+            $addressId = $this->addressModel->insert($addressData);
+
+            // 2. Create user account
+            $userData = [
+                'email' => $this->request->getPost('email'),
+                'password' => $this->request->getPost('password'), // Will be hashed by model
+                'role' => 'student',
+                'is_active' => 1,
+                'email_verified' => 0
+            ];
+            $userId = $this->userModel->insert($userData);
+
+            // 3. Create user profile
+            $profileData = [
+                'user_id' => $userId,
+                'firstname' => $this->request->getPost('firstname'),
+                'middlename' => $this->request->getPost('middlename'),
+                'lastname' => $this->request->getPost('lastname'),
+                'birthday' => $this->request->getPost('birthday'),
+                'gender' => $this->request->getPost('gender'),
+                'phone' => $this->request->getPost('phone'),
+                'address_id' => $addressId
+            ];
+            $this->userProfileModel->insert($profileData);
+
+            // 4. Create student record
+            $studentData = [
+                'user_id' => $userId,
+                'student_id' => $this->request->getPost('student_id'),
+                'department' => $this->request->getPost('department'),
+                'course' => $this->request->getPost('course'),
+                'year_level' => $this->request->getPost('year_level'),
+                'in_organization' => $this->request->getPost('in_organization'),
+                'organization_name' => $this->request->getPost('in_organization') === 'yes' 
+                    ? $this->request->getPost('organization_name') 
+                    : null
+            ];
+            $this->studentModel->insert($studentData);
+
+            // Complete transaction
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return redirect()->back()->withInput()->with('errors', ['Database error occurred. Please try again.']);
+            }
+
+            return redirect()->to(base_url('auth/login'))->with('success', 'Registration successful! Please login.');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Registration error: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('errors', ['An error occurred during registration. Please try again.']);
+        }
     }
 }
 
