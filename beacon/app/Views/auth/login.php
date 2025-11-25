@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - BEACON | CSPC</title>
+    <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v2.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>" type="text/css">
     <link rel="stylesheet" href="<?= base_url('assets/css/login.css') ?>" type="text/css">
     <link rel="stylesheet" href="<?= base_url('assets/css/footer.css') ?>" type="text/css">
