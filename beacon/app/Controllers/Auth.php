@@ -55,7 +55,7 @@ class Auth extends BaseController
 
         // Add your authentication logic here
         // For now, just redirect to home
-        return redirect()->to('/')->with('success', 'Login successful!');
+        return redirect()->to('/student/dashboard')->with('success', 'Login successful!');
     }
 
     public function processRegister()
@@ -197,7 +197,10 @@ class Auth extends BaseController
         $client->setRedirectUri($config->redirectUri);
         $client->addScope('email');
         $client->addScope('profile');
-    
+        
+        // Also set login_hint to empty to not pre-fill email
+        $client->setLoginHint('');
+        
         // Disable SSL verification locally
         $httpClient = new GuzzleClient(['verify' => false]);
         $client->setHttpClient($httpClient);
@@ -206,78 +209,119 @@ class Auth extends BaseController
     }
     
     public function googleCallback()
-{
-    $config = new Google();
-    $client = new \Google\Client();
-    $client->setClientId($config->clientID);
-    $client->setClientSecret($config->clientSecret);
-    $client->setRedirectUri($config->redirectUri);
-
-    // Disable SSL verification locally
-    $httpClient = new GuzzleClient(['verify' => false]);
-    $client->setHttpClient($httpClient);
-
-    if (! $this->request->getGet('code')) {
-        return redirect()->to('/auth/login');
+    {
+        $config = new Google();
+        $client = new \Google\Client();
+        $client->setClientId($config->clientID);
+        $client->setClientSecret($config->clientSecret);
+        $client->setRedirectUri($config->redirectUri);
+    
+        // Disable SSL verification locally
+        $httpClient = new GuzzleClient(['verify' => false]);
+        $client->setHttpClient($httpClient);
+    
+        if (! $this->request->getGet('code')) {
+            return redirect()->to('/auth/login');
+        }
+    
+        $token = $client->fetchAccessTokenWithAuthCode($this->request->getGet('code'));
+        if (isset($token['error'])) {
+            return redirect()->to('/auth/login')->with('error', 'Google login failed');
+        }
+    
+        $client->setAccessToken($token['access_token']);
+        $oauth2 = new \Google\Service\Oauth2($client);
+        $googleUser = $oauth2->userinfo->get();
+    
+        // Load models
+        $userModel    = new \App\Models\UserModel();
+        $studentModel = new \App\Models\StudentModel();
+    
+        /* ----------------------------------------------------------
+         * 1. CHECK USERS TABLE BY EMAIL
+         * ---------------------------------------------------------- */
+        $user = $userModel->where('email', $googleUser->email)->first();
+    
+        if (! $user) {
+            return redirect()->to('/auth/login')
+                ->with('error', 'Your Google account is not registered in the system.');
+        }
+    
+        // User exists but MUST be student
+        if ($user['role'] !== 'student') {
+            return redirect()->to('/auth/login')
+                ->with('error', 'This Google account is not registered as a student.');
+        }
+    
+        /* ----------------------------------------------------------
+         * 2. LOAD STUDENT RECORD
+         * ---------------------------------------------------------- */
+        $student = $studentModel->where('user_id', $user['id'])->first();
+    
+        if (! $student) {
+            return redirect()->to('/auth/login')
+                ->with('error', 'Student record not found.');
+        }
+    
+        /* ----------------------------------------------------------
+         * 3. SET SESSION FOR STUDENT LOGIN
+         * ---------------------------------------------------------- */
+        session()->set([
+            'isLoggedIn'    => true,
+            'role'          => 'student',
+            'user_id'       => $user['id'],
+            'student_id'    => $student['id'],
+            'google_login'  => true,  // Flag to indicate Google login
+            'google_token'  => $token['access_token'],  // Store token for logout
+    
+            // Optional: For UX use only
+            'email'         => $googleUser->email,
+            'name'          => $googleUser->name,
+            'photo'         => $googleUser->picture
+        ]);
+    
+        return redirect()->to('/student/dashboard');
     }
-
-    $token = $client->fetchAccessTokenWithAuthCode($this->request->getGet('code'));
-    if (isset($token['error'])) {
-        return redirect()->to('/auth/login')->with('error', 'Google login failed');
+    
+    /**
+     * Google Logout - Revoke token and sign out from Google
+     */
+    public function googleLogout()
+    {
+        $session = session();
+        $googleToken = $session->get('google_token');
+        
+        // Revoke Google token if exists (disconnects app from Google account)
+        if ($googleToken) {
+            try {
+                $config = new Google();
+                $client = new \Google\Client();
+                $client->setClientId($config->clientID);
+                $client->setClientSecret($config->clientSecret);
+                
+                // Disable SSL verification locally
+                $httpClient = new GuzzleClient(['verify' => false]);
+                $client->setHttpClient($httpClient);
+                
+                // Revoke the token - this forces re-authentication next time
+                $client->revokeToken($googleToken);
+            } catch (\Exception $e) {
+                // Token might already be expired/revoked, continue with logout
+                log_message('debug', 'Google token revoke error: ' . $e->getMessage());
+            }
+        }
+        
+        // Clear all session data
+        $session->remove(['isLoggedIn', 'role', 'user_id', 'student_id', 'organization_id', 'email', 'name', 'photo', 'google_login', 'google_token']);
+        $session->destroy();
+        
+        // Start new session for flash message
+        $session = \Config\Services::session();
+        $session->setFlashdata('success', 'You have been logged out from Google successfully.');
+        
+        // Redirect to login page
+        return redirect()->to(base_url('auth/login'));
     }
-
-    $client->setAccessToken($token['access_token']);
-    $oauth2 = new \Google\Service\Oauth2($client);
-    $googleUser = $oauth2->userinfo->get();
-
-    // Load models
-    $userModel    = new \App\Models\UserModel();
-    $studentModel = new \App\Models\StudentModel();
-
-    /* ----------------------------------------------------------
-     * 1. CHECK USERS TABLE BY EMAIL
-     * ---------------------------------------------------------- */
-    $user = $userModel->where('email', $googleUser->email)->first();
-
-    if (! $user) {
-        return redirect()->to('/auth/login')
-            ->with('error', 'Your Google account is not registered in the system.');
-    }
-
-    // User exists but MUST be student
-    if ($user['role'] !== 'student') {
-        return redirect()->to('/auth/login')
-            ->with('error', 'This Google account is not registered as a student.');
-    }
-
-    /* ----------------------------------------------------------
-     * 2. LOAD STUDENT RECORD
-     * ---------------------------------------------------------- */
-    $student = $studentModel->where('user_id', $user['id'])->first();
-
-    if (! $student) {
-        return redirect()->to('/auth/login')
-            ->with('error', 'Student record not found.');
-    }
-
-    /* ----------------------------------------------------------
-     * 3. SET SESSION FOR STUDENT LOGIN
-     * ---------------------------------------------------------- */
-    session()->set([
-        'isLoggedIn' => true,
-        'role'       => 'student',
-        'user_id'    => $user['id'],
-        'student_id' => $student['id'],
-
-        // Optional: For UX use only
-        'email'      => $googleUser->email,
-        'name'       => $googleUser->name,
-        'photo'      => $googleUser->picture
-    ]);
-
-    return redirect()->to('/student/dashboard');
-}
-
 
 }
 
