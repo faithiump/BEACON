@@ -81,7 +81,28 @@ class Auth extends BaseController
             return $this->handleStudentLogin($user);
         }
 
-        return redirect()->back()->withInput()->with('error', 'Login for the selected role is not yet available.');
+        if ($role === 'organization') {
+            $organizationModel = new \App\Models\OrganizationModel();
+            $organization = $organizationModel->where('user_id', $user['id'])->first();
+
+            if (!$organization) {
+                return redirect()->back()->withInput()->with('error', 'Organization record not found.');
+            }
+
+            session()->set([
+                'isLoggedIn'           => true,
+                'role'                 => 'organization',
+                'user_id'              => $user['id'],
+                'organization_id'      => $organization['id'],
+                'organization_name'    => $organization['organization_name'],
+                'organization_acronym' => $organization['organization_acronym'],
+                'email'                => $user['email']
+            ]);
+
+            return redirect()->to(base_url('organization/dashboard'))->with('success', 'Welcome back!');
+        }
+
+        return redirect()->back()->withInput()->with('error', 'Invalid role selected.');
     }
 
     private function handleStudentLogin(array $user)
