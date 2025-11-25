@@ -122,11 +122,25 @@
                             <div class="form-group form-group-half">
                                 <label for="contact_email">Contact Email <span class="required">*</span></label>
                                 <input type="email" name="contact_email" id="contact_email" class="form-control" placeholder="organization@cspc.edu.ph" required>
+                                <small class="form-hint">This will be your login email</small>
                             </div>
 
                             <div class="form-group form-group-half">
                                 <label for="contact_phone">Contact Phone <span class="required">*</span></label>
                                 <input type="tel" name="contact_phone" id="contact_phone" class="form-control" placeholder="+63 XXX XXX XXXX" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group form-group-half">
+                                <label for="password">Account Password <span class="required">*</span></label>
+                                <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required minlength="8">
+                                <small class="form-hint">Minimum 8 characters</small>
+                            </div>
+
+                            <div class="form-group form-group-half">
+                                <label for="password_confirm">Confirm Password <span class="required">*</span></label>
+                                <input type="password" name="password_confirm" id="password_confirm" class="form-control" placeholder="Confirm your password" required minlength="8">
                             </div>
                         </div>
 

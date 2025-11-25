@@ -847,8 +847,24 @@ class Organization extends BaseController
      */
     public function logout()
     {
-        $this->session->destroy();
-        return redirect()->to(base_url('auth/login'))->with('success', 'You have been logged out successfully.');
+        $session = session();
+        
+        // Check if user logged in with Google
+        if ($session->get('google_login')) {
+            // Redirect to Google logout which will handle everything
+            return redirect()->to(base_url('auth/googleLogout'));
+        }
+        
+        // Normal logout for non-Google users
+        $session->remove(['isLoggedIn', 'role', 'user_id', 'organization_id', 'organization_name', 'organization_acronym', 'email', 'name', 'photo']);
+        $session->destroy();
+        
+        // Set flash message for after redirect
+        $session = \Config\Services::session();
+        $session->setFlashdata('success', 'You have been logged out successfully.');
+        
+        // Redirect to login page
+        return redirect()->to(base_url('auth/login'));
     }
 
     // ==========================================
@@ -876,6 +892,8 @@ class Organization extends BaseController
             'founding_date' => 'required|valid_date',
             'contact_email' => 'required|valid_email',
             'contact_phone' => 'required',
+            'password' => 'required|min_length[8]',
+            'password_confirm' => 'required|matches[password]',
             'advisor_name' => 'required|min_length[3]|max_length[100]',
             'advisor_email' => 'required|valid_email',
             'advisor_phone' => 'required',
@@ -1013,6 +1031,7 @@ class Organization extends BaseController
                 'objectives' => $this->request->getPost('objectives'),
                 'contact_email' => $this->request->getPost('contact_email'),
                 'contact_phone' => $this->request->getPost('contact_phone'),
+                'password_hash' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
                 'current_members' => (int)$this->request->getPost('current_members'),
                 'status' => 'pending',
                 'submitted_at' => date('Y-m-d H:i:s')

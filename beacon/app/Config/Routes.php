@@ -14,6 +14,7 @@ $routes->post('auth/login', 'Auth::processLogin');
 $routes->post('auth/register', 'Auth::processRegister');
 $routes->get('auth/googleLogin', 'Auth::googleLogin');
 $routes->get('auth/googleCallback', 'Auth::googleCallback');
+$routes->get('auth/googleLogout', 'Auth::googleLogout');
 
 // Organization routes
 $routes->get('organization/launch', 'Organization::launch');

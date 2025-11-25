@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS `organization_applications` (
     `objectives` TEXT NOT NULL,
     `contact_email` VARCHAR(255) NOT NULL,
     `contact_phone` VARCHAR(20) NOT NULL,
+    `password_hash` VARCHAR(255) NOT NULL,
     `current_members` INT(11) UNSIGNED NOT NULL,
     `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
     `admin_notes` TEXT DEFAULT NULL,

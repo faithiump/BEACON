@@ -328,10 +328,10 @@ class Login extends BaseController
                     throw new \Exception('Failed to update existing user: ' . ($error['message'] ?? 'Unknown error'));
                 }
             } else {
-                // Create user account for organization
+                // Create user account for organization using password from application
                 $userData = [
                     'email'          => $application['contact_email'],
-                    'password'       => password_hash('TempPassword123!', PASSWORD_DEFAULT), // Temporary password
+                    'password'       => $application['password_hash'], // Use password set during registration
                     'role'           => 'organization',
                     'is_active'      => 1,
                     'email_verified' => 0

@@ -817,8 +817,24 @@ class Student extends BaseController
      */
     public function logout()
     {
-        session()->destroy();
-        return redirect()->to(base_url('auth/login'))->with('success', 'You have been logged out successfully.');
+        $session = session();
+        
+        // Check if user logged in with Google
+        if ($session->get('google_login')) {
+            // Redirect to Google logout which will handle everything
+            return redirect()->to(base_url('auth/googleLogout'));
+        }
+        
+        // Normal logout for non-Google users
+        $session->remove(['isLoggedIn', 'role', 'user_id', 'student_id', 'email', 'name', 'photo']);
+        $session->destroy();
+        
+        // Set flash message for after redirect
+        $session = \Config\Services::session();
+        $session->setFlashdata('success', 'You have been logged out successfully.');
+        
+        // Redirect to login page
+        return redirect()->to(base_url('auth/login'));
     }
 }
 
