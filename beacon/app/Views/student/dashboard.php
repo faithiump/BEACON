@@ -185,7 +185,7 @@
                                 <i class="fas fa-user-edit"></i> Edit Profile
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a href="<?= base_url('student/logout') ?>" class="dropdown-item logout">
+                            <a href="#" class="dropdown-item logout" onclick="confirmLogout(event)">
                                 <i class="fas fa-sign-out-alt"></i> Logout
                             </a>
                         </div>
@@ -230,7 +230,7 @@
                 <a href="#profile" class="mobile-nav-link" data-section="profile">
                     <i class="fas fa-user-edit"></i> Edit Profile
                 </a>
-                <a href="<?= base_url('student/logout') ?>" class="mobile-nav-link logout">
+                <a href="#" class="mobile-nav-link logout" onclick="confirmLogout(event)">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
             </nav>
@@ -1088,6 +1088,50 @@
 
     <script>
         const baseUrl = '<?= base_url() ?>';
+        
+        // Logout Confirmation
+        function confirmLogout(event) {
+            event.preventDefault();
+            
+            // Create confirmation modal
+            const overlay = document.createElement('div');
+            overlay.className = 'logout-modal-overlay';
+            overlay.innerHTML = `
+                <div class="logout-modal">
+                    <div class="logout-modal-icon">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                    <h3>Confirm Logout</h3>
+                    <p>Are you sure you want to logout from your account?</p>
+                    <div class="logout-modal-actions">
+                        <button class="btn-cancel" onclick="closeLogoutModal()">Cancel</button>
+                        <button class="btn-confirm" onclick="performLogout()">Yes, Logout</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.classList.add('active'), 10);
+        }
+        
+        function closeLogoutModal() {
+            const overlay = document.querySelector('.logout-modal-overlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.remove(), 300);
+            }
+        }
+        
+        function performLogout() {
+            closeLogoutModal();
+            window.location.href = baseUrl + 'student/logout';
+        }
+        
+        // Close modal on overlay click
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('logout-modal-overlay')) {
+                closeLogoutModal();
+            }
+        });
         
         // Mobile Navigation
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
