@@ -1625,6 +1625,61 @@ body {
     box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
 }
 
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+}
+
+.btn-outline-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: transparent;
+    border: 2px solid var(--primary-500);
+    color: var(--primary-600);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-500);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.btn-outline-primary i {
+    font-size: 0.875rem;
+}
+
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: transparent;
+    border: 2px solid var(--gray-200);
+    color: var(--gray-700);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-outline:hover {
+    border-color: var(--gray-300);
+    background: var(--gray-50);
+}
+
 .btn-secondary {
     padding: 0.75rem 1rem;
     background: white;
@@ -3005,4 +3060,895 @@ body {
 .logout-modal-actions .btn-confirm:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+}
+
+/* ==============================================
+   Student Facebook-Style Feed Layout
+   ============================================== */
+
+.student-feed-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    gap: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Left Sidebar */
+.student-sidebar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: sticky;
+    top: calc(var(--nav-height) + 1.5rem);
+    height: fit-content;
+}
+
+/* Student Profile Card */
+.student-profile-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.student-cover {
+    height: 80px;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+    position: relative;
+}
+
+.student-cover-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.3));
+}
+
+.student-profile-info {
+    padding: 0 1rem 1rem;
+    text-align: center;
+    margin-top: -40px;
+    position: relative;
+}
+
+.student-avatar-large {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    border: 4px solid white;
+    background: white;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.student-avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-lg {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.student-name {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.125rem;
+}
+
+.student-id {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.student-course {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+}
+
+.student-course i {
+    margin-right: 0.25rem;
+}
+
+.student-stats-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 1rem;
+    border-top: 1px solid var(--gray-100);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.student-stat {
+    text-align: center;
+}
+
+.student-stat .sstat-num {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.student-stat .sstat-text {
+    font-size: 0.6875rem;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.student-profile-actions {
+    padding: 1rem;
+}
+
+.student-profile-actions .btn,
+.student-profile-actions a.btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.student-profile-actions .btn-outline-primary {
+    padding: 0.75rem 1rem;
+}
+
+.student-profile-actions .btn-outline-primary.btn-sm {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+}
+
+/* Sidebar Cards */
+.student-sidebar-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.sidebar-card-title {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 0.75rem;
+}
+
+.sidebar-card-title i {
+    margin-right: 0.5rem;
+    color: var(--primary-500);
+}
+
+/* My Organizations List */
+.my-org-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.my-org-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.my-org-item:hover {
+    background: var(--gray-50);
+}
+
+.my-org-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.6875rem;
+    flex-shrink: 0;
+}
+
+.my-org-avatar.pending {
+    background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+}
+
+.my-org-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.my-org-name {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.my-org-status {
+    font-size: 0.6875rem;
+    color: var(--success);
+}
+
+.my-org-status.pending {
+    color: var(--warning);
+}
+
+/* Sidebar Events */
+.sidebar-events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-event-item {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.sidebar-event-item:hover {
+    background: var(--gray-50);
+}
+
+.se-date-box {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-50);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.se-date-box .se-day {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-600);
+    line-height: 1;
+}
+
+.se-date-box .se-month {
+    font-size: 0.5625rem;
+    color: var(--primary-500);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.se-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.se-details .se-title {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.se-details .se-org {
+    font-size: 0.6875rem;
+    color: var(--gray-500);
+}
+
+.sidebar-view-all {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--gray-100);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--primary-600);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.sidebar-view-all:hover {
+    color: var(--primary-700);
+}
+
+/* Main Feed */
+.student-feed-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Welcome Banner */
+.welcome-banner {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
+}
+
+.welcome-content h1 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.welcome-content p {
+    font-size: 0.9375rem;
+    opacity: 0.9;
+}
+
+.welcome-date {
+    background: rgba(255,255,255,0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.welcome-date i {
+    margin-right: 0.5rem;
+}
+
+/* Feed Posts */
+.feed-post {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.feed-post .post-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.feed-post .post-author-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gray-400) 0%, var(--gray-500) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.feed-post .post-author-avatar.org {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+}
+
+.feed-post .post-author-avatar.org.css {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+.feed-post .post-author-info {
+    flex: 1;
+}
+
+.feed-post .post-author-name {
+    display: block;
+    font-weight: 600;
+    color: var(--gray-900);
+    font-size: 0.9375rem;
+}
+
+.feed-post .post-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.feed-post .post-time i {
+    font-size: 0.625rem;
+}
+
+.post-badge {
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.post-badge.important {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+}
+
+.post-badge.shop {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.feed-post .post-content {
+    padding: 0 1rem 1rem;
+}
+
+.feed-post .post-title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.5rem;
+}
+
+.feed-post .post-text {
+    font-size: 0.9375rem;
+    color: var(--gray-700);
+    line-height: 1.6;
+}
+
+.feed-post.priority-high {
+    border-left: 4px solid var(--error);
+}
+
+.feed-post .post-actions {
+    display: flex;
+    border-top: 1px solid var(--gray-100);
+    padding: 0.375rem;
+}
+
+.feed-post .post-action {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.feed-post .post-action:hover {
+    background: var(--gray-50);
+    color: var(--primary-600);
+}
+
+/* Event Preview Card */
+.event-preview-card {
+    margin: 0 1rem 1rem;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+}
+
+.event-preview-banner {
+    height: 120px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    position: relative;
+}
+
+.event-preview-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5));
+    display: flex;
+    align-items: flex-end;
+    padding: 1rem;
+}
+
+.event-date-badge {
+    background: white;
+    border-radius: 8px;
+    padding: 0.375rem 0.75rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+
+.event-date-badge .edb-day {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1;
+}
+
+.event-date-badge .edb-month {
+    font-size: 0.625rem;
+    color: var(--primary-600);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.event-preview-info {
+    padding: 1rem;
+}
+
+.event-preview-info h3 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.375rem;
+}
+
+.event-preview-info p {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    margin-bottom: 0.25rem;
+}
+
+.event-preview-info p i {
+    margin-right: 0.375rem;
+    width: 14px;
+    color: var(--gray-400);
+}
+
+.event-preview-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+/* Products Preview Grid */
+.products-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin: 0 1rem 1rem;
+}
+
+.product-preview-item {
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.product-preview-item:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--primary-300);
+}
+
+.product-preview-img {
+    height: 80px;
+    background: var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--gray-400);
+}
+
+.product-preview-info {
+    padding: 0.625rem;
+}
+
+.product-preview-info .product-name {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 0.125rem;
+}
+
+.product-preview-info .product-price {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--success);
+}
+
+/* Right Sidebar */
+.student-sidebar-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: sticky;
+    top: calc(var(--nav-height) + 1.5rem);
+    max-height: calc(100vh - var(--nav-height) - 3rem);
+    overflow-y: auto;
+}
+
+.student-sidebar-right::-webkit-scrollbar {
+    width: 4px;
+}
+
+.student-sidebar-right::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 4px;
+}
+
+/* Payments Sidebar */
+.payments-sidebar .sidebar-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.payments-sidebar .sidebar-header-flex .sidebar-card-title {
+    margin-bottom: 0;
+}
+
+.pending-count {
+    background: var(--error);
+    color: white;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+}
+
+.pending-payments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.pending-payment-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem;
+    background: var(--gray-50);
+    border-radius: 8px;
+}
+
+.pp-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(59, 130, 246, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-500);
+    flex-shrink: 0;
+}
+
+.pp-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pp-name {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pp-due {
+    font-size: 0.6875rem;
+    color: var(--warning);
+}
+
+.pp-amount {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.pending-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.pending-total span:first-child {
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+}
+
+.pending-total .total-value {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--error);
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+    margin-top: 0.75rem;
+}
+
+/* Suggested Organizations */
+.suggested-orgs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.suggested-org-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.suggested-org-item:hover {
+    background: var(--gray-50);
+}
+
+.sug-org-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.625rem;
+    flex-shrink: 0;
+}
+
+.sug-org-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sug-org-name {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sug-org-members {
+    font-size: 0.6875rem;
+    color: var(--gray-500);
+}
+
+/* Quick Links */
+.quick-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.quick-link-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem;
+    border-radius: 8px;
+    color: var(--gray-700);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.quick-link-item:hover {
+    background: var(--primary-50);
+    color: var(--primary-600);
+}
+
+.quick-link-item i {
+    width: 20px;
+    text-align: center;
+    color: var(--gray-400);
+}
+
+.quick-link-item:hover i {
+    color: var(--primary-500);
+}
+
+/* Responsive Feed Layout */
+@media (max-width: 1200px) {
+    .student-feed-layout {
+        grid-template-columns: 260px 1fr;
+    }
+    
+    .student-sidebar-right {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .student-feed-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .student-sidebar-left {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .student-profile-card {
+        grid-column: 1 / -1;
+    }
+    
+    .welcome-banner {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .student-sidebar-left {
+        grid-template-columns: 1fr;
+    }
+    
+    .student-stats-row {
+        flex-wrap: wrap;
+    }
+    
+    .student-stat {
+        flex: 1;
+        min-width: 60px;
+    }
+    
+    .products-preview-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .event-preview-actions {
+        flex-direction: column;
+    }
+    
+    .welcome-content h1 {
+        font-size: 1.25rem;
+    }
 }

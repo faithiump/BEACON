@@ -238,215 +238,362 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="content-area">
-                <!-- Overview Section -->
+                <!-- Overview Section - Facebook Style Feed -->
                 <section class="content-section active" id="overview">
-                    <div class="section-header">
-                        <div>
-                            <h1 class="section-title">Welcome back, <?= esc($profile['firstname'] ?? 'Student') ?>!</h1>
-                            <p class="section-subtitle">Here's what's happening in your campus community</p>
-                        </div>
-                        <div class="date-display">
-                            <i class="fas fa-calendar-day"></i>
-                            <span><?= date('l, F j, Y') ?></span>
-                        </div>
-                    </div>
-
-                    <!-- Stats Cards -->
-                    <div class="stats-grid">
-                        <div class="stat-card gradient-blue">
-                            <div class="stat-icon">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">5</span>
-                                <span class="stat-label">Events Joined</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                        <div class="stat-card gradient-purple">
-                            <div class="stat-icon">
-                                <i class="fas fa-building"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">3</span>
-                                <span class="stat-label">Organizations</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                        <div class="stat-card gradient-emerald">
-                            <div class="stat-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">₱650</span>
-                                <span class="stat-label">Total Paid</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                        <div class="stat-card gradient-amber">
-                            <div class="stat-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">₱850</span>
-                                <span class="stat-label">Pending</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                    </div>
-
-                    <!-- Main Grid -->
-                    <div class="dashboard-grid">
-                        <!-- Upcoming Events -->
-                        <div class="card events-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
-                                <a href="#events" class="view-all-link" onclick="switchSection('events')">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <div class="event-list">
-                                    <div class="event-item">
-                                        <div class="event-date">
-                                            <span class="day">05</span>
-                                            <span class="month">DEC</span>
-                                        </div>
-                                        <div class="event-details">
-                                            <h4>Tech Innovation Summit 2025</h4>
-                                            <p><i class="fas fa-building"></i> Computer Science Society</p>
-                                            <p><i class="fas fa-map-marker-alt"></i> Main Auditorium</p>
-                                        </div>
-                                        <button class="btn-join" onclick="joinEvent(1)">Join</button>
+                    <div class="student-feed-layout">
+                        <!-- Left Sidebar -->
+                        <aside class="student-sidebar-left">
+                            <!-- Profile Card -->
+                            <div class="student-profile-card">
+                                <div class="student-cover">
+                                    <div class="student-cover-gradient"></div>
+                                </div>
+                                <div class="student-profile-info">
+                                    <div class="student-avatar-large">
+                                        <?php if(!empty($profile['photo'])): ?>
+                                            <img src="<?= $profile['photo'] ?>" alt="Profile">
+                                        <?php else: ?>
+                                            <div class="avatar-placeholder-lg">
+                                                <?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1) . substr($profile['lastname'] ?? 'T', 0, 1)) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                    <div class="event-item">
-                                        <div class="event-date">
-                                            <span class="day">10</span>
-                                            <span class="month">DEC</span>
-                                        </div>
-                                        <div class="event-details">
-                                            <h4>Business Plan Competition</h4>
-                                            <p><i class="fas fa-building"></i> Business Administration Club</p>
-                                            <p><i class="fas fa-map-marker-alt"></i> Conference Hall B</p>
-                                        </div>
-                                        <button class="btn-join" onclick="joinEvent(2)">Join</button>
+                                    <h2 class="student-name"><?= esc(($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? '')) ?></h2>
+                                    <span class="student-id"><?= session()->get('student_number') ?? 'Student' ?></span>
+                                    <p class="student-course">
+                                        <i class="fas fa-graduation-cap"></i>
+                                        <?= $profile['course'] ?? 'Bachelor of Science' ?>
+                                    </p>
+                                </div>
+                                <div class="student-stats-row">
+                                    <div class="student-stat">
+                                        <span class="sstat-num">5</span>
+                                        <span class="sstat-text">EVENTS</span>
                                     </div>
-                                    <div class="event-item">
-                                        <div class="event-date">
-                                            <span class="day">15</span>
-                                            <span class="month">DEC</span>
-                                        </div>
-                                        <div class="event-details">
-                                            <h4>Environmental Awareness Week</h4>
-                                            <p><i class="fas fa-building"></i> Green Energy Initiative</p>
-                                            <p><i class="fas fa-map-marker-alt"></i> Campus Grounds</p>
-                                        </div>
-                                        <button class="btn-join free" onclick="joinEvent(3)">Free</button>
+                                    <div class="student-stat">
+                                        <span class="sstat-num">3</span>
+                                        <span class="sstat-text">ORGS</span>
+                                    </div>
+                                    <div class="student-stat">
+                                        <span class="sstat-num">₱650</span>
+                                        <span class="sstat-text">PAID</span>
                                     </div>
                                 </div>
+                                <div class="student-profile-actions">
+                                    <a href="#profile" class="btn btn-outline-primary btn-sm" onclick="switchSection('profile')">
+                                        <i class="fas fa-user-edit"></i> Edit Profile
+                                    </a>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Recent Announcements -->
-                        <div class="card announcements-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-bullhorn"></i> Announcements</h3>
-                                <a href="#announcements" class="view-all-link" onclick="switchSection('announcements')">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <div class="announcement-list">
-                                    <div class="announcement-item priority-high">
-                                        <div class="announcement-badge">Important</div>
-                                        <h4>Enrollment Period Extended</h4>
-                                        <p>The enrollment period for the 2nd semester has been extended until December 15, 2025.</p>
-                                        <div class="announcement-meta">
-                                            <span><i class="fas fa-user"></i> Registrar Office</span>
-                                            <span><i class="fas fa-clock"></i> 2 days ago</span>
+                            <!-- My Organizations -->
+                            <div class="student-sidebar-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-users"></i> My Organizations</h4>
+                                <div class="my-org-list">
+                                    <div class="my-org-item">
+                                        <div class="my-org-avatar">CSS</div>
+                                        <div class="my-org-info">
+                                            <span class="my-org-name">Computer Science Society</span>
+                                            <span class="my-org-status active">Active Member</span>
                                         </div>
                                     </div>
-                                    <div class="announcement-item">
-                                        <h4>New Library Hours</h4>
-                                        <p>Starting December 1, the library will be open 24/7 during examination week.</p>
-                                        <div class="announcement-meta">
-                                            <span><i class="fas fa-user"></i> Library Services</span>
-                                            <span><i class="fas fa-clock"></i> 5 days ago</span>
+                                    <div class="my-org-item">
+                                        <div class="my-org-avatar">TIH</div>
+                                        <div class="my-org-info">
+                                            <span class="my-org-name">Tech Innovation Hub</span>
+                                            <span class="my-org-status active">Active Member</span>
+                                        </div>
+                                    </div>
+                                    <div class="my-org-item">
+                                        <div class="my-org-avatar pending">GEI</div>
+                                        <div class="my-org-info">
+                                            <span class="my-org-name">Green Energy Initiative</span>
+                                            <span class="my-org-status pending">Pending</span>
                                         </div>
                                     </div>
                                 </div>
+                                <a href="#organizations" class="sidebar-view-all" onclick="switchSection('organizations')">
+                                    Explore Organizations <i class="fas fa-arrow-right"></i>
+                                </a>
                             </div>
-                        </div>
 
-                        <!-- My Organizations -->
-                        <div class="card orgs-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-users"></i> My Organizations</h3>
-                                <a href="#organizations" class="view-all-link" onclick="switchSection('organizations')">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <div class="org-list">
-                                    <div class="org-item">
-                                        <div class="org-avatar">CSS</div>
-                                        <div class="org-details">
-                                            <h4>Computer Science Society</h4>
-                                            <p>Member since Sept 2024</p>
+                            <!-- Upcoming Events -->
+                            <div class="student-sidebar-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h4>
+                                <div class="sidebar-events-list">
+                                    <div class="sidebar-event-item">
+                                        <div class="se-date-box">
+                                            <span class="se-day">05</span>
+                                            <span class="se-month">DEC</span>
                                         </div>
-                                        <span class="org-badge active">Active</span>
+                                        <div class="se-details">
+                                            <span class="se-title">Tech Innovation Summit</span>
+                                            <span class="se-org">Computer Science Society</span>
+                                        </div>
                                     </div>
-                                    <div class="org-item">
-                                        <div class="org-avatar">TIH</div>
-                                        <div class="org-details">
-                                            <h4>Tech Innovation Hub</h4>
-                                            <p>Member since Oct 2024</p>
+                                    <div class="sidebar-event-item">
+                                        <div class="se-date-box">
+                                            <span class="se-day">10</span>
+                                            <span class="se-month">DEC</span>
                                         </div>
-                                        <span class="org-badge active">Active</span>
-                                    </div>
-                                    <div class="org-item pending">
-                                        <div class="org-avatar">GEI</div>
-                                        <div class="org-details">
-                                            <h4>Green Energy Initiative</h4>
-                                            <p>Application submitted</p>
+                                        <div class="se-details">
+                                            <span class="se-title">Business Plan Competition</span>
+                                            <span class="se-org">Business Administration Club</span>
                                         </div>
-                                        <span class="org-badge pending">Pending</span>
                                     </div>
                                 </div>
+                                <a href="#events" class="sidebar-view-all" onclick="switchSection('events')">
+                                    View all events <i class="fas fa-arrow-right"></i>
+                                </a>
                             </div>
-                        </div>
+                        </aside>
 
-                        <!-- Pending Payments -->
-                        <div class="card payments-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-credit-card"></i> Pending Payments</h3>
-                                <a href="#payments" class="view-all-link" onclick="switchSection('payments')">View All</a>
+                        <!-- Main Feed -->
+                        <div class="student-feed-main">
+                            <!-- Welcome Banner -->
+                            <div class="welcome-banner">
+                                <div class="welcome-content">
+                                    <h1>Welcome back, <?= esc($profile['firstname'] ?? 'Student') ?>! 👋</h1>
+                                    <p>Here's what's happening in your campus community</p>
+                                </div>
+                                <div class="welcome-date">
+                                    <i class="fas fa-calendar-day"></i>
+                                    <?= date('l, F j, Y') ?>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="payment-list">
-                                    <div class="payment-item">
-                                        <div class="payment-icon">
+
+                            <!-- Feed Posts - Announcements -->
+                            <div class="feed-post announcement-post priority-high">
+                                <div class="post-header">
+                                    <div class="post-author-avatar org">
+                                        <i class="fas fa-university"></i>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name">Registrar Office</span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> 2 days ago
+                                            <span class="post-badge important">Important</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <h3 class="post-title">📢 Enrollment Period Extended</h3>
+                                    <p class="post-text">The enrollment period for the 2nd semester has been extended until December 15, 2025. Please make sure to complete your enrollment requirements before the deadline.</p>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
+                                </div>
+                            </div>
+
+                            <!-- Event Post -->
+                            <div class="feed-post event-post-card">
+                                <div class="post-header">
+                                    <div class="post-author-avatar org css">CSS</div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name">Computer Science Society</span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> 3 days ago
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <p class="post-text">🎉 We're excited to announce our biggest event of the year!</p>
+                                </div>
+                                <div class="event-preview-card">
+                                    <div class="event-preview-banner">
+                                        <div class="event-preview-overlay">
+                                            <div class="event-date-badge">
+                                                <span class="edb-day">05</span>
+                                                <span class="edb-month">DEC</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="event-preview-info">
+                                        <h3>Tech Innovation Summit 2025</h3>
+                                        <p><i class="fas fa-map-marker-alt"></i> Main Auditorium</p>
+                                        <p><i class="fas fa-users"></i> 45 going • 12 interested</p>
+                                        <div class="event-preview-actions">
+                                            <button class="btn btn-primary btn-sm" onclick="joinEvent(1)">
+                                                <i class="fas fa-check"></i> Join Event
+                                            </button>
+                                            <button class="btn btn-outline btn-sm">
+                                                <i class="fas fa-star"></i> Interested
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
+                                </div>
+                            </div>
+
+                            <!-- Regular Announcement -->
+                            <div class="feed-post announcement-post">
+                                <div class="post-header">
+                                    <div class="post-author-avatar org">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name">Library Services</span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> 5 days ago
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <h3 class="post-title">📚 New Library Hours</h3>
+                                    <p class="post-text">Starting December 1, the library will be open 24/7 during examination week. Study rooms can be reserved through the BEACON app. Refreshments will be available at the library cafe.</p>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
+                                </div>
+                            </div>
+
+                            <!-- Product Post -->
+                            <div class="feed-post product-post">
+                                <div class="post-header">
+                                    <div class="post-author-avatar org css">CSS</div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name">Computer Science Society</span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> 1 week ago
+                                            <span class="post-badge shop">Shop</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <p class="post-text">🛍️ Our official merchandise is now available! Get yours before stocks run out!</p>
+                                </div>
+                                <div class="products-preview-grid">
+                                    <div class="product-preview-item" onclick="switchSection('shop')">
+                                        <div class="product-preview-img">
                                             <i class="fas fa-tshirt"></i>
                                         </div>
-                                        <div class="payment-details">
-                                            <h4>CSS Official T-Shirt x2</h4>
-                                            <p>Due: Dec 1, 2025</p>
+                                        <div class="product-preview-info">
+                                            <span class="product-name">CSS Official T-Shirt</span>
+                                            <span class="product-price">₱350</span>
                                         </div>
-                                        <div class="payment-amount">₱700.00</div>
-                                        <button class="btn-pay" onclick="initiatePayment(1)">Pay Now</button>
                                     </div>
-                                    <div class="payment-item">
-                                        <div class="payment-icon">
-                                            <i class="fas fa-ticket-alt"></i>
+                                    <div class="product-preview-item" onclick="switchSection('shop')">
+                                        <div class="product-preview-img">
+                                            <i class="fas fa-mug-hot"></i>
                                         </div>
-                                        <div class="payment-details">
-                                            <h4>Tech Summit Registration</h4>
-                                            <p>Due: Dec 3, 2025</p>
+                                        <div class="product-preview-info">
+                                            <span class="product-name">CSS Coffee Mug</span>
+                                            <span class="product-price">₱150</span>
                                         </div>
-                                        <div class="payment-amount">₱150.00</div>
-                                        <button class="btn-pay" onclick="initiatePayment(2)">Pay Now</button>
                                     </div>
                                 </div>
-                                <div class="payment-total">
-                                    <span>Total Pending</span>
-                                    <span class="total-amount">₱850.00</span>
+                                <div class="post-actions">
+                                    <button class="post-action" onclick="switchSection('shop')"><i class="fas fa-shopping-bag"></i> Shop Now</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Right Sidebar -->
+                        <aside class="student-sidebar-right">
+                            <!-- Pending Payments -->
+                            <div class="student-sidebar-card payments-sidebar">
+                                <div class="sidebar-header-flex">
+                                    <h4 class="sidebar-card-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
+                                    <span class="pending-count">2</span>
+                                </div>
+                                <div class="pending-payments-list">
+                                    <div class="pending-payment-item">
+                                        <div class="pp-icon">
+                                            <i class="fas fa-tshirt"></i>
+                                        </div>
+                                        <div class="pp-info">
+                                            <span class="pp-name">CSS Official T-Shirt x2</span>
+                                            <span class="pp-due">Due: Dec 1, 2025</span>
+                                        </div>
+                                        <span class="pp-amount">₱700</span>
+                                    </div>
+                                    <div class="pending-payment-item">
+                                        <div class="pp-icon">
+                                            <i class="fas fa-ticket-alt"></i>
+                                        </div>
+                                        <div class="pp-info">
+                                            <span class="pp-name">Tech Summit Registration</span>
+                                            <span class="pp-due">Due: Dec 3, 2025</span>
+                                        </div>
+                                        <span class="pp-amount">₱150</span>
+                                    </div>
+                                </div>
+                                <div class="pending-total">
+                                    <span>Total Pending</span>
+                                    <span class="total-value">₱850</span>
+                                </div>
+                                <a href="#payments" class="btn btn-primary btn-block" onclick="switchSection('payments')">
+                                    <i class="fas fa-credit-card"></i> Pay Now
+                                </a>
+                            </div>
+
+                            <!-- Suggested Organizations -->
+                            <div class="student-sidebar-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-compass"></i> Suggested for You</h4>
+                                <div class="suggested-orgs-list">
+                                    <div class="suggested-org-item">
+                                        <div class="sug-org-avatar">BAC</div>
+                                        <div class="sug-org-info">
+                                            <span class="sug-org-name">Business Administration Club</span>
+                                            <span class="sug-org-members">150 members</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary">Join</button>
+                                    </div>
+                                    <div class="suggested-org-item">
+                                        <div class="sug-org-avatar">EAC</div>
+                                        <div class="sug-org-info">
+                                            <span class="sug-org-name">Engineering Arts Circle</span>
+                                            <span class="sug-org-members">89 members</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary">Join</button>
+                                    </div>
+                                    <div class="suggested-org-item">
+                                        <div class="sug-org-avatar">MCC</div>
+                                        <div class="sug-org-info">
+                                            <span class="sug-org-name">Music & Culture Club</span>
+                                            <span class="sug-org-members">120 members</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary">Join</button>
+                                    </div>
+                                </div>
+                                <a href="#organizations" class="sidebar-view-all" onclick="switchSection('organizations')">
+                                    See all organizations <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+
+                            <!-- Quick Links -->
+                            <div class="student-sidebar-card quick-links-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-link"></i> Quick Links</h4>
+                                <div class="quick-links-list">
+                                    <a href="#events" class="quick-link-item" onclick="switchSection('events')">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>Browse Events</span>
+                                    </a>
+                                    <a href="#shop" class="quick-link-item" onclick="switchSection('shop')">
+                                        <i class="fas fa-shopping-bag"></i>
+                                        <span>Shop Products</span>
+                                    </a>
+                                    <a href="#announcements" class="quick-link-item" onclick="switchSection('announcements')">
+                                        <i class="fas fa-bullhorn"></i>
+                                        <span>Announcements</span>
+                                    </a>
+                                    <a href="#payments" class="quick-link-item" onclick="switchSection('payments')">
+                                        <i class="fas fa-history"></i>
+                                        <span>Payment History</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </aside>
                     </div>
                 </section>
 

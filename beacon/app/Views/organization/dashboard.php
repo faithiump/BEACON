@@ -252,218 +252,316 @@
     <main class="main-content">
         <div class="content-area">
             
-            <!-- Overview Section -->
+            <!-- Overview Section - Facebook Style Feed -->
             <section id="overview" class="dashboard-section active">
-                <div class="section-header">
-                    <div>
-                        <h1 class="section-title">Welcome, <?= $organization['acronym'] ?? 'Organization' ?>!</h1>
-                        <p class="section-subtitle">Here's what's happening with your organization today.</p>
-                    </div>
-                    <div class="section-actions">
-                        <button class="btn btn-primary" onclick="openModal('eventModal')">
-                            <i class="fas fa-plus"></i> Create Event
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card gradient-primary">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value"><?= $stats['total_members'] ?? 0 ?></span>
-                            <span class="stat-label">Total Members</span>
-                        </div>
-                        <div class="stat-badge">+<?= $stats['pending_members'] ?? 0 ?> pending</div>
-                    </div>
-                    <div class="stat-card gradient-purple">
-                        <div class="stat-icon">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value"><?= $stats['total_events'] ?? 0 ?></span>
-                            <span class="stat-label">Total Events</span>
-                        </div>
-                        <div class="stat-badge"><?= $stats['upcoming_events'] ?? 0 ?> upcoming</div>
-                    </div>
-                    <div class="stat-card gradient-emerald">
-                        <div class="stat-icon">
-                            <i class="fas fa-peso-sign"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value">₱<?= number_format($stats['total_revenue'] ?? 0) ?></span>
-                            <span class="stat-label">Total Revenue</span>
-                        </div>
-                        <div class="stat-badge"><?= $stats['pending_payments'] ?? 0 ?> pending</div>
-                    </div>
-                    <div class="stat-card gradient-amber">
-                        <div class="stat-icon">
-                            <i class="fas fa-box"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value"><?= $stats['total_products'] ?? 0 ?></span>
-                            <span class="stat-label">Products</span>
-                        </div>
-                        <div class="stat-badge">Active listings</div>
-                    </div>
-                </div>
-
-                <!-- Dashboard Grid -->
-                <div class="dashboard-grid">
-                    <!-- Upcoming Events -->
-                    <div class="card events-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
-                            <a href="#events" class="view-all-link" onclick="switchSection('events')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="event-list">
-                                <?php if(!empty($recentEvents)): ?>
-                                    <?php foreach(array_slice($recentEvents, 0, 3) as $event): ?>
-                                    <div class="event-item">
-                                        <div class="event-date-box">
-                                            <span class="event-day"><?= date('d', strtotime($event['date'])) ?></span>
-                                            <span class="event-month"><?= date('M', strtotime($event['date'])) ?></span>
+                <div class="feed-layout">
+                    <!-- Left Sidebar -->
+                    <aside class="feed-sidebar-left">
+                        <!-- Profile Card -->
+                        <div class="profile-card">
+                            <div class="profile-cover">
+                                <div class="profile-cover-gradient"></div>
+                            </div>
+                            <div class="profile-info">
+                                <div class="profile-avatar-large">
+                                    <?php if(!empty($organization['photo'])): ?>
+                                        <img src="<?= $organization['photo'] ?>" alt="<?= $organization['name'] ?>">
+                                    <?php else: ?>
+                                        <div class="avatar-placeholder">
+                                            <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
                                         </div>
-                                        <div class="event-details">
-                                            <h4><?= esc($event['title']) ?></h4>
-                                            <p><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
-                                            <div class="event-meta">
-                                                <span><i class="fas fa-users"></i> <?= $event['attendees'] ?>/<?= $event['max_attendees'] ?></span>
-                                                <span class="status-badge <?= $event['status'] ?>"><?= ucfirst($event['status']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <h2 class="profile-name"><?= $organization['name'] ?? 'Organization Name' ?></h2>
+                                <span class="profile-acronym"><?= $organization['acronym'] ?? 'ORG' ?></span>
+                                <p class="profile-type">
+                                    <i class="fas fa-tag"></i> 
+                                    <?= ucfirst(str_replace('_', ' ', $organization['type'] ?? 'Organization')) ?>
+                                </p>
+                            </div>
+                            <div class="profile-stats-row">
+                                <div class="profile-stat">
+                                    <span class="stat-num"><?= $stats['total_members'] ?? 0 ?></span>
+                                    <span class="stat-text">MEMBERS</span>
+                                </div>
+                                <div class="profile-stat">
+                                    <span class="stat-num"><?= $stats['total_events'] ?? 0 ?></span>
+                                    <span class="stat-text">EVENTS</span>
+                                </div>
+                                <div class="profile-stat">
+                                    <span class="stat-num"><?= $stats['total_products'] ?? 0 ?></span>
+                                    <span class="stat-text">PRODUCTS</span>
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button class="btn btn-outline-primary btn-sm" onclick="switchSection('settings')">
+                                    <i class="fas fa-edit"></i> Edit Profile
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-chart-line"></i> Quick Stats</h4>
+                            <div class="quick-stat-item">
+                                <div class="qs-icon emerald"><i class="fas fa-peso-sign"></i></div>
+                                <div class="qs-info">
+                                    <span class="qs-value">₱<?= number_format($stats['total_revenue'] ?? 0) ?></span>
+                                    <span class="qs-label">Total Revenue</span>
+                                </div>
+                            </div>
+                            <div class="quick-stat-item">
+                                <div class="qs-icon amber"><i class="fas fa-clock"></i></div>
+                                <div class="qs-info">
+                                    <span class="qs-value"><?= $stats['pending_payments'] ?? 0 ?></span>
+                                    <span class="qs-label">Pending Payments</span>
+                                </div>
+                            </div>
+                            <div class="quick-stat-item">
+                                <div class="qs-icon purple"><i class="fas fa-user-plus"></i></div>
+                                <div class="qs-info">
+                                    <span class="qs-value"><?= $stats['pending_members'] ?? 0 ?></span>
+                                    <span class="qs-label">Member Requests</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Events -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h4>
+                            <?php if(!empty($recentEvents)): ?>
+                                <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
+                                <div class="sidebar-event">
+                                    <div class="se-date">
+                                        <span class="se-day"><?= date('d', strtotime($event['date'])) ?></span>
+                                        <span class="se-month"><?= date('M', strtotime($event['date'])) ?></span>
+                                    </div>
+                                    <div class="se-info">
+                                        <span class="se-title"><?= esc($event['title']) ?></span>
+                                        <span class="se-location"><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></span>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No upcoming events</p>
+                            <?php endif; ?>
+                            <a href="#events" class="sidebar-link" onclick="switchSection('events')">View all events <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </aside>
+
+                    <!-- Center Feed -->
+                    <div class="feed-main">
+                        <!-- Create Post Box -->
+                        <div class="create-post-card">
+                            <div class="create-post-header">
+                                <div class="post-avatar">
+                                    <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                </div>
+                                <button class="create-post-input" onclick="openModal('announcementModal')">
+                                    What's on your mind, <?= $organization['acronym'] ?? 'Organization' ?>?
+                                </button>
+                            </div>
+                            <div class="create-post-actions">
+                                <button class="post-action-btn" onclick="openModal('eventModal')">
+                                    <i class="fas fa-calendar-plus text-primary"></i>
+                                    <span>Event</span>
+                                </button>
+                                <button class="post-action-btn" onclick="openModal('announcementModal')">
+                                    <i class="fas fa-bullhorn text-warning"></i>
+                                    <span>Announcement</span>
+                                </button>
+                                <button class="post-action-btn" onclick="openModal('productModal')">
+                                    <i class="fas fa-box text-purple"></i>
+                                    <span>Product</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Feed Posts (Announcements) -->
+                        <?php if(!empty($recentAnnouncements)): ?>
+                            <?php foreach($recentAnnouncements as $announcement): ?>
+                            <div class="feed-post">
+                                <div class="post-header">
+                                    <div class="post-author-avatar">
+                                        <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name"><?= $organization['name'] ?? 'Organization' ?></span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> <?= date('M d, Y \a\t g:i A', strtotime($announcement['created_at'])) ?>
+                                            <?php if($announcement['priority'] === 'high'): ?>
+                                            <span class="post-priority high"><i class="fas fa-exclamation-circle"></i> Important</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                    <div class="post-menu">
+                                        <button class="post-menu-btn" onclick="togglePostMenu(<?= $announcement['id'] ?>)">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <div class="post-menu-dropdown" id="postMenu<?= $announcement['id'] ?>">
+                                            <button onclick="editAnnouncement(<?= $announcement['id'] ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                            <button onclick="deleteAnnouncement(<?= $announcement['id'] ?>)"><i class="fas fa-trash"></i> Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <h3 class="post-title"><?= esc($announcement['title']) ?></h3>
+                                    <p class="post-text"><?= nl2br(esc($announcement['content'])) ?></p>
+                                </div>
+                                <div class="post-stats">
+                                    <span><i class="fas fa-eye"></i> <?= $announcement['views'] ?? 0 ?> views</span>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="feed-empty">
+                                <i class="fas fa-newspaper"></i>
+                                <h3>No posts yet</h3>
+                                <p>Create your first announcement to share with your members!</p>
+                                <button class="btn btn-primary" onclick="openModal('announcementModal')">
+                                    <i class="fas fa-plus"></i> Create Announcement
+                                </button>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Recent Events as Posts -->
+                        <?php if(!empty($recentEvents)): ?>
+                            <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
+                            <div class="feed-post event-post">
+                                <div class="post-header">
+                                    <div class="post-author-avatar event-avatar">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name"><?= $organization['name'] ?? 'Organization' ?> created an event</span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($event['created_at'] ?? $event['date'])) ?>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="event-card-content">
+                                    <div class="event-banner">
+                                        <div class="event-banner-overlay">
+                                            <div class="event-date-badge">
+                                                <span class="edb-day"><?= date('d', strtotime($event['date'])) ?></span>
+                                                <span class="edb-month"><?= date('M', strtotime($event['date'])) ?></span>
                                             </div>
                                         </div>
-                                        <button class="btn-icon" onclick="editEvent(<?= $event['id'] ?>)">
-                                            <i class="fas fa-edit"></i>
+                                    </div>
+                                    <div class="event-card-info">
+                                        <h3><?= esc($event['title']) ?></h3>
+                                        <p class="event-location"><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
+                                        <p class="event-attendees"><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
+                                    </div>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="fas fa-star"></i> Interested</button>
+                                    <button class="post-action"><i class="fas fa-check"></i> Going</button>
+                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Right Sidebar - Products/Marketplace -->
+                    <aside class="feed-sidebar-right">
+                        <!-- Products Section -->
+                        <div class="sidebar-card marketplace-card">
+                            <div class="sidebar-header">
+                                <h4 class="sidebar-title"><i class="fas fa-store"></i> Our Products</h4>
+                                <button class="btn btn-sm btn-primary" onclick="openModal('productModal')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="product-grid">
+                                <?php if(!empty($products)): ?>
+                                    <?php foreach(array_slice($products, 0, 4) as $product): ?>
+                                    <div class="product-mini-card">
+                                        <div class="product-mini-img">
+                                            <?php if(!empty($product['image'])): ?>
+                                                <img src="<?= $product['image'] ?>" alt="<?= $product['name'] ?>">
+                                            <?php else: ?>
+                                                <div class="product-placeholder"><i class="fas fa-box"></i></div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="product-mini-info">
+                                            <span class="product-mini-name"><?= esc($product['name']) ?></span>
+                                            <span class="product-mini-price">₱<?= number_format($product['price']) ?></span>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="sidebar-empty-full">
+                                        <i class="fas fa-box-open"></i>
+                                        <p>No products yet</p>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="openModal('productModal')">Add Product</button>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php if(!empty($products)): ?>
+                            <a href="#products" class="sidebar-link" onclick="switchSection('products')">View all products <i class="fas fa-arrow-right"></i></a>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Member Requests -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-user-plus"></i> Member Requests</h4>
+                            <?php 
+                            $pendingMembers = array_filter($recentMembers ?? [], fn($m) => $m['status'] === 'pending');
+                            if(!empty($pendingMembers)): ?>
+                                <?php foreach(array_slice($pendingMembers, 0, 3) as $member): ?>
+                                <div class="member-request-item">
+                                    <div class="mr-avatar">
+                                        <?= strtoupper(substr($member['name'], 0, 1)) ?>
+                                    </div>
+                                    <div class="mr-info">
+                                        <span class="mr-name"><?= esc($member['name']) ?></span>
+                                        <span class="mr-course"><?= esc($member['course']) ?></span>
+                                    </div>
+                                    <div class="mr-actions">
+                                        <button class="mr-btn approve" onclick="manageMember(<?= $member['id'] ?>, 'approve')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="mr-btn reject" onclick="manageMember(<?= $member['id'] ?>, 'reject')">
+                                            <i class="fas fa-times"></i>
                                         </button>
                                     </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-calendar-plus"></i>
-                                        <p>No upcoming events</p>
-                                        <button class="btn btn-sm btn-primary" onclick="openModal('eventModal')">Create Event</button>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No pending requests</p>
+                            <?php endif; ?>
+                            <a href="#members" class="sidebar-link" onclick="switchSection('members')">Manage members <i class="fas fa-arrow-right"></i></a>
                         </div>
-                    </div>
 
-                    <!-- Pending Payments -->
-                    <div class="card payments-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-credit-card"></i> Pending Payments</h3>
-                            <a href="#payments" class="view-all-link" onclick="switchSection('payments')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="payment-list">
-                                <?php if(!empty($pendingPayments)): ?>
-                                    <?php foreach(array_slice($pendingPayments, 0, 4) as $payment): ?>
-                                    <div class="payment-item">
-                                        <div class="payment-avatar">
-                                            <?= strtoupper(substr($payment['student_name'], 0, 1)) ?>
-                                        </div>
-                                        <div class="payment-details">
-                                            <h4><?= esc($payment['student_name']) ?></h4>
-                                            <p><?= esc($payment['product']) ?></p>
-                                        </div>
-                                        <div class="payment-amount">₱<?= number_format($payment['amount']) ?></div>
-                                        <div class="payment-actions">
-                                            <button class="btn-icon success" onclick="confirmPayment(<?= $payment['id'] ?>, 'approve')" title="Approve">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn-icon danger" onclick="confirmPayment(<?= $payment['id'] ?>, 'reject')" title="Reject">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
+                        <!-- Pending Payments -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
+                            <?php if(!empty($pendingPayments)): ?>
+                                <?php foreach(array_slice($pendingPayments, 0, 3) as $payment): ?>
+                                <div class="payment-request-item">
+                                    <div class="pr-avatar">
+                                        <?= strtoupper(substr($payment['student_name'], 0, 1)) ?>
                                     </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-check-circle"></i>
-                                        <p>No pending payments</p>
+                                    <div class="pr-info">
+                                        <span class="pr-name"><?= esc($payment['student_name']) ?></span>
+                                        <span class="pr-product"><?= esc($payment['product']) ?></span>
                                     </div>
-                                <?php endif; ?>
-                            </div>
+                                    <span class="pr-amount">₱<?= number_format($payment['amount']) ?></span>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No pending payments</p>
+                            <?php endif; ?>
+                            <a href="#payments" class="sidebar-link" onclick="switchSection('payments')">View all payments <i class="fas fa-arrow-right"></i></a>
                         </div>
-                    </div>
-
-                    <!-- Recent Announcements -->
-                    <div class="card announcements-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-bullhorn"></i> Recent Announcements</h3>
-                            <a href="#announcements" class="view-all-link" onclick="switchSection('announcements')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="announcement-list">
-                                <?php if(!empty($recentAnnouncements)): ?>
-                                    <?php foreach(array_slice($recentAnnouncements, 0, 3) as $announcement): ?>
-                                    <div class="announcement-item <?= $announcement['priority'] ?>">
-                                        <div class="announcement-priority <?= $announcement['priority'] ?>">
-                                            <i class="fas fa-<?= $announcement['priority'] === 'high' ? 'exclamation-circle' : 'info-circle' ?>"></i>
-                                        </div>
-                                        <div class="announcement-content">
-                                            <h4><?= esc($announcement['title']) ?></h4>
-                                            <p><?= esc(substr($announcement['content'], 0, 80)) ?>...</p>
-                                            <div class="announcement-meta">
-                                                <span><i class="fas fa-eye"></i> <?= $announcement['views'] ?> views</span>
-                                                <span><i class="fas fa-clock"></i> <?= date('M d', strtotime($announcement['created_at'])) ?></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-bullhorn"></i>
-                                        <p>No announcements yet</p>
-                                        <button class="btn btn-sm btn-primary" onclick="openModal('announcementModal')">Create Announcement</button>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pending Members -->
-                    <div class="card members-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-user-plus"></i> Member Requests</h3>
-                            <a href="#members" class="view-all-link" onclick="switchSection('members')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="member-list">
-                                <?php 
-                                $pendingMembers = array_filter($recentMembers ?? [], fn($m) => $m['status'] === 'pending');
-                                if(!empty($pendingMembers)): ?>
-                                    <?php foreach(array_slice($pendingMembers, 0, 3) as $member): ?>
-                                    <div class="member-item">
-                                        <div class="member-avatar">
-                                            <?= strtoupper(substr($member['name'], 0, 1)) ?>
-                                        </div>
-                                        <div class="member-details">
-                                            <h4><?= esc($member['name']) ?></h4>
-                                            <p><?= esc($member['course']) ?> - <?= $member['year'] ?></p>
-                                        </div>
-                                        <div class="member-actions">
-                                            <button class="btn-icon success" onclick="manageMember(<?= $member['id'] ?>, 'approve')" title="Approve">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn-icon danger" onclick="manageMember(<?= $member['id'] ?>, 'reject')" title="Reject">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-user-check"></i>
-                                        <p>No pending requests</p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
+                    </aside>
                 </div>
             </section>
 
@@ -1164,6 +1262,25 @@
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        // Post Menu Toggle
+        function togglePostMenu(id) {
+            const menu = document.getElementById('postMenu' + id);
+            // Close all other post menus
+            document.querySelectorAll('.post-menu-dropdown').forEach(m => {
+                if (m !== menu) m.classList.remove('active');
+            });
+            menu.classList.toggle('active');
+        }
+
+        // Close post menus when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.post-menu')) {
+                document.querySelectorAll('.post-menu-dropdown').forEach(m => {
+                    m.classList.remove('active');
+                });
+            }
+        });
 
         // Mobile Navigation
         document.getElementById('mobileMenuBtn').addEventListener('click', () => {
