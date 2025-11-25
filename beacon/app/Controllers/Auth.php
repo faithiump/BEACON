@@ -4,7 +4,12 @@ namespace App\Controllers;
 use Config\Google;
 use GuzzleHttp\Client as GuzzleClient;
 
-require_once APPPATH . '../vendor/autoload.php';
+// Load Composer autoload if not already loaded
+if (defined('COMPOSER_PATH')) {
+    require_once COMPOSER_PATH;
+} elseif (file_exists(ROOTPATH . 'vendor/autoload.php')) {
+    require_once ROOTPATH . 'vendor/autoload.php';
+}
 
 use App\Models\UserModel;
 use App\Models\UserProfileModel;
@@ -40,22 +45,71 @@ class Auth extends BaseController
 
     public function processLogin()
     {
-        // Handle login logic here
         $validation = \Config\Services::validation();
         
         $rules = [
-            'role' => 'required',
+            'role' => 'required|in_list[student,organization]',
             'email' => 'required|valid_email',
             'password' => 'required|min_length[6]'
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $validation->getErrors());
+            $errors = $validation->getErrors();
+            $firstError = array_shift($errors);
+            return redirect()->back()->withInput()->with('error', $firstError ?? 'Invalid login data.');
         }
 
-        // Add your authentication logic here
-        // For now, just redirect to home
-        return redirect()->to('/student/dashboard')->with('success', 'Login successful!');
+        $role = $this->request->getPost('role');
+        $email = strtolower(trim($this->request->getPost('email')));
+        $password = $this->request->getPost('password');
+
+        $user = $this->userModel->where('email', $email)->first();
+
+        if (!$user || $user['role'] !== $role) {
+            return redirect()->back()->withInput()->with('error', 'Invalid credentials for the selected role.');
+        }
+
+        if (!password_verify($password, $user['password'])) {
+            return redirect()->back()->withInput()->with('error', 'Incorrect email or password.');
+        }
+
+        if (empty($user['is_active'])) {
+            return redirect()->back()->withInput()->with('error', 'Your account is currently inactive.');
+        }
+
+        if ($role === 'student') {
+            return $this->handleStudentLogin($user);
+        }
+
+        return redirect()->back()->withInput()->with('error', 'Login for the selected role is not yet available.');
+    }
+
+    private function handleStudentLogin(array $user)
+    {
+        $student = $this->studentModel->where('user_id', $user['id'])->first();
+
+        if (!$student) {
+            return redirect()->back()->withInput()->with('error', 'Student record not found.');
+        }
+
+        $profile = $this->userProfileModel->where('user_id', $user['id'])->first();
+        $fullName = null;
+        if ($profile) {
+            $fullName = trim(($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? ''));
+        }
+
+        session()->set([
+            'isLoggedIn'     => true,
+            'role'           => 'student',
+            'user_id'        => $user['id'],
+            'student_id'     => $student['id'],
+            'student_number' => $student['student_id'],
+            'email'          => $user['email'],
+            'name'           => $fullName ?: null,
+            'photo'          => $profile['photo'] ?? null
+        ]);
+
+        return redirect()->to(base_url('student/dashboard'))->with('success', 'Welcome back!');
     }
 
     public function processRegister()

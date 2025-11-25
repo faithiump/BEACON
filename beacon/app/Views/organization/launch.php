@@ -4,27 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Launch Organization - BEACON | CSPC</title>
+    <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/launch-org.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/footer.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Navigation Panel -->
-    <nav class="auth-nav">
-        <div class="nav-container">
-            <a href="<?= base_url() ?>" class="nav-brand">
-                <span class="nav-logo">BEACON</span>
-                <span class="nav-subtitle">CSPC</span>
-            </a>
-            <div class="nav-links">
-                <a href="<?= base_url() ?>" class="nav-link">Home</a>
-                <a href="<?= base_url('auth/login') ?>" class="nav-link">Login</a>
-                <a href="<?= base_url('auth/register') ?>" class="nav-link">Register</a>
-                <a href="<?= base_url('organization/launch') ?>" class="nav-link active">Launch Organization</a>
-            </div>
-        </div>
-    </nav>
+    <?= view('components/nav', ['active' => 'launch']) ?>
 
     <div class="launch-container">
         <div class="launch-form-container">
@@ -251,6 +240,7 @@
             </div>
         </div>
     </div>
+    <?= view('components/footer') ?>
 </body>
 </html>
 
