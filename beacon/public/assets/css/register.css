@@ -620,3 +620,66 @@ textarea.form-control {
     transform: none;
 }
 
+/* Alert Messages */
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert i {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 2px solid rgba(34, 197, 94, 0.3);
+    color: #15803d;
+}
+
+.alert-success i {
+    color: #22c55e;
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+    color: #991b1b;
+}
+
+.alert-error i {
+    color: #ef4444;
+}
+
+.alert ul {
+    margin: 0.5rem 0 0 0;
+    padding-left: 1.5rem;
+}
+
+.alert li {
+    margin-bottom: 0.25rem;
+}
+
+.alert li:last-child {
+    margin-bottom: 0;
+}
+

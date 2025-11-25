@@ -60,6 +60,10 @@ class Auth extends BaseController
 
     public function processRegister()
     {
+        // Debug: Log that we reached this method
+        log_message('info', 'processRegister method called');
+        log_message('info', 'POST data: ' . json_encode($this->request->getPost()));
+        
         // Handle registration logic here
         $validation = \Config\Services::validation();
         
@@ -92,7 +96,9 @@ class Auth extends BaseController
         }
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $validation->getErrors());
+            $errors = $validation->getErrors();
+            log_message('error', 'Registration validation failed: ' . json_encode($errors));
+            return redirect()->to(base_url('auth/register'))->withInput()->with('errors', $errors);
         }
 
         // Start database transaction
@@ -107,6 +113,10 @@ class Auth extends BaseController
                 'barangay' => $this->request->getPost('barangay')
             ];
             $addressId = $this->addressModel->insert($addressData);
+            
+            if (!$addressId) {
+                throw new \Exception('Failed to create address record: ' . json_encode($this->addressModel->errors()));
+            }
 
             // 2. Create user account
             $userData = [
@@ -117,6 +127,10 @@ class Auth extends BaseController
                 'email_verified' => 0
             ];
             $userId = $this->userModel->insert($userData);
+            
+            if (!$userId) {
+                throw new \Exception('Failed to create user account: ' . json_encode($this->userModel->errors()));
+            }
 
             // 3. Create user profile
             $profileData = [
@@ -129,7 +143,11 @@ class Auth extends BaseController
                 'phone' => $this->request->getPost('phone'),
                 'address_id' => $addressId
             ];
-            $this->userProfileModel->insert($profileData);
+            $profileId = $this->userProfileModel->insert($profileData);
+            
+            if (!$profileId) {
+                throw new \Exception('Failed to create user profile: ' . json_encode($this->userProfileModel->errors()));
+            }
 
             // 4. Create student record
             $studentData = [
@@ -143,21 +161,30 @@ class Auth extends BaseController
                     ? $this->request->getPost('organization_name') 
                     : null
             ];
-            $this->studentModel->insert($studentData);
+            $studentId = $this->studentModel->insert($studentData);
+            
+            if (!$studentId) {
+                throw new \Exception('Failed to create student record: ' . json_encode($this->studentModel->errors()));
+            }
 
             // Complete transaction
             $db->transComplete();
 
             if ($db->transStatus() === false) {
-                return redirect()->back()->withInput()->with('errors', ['Database error occurred. Please try again.']);
+                log_message('error', 'Database transaction failed during registration');
+                return redirect()->to(base_url('auth/register'))->withInput()->with('errors', ['Database error occurred. Please try again.']);
             }
 
+            log_message('info', 'Student registration successful for email: ' . $this->request->getPost('email'));
             return redirect()->to(base_url('auth/login'))->with('success', 'Registration successful! Please login.');
 
         } catch (\Exception $e) {
-            $db->transRollback();
+            if (isset($db)) {
+                $db->transRollback();
+            }
             log_message('error', 'Registration error: ' . $e->getMessage());
-            return redirect()->back()->withInput()->with('errors', ['An error occurred during registration. Please try again.']);
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            return redirect()->to(base_url('auth/register'))->withInput()->with('errors', ['An error occurred during registration: ' . $e->getMessage()]);
         }
     }
     

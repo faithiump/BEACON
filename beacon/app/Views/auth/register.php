@@ -38,6 +38,28 @@
                 <h1 class="auth-title">Create Account!</h1>
                 <p class="auth-subtitle">Join the CSPC community and access events, announcements, and campus organizations.</p>
                 
+                <?php if (session()->getFlashdata('success')): ?>
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <?= esc(session()->getFlashdata('success')) ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (session()->getFlashdata('errors')): ?>
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <?php if (is_array(session()->getFlashdata('errors'))): ?>
+                            <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
+                                <?php foreach (session()->getFlashdata('errors') as $error): ?>
+                                    <li><?= esc($error) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <?= esc(session()->getFlashdata('errors')) ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                
                 <form action="<?= base_url('auth/register') ?>" method="POST" class="auth-form">
                     <!-- Hidden role field - automatically set to student -->
                     <input type="hidden" name="role" id="role" value="student">
