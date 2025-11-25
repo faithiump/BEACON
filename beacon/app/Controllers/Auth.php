@@ -4,7 +4,12 @@ namespace App\Controllers;
 use Config\Google;
 use GuzzleHttp\Client as GuzzleClient;
 
-require_once APPPATH . '../vendor/autoload.php';
+// Load Composer autoload if not already loaded
+if (defined('COMPOSER_PATH')) {
+    require_once COMPOSER_PATH;
+} elseif (file_exists(ROOTPATH . 'vendor/autoload.php')) {
+    require_once ROOTPATH . 'vendor/autoload.php';
+}
 
 use App\Models\UserModel;
 use App\Models\UserProfileModel;

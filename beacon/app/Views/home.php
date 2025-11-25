@@ -4,31 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BEACON | Unified Campus Hub</title>
+    <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/home.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/footer.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <nav class="home-nav">
-        <div class="nav-container">
-            <a href="<?= base_url() ?>" class="nav-brand">
-                <span class="nav-logo">BEACON</span>
-                <span class="nav-subtitle">CSPC</span>
-            </a>
-            <div class="nav-links">
-                <a href="<?= base_url() ?>" class="nav-link active">Home</a>
-                <a href="<?= base_url('auth/login') ?>" class="nav-link">Login</a>
-                <a href="<?= base_url('auth/register') ?>" class="nav-link">Register</a>
-            </div>
-        </div>
-    </nav>
+    <?= view('components/nav', ['active' => 'home']) ?>
 
     <main class="home-wrapper">
         <section class="hero">
             <div class="hero-text">
-                <div class="status-pill">Unified Platform • Student Organizations</div>
-                <h1>Bringing Events, Announcements, and Campus Organizations Together.</h1>
+                <h1>Bringing Events, Announcements, and Campus Organization Network.</h1>
                 <p>
                     BEACON is CSPC's centralized hub for organization management, event visibility,
                     and student engagement. Stay informed, collaborate seamlessly, and keep the pulse
@@ -88,5 +77,6 @@
             </div>
         </section>
     </main>
+    <?= view('components/footer') ?>
 </body>
 </html>
