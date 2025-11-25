@@ -192,9 +192,7 @@ class Auth extends BaseController
             return redirect()->to(base_url('auth/register'))->withInput()->with('errors', ['An error occurred during registration: ' . $e->getMessage()]);
         }
     }
-
     
-
     public function googleLogin()
     {
         $config = new Google();

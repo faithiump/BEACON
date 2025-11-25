@@ -55,7 +55,7 @@ class Login extends BaseController
                 'admin_id' => $admin['id']
             ]);
 
-            return redirect()->to('/admin/dashboard');
+            return redirect()->to('/admin/dashboard')->with('success', 'Login successful! Welcome back.');
         }
 
         return redirect()->back()->withInput()->with('error', 'Invalid admin credentials');
@@ -303,21 +303,48 @@ class Login extends BaseController
             $db->table('organization_applications')
                 ->where('id', $id)
                 ->update([
-                    'status' => 'approved',
+                    'status'      => 'approved',
                     'reviewed_by' => session()->get('admin_id'),
                     'reviewed_at' => date('Y-m-d H:i:s')
                 ]);
 
-            // Create user account for organization
-            $userData = [
-                'email' => $application['contact_email'],
-                'password' => password_hash('TempPassword123!', PASSWORD_DEFAULT), // Temporary password
-                'role' => 'organization',
-                'is_active' => 1,
-                'email_verified' => 0
-            ];
-            $db->table('users')->insert($userData);
-            $userId = $db->insertID();
+            // Ensure unique organization user (re-use existing email if already registered)
+            $userBuilder  = $db->table('users');
+            $existingUser = $userBuilder->where('email', $application['contact_email'])->get()->getRowArray();
+            $userId       = null;
+
+            if ($existingUser) {
+                $userId = $existingUser['id'];
+
+                $userBuilder = $db->table('users');
+                $userBuilder->where('id', $userId)->update([
+                    'role'         => 'organization',
+                    'is_active'    => 1,
+                    'email_verified' => $existingUser['email_verified'] ?? 0
+                ]);
+
+                $error = $db->error();
+                if (!empty($error['code'])) {
+                    throw new \Exception('Failed to update existing user: ' . ($error['message'] ?? 'Unknown error'));
+                }
+            } else {
+                // Create user account for organization
+                $userData = [
+                    'email'          => $application['contact_email'],
+                    'password'       => password_hash('TempPassword123!', PASSWORD_DEFAULT), // Temporary password
+                    'role'           => 'organization',
+                    'is_active'      => 1,
+                    'email_verified' => 0
+                ];
+                $userBuilder = $db->table('users');
+                $userBuilder->insert($userData);
+                $userId = $db->insertID();
+
+                $error = $db->error();
+                if (!$userId || !empty($error['code'])) {
+                    throw new \Exception('Failed to create organization user: ' . ($error['message'] ?? 'Unknown error'));
+                }
+            }
 
             // Create organization record
             $orgData = [
@@ -335,7 +362,18 @@ class Login extends BaseController
                 'current_members' => $application['current_members'],
                 'is_active' => 1
             ];
-            $db->table('organizations')->insert($orgData);
+            $orgBuilder = $db->table('organizations');
+            $existingOrg = $orgBuilder->where('organization_name', $application['organization_name'])->get()->getRowArray();
+
+            if ($existingOrg) {
+                throw new \Exception('Organization name already exists in the system.');
+            }
+
+            $orgBuilder->insert($orgData);
+            $error = $db->error();
+            if (!empty($error['code'])) {
+                throw new \Exception('Failed to create organization record: ' . ($error['message'] ?? 'Unknown error'));
+            }
 
             // Get advisor and officer info for email
             $advisor = $db->table('organization_advisors')
@@ -378,21 +416,27 @@ class Login extends BaseController
     private function sendApprovalEmail($application, $advisor, $officer)
     {
         $email = \Config\Services::email();
-        
+
         $subject = 'Organization Application Approved - ' . $application['organization_name'];
         $message = view('emails/organization_approved', [
             'application' => $application,
-            'advisor' => $advisor,
-            'officer' => $officer
+            'advisor'     => $advisor,
+            'officer'     => $officer,
         ]);
 
         $email->setTo($application['contact_email']);
-        if ($advisor) {
-            $email->setCC($advisor['email']);
+
+        $ccRecipients = [];
+        if (!empty($advisor['email'])) {
+            $ccRecipients[] = $advisor['email'];
         }
-        if ($officer) {
-            $email->setCC($officer['email']);
+        if (!empty($officer['email'])) {
+            $ccRecipients[] = $officer['email'];
         }
+        if (!empty($ccRecipients)) {
+            $email->setCC($ccRecipients);
+        }
+
         $email->setSubject($subject);
         $email->setMessage($message);
 
@@ -470,21 +514,27 @@ class Login extends BaseController
     private function sendRejectionEmail($application, $advisor, $officer)
     {
         $email = \Config\Services::email();
-        
+
         $subject = 'Organization Application Status - ' . $application['organization_name'];
         $message = view('emails/organization_rejected', [
             'application' => $application,
-            'advisor' => $advisor,
-            'officer' => $officer
+            'advisor'     => $advisor,
+            'officer'     => $officer,
         ]);
 
         $email->setTo($application['contact_email']);
-        if ($advisor) {
-            $email->setCC($advisor['email']);
+
+        $ccRecipients = [];
+        if (!empty($advisor['email'])) {
+            $ccRecipients[] = $advisor['email'];
         }
-        if ($officer) {
-            $email->setCC($officer['email']);
+        if (!empty($officer['email'])) {
+            $ccRecipients[] = $officer['email'];
         }
+        if (!empty($ccRecipients)) {
+            $email->setCC($ccRecipients);
+        }
+
         $email->setSubject($subject);
         $email->setMessage($message);
 

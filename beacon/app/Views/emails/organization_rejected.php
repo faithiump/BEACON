@@ -22,7 +22,7 @@
             <div class="notice-badge">Application Status Update</div>
             
             <h2>Application Review Complete</h2>
-            <p>We regret to inform you that your organization application for <strong><?= esc($application['organization_name']) ?></strong> has been <strong>reviewed</strong> by the administration.</p>
+            <p>We regret to inform you that your organization application for <strong><?= esc($application['organization_name']) ?></strong> has been <strong>rejected</strong> by the administration.</p>
             
             <div class="info-box">
                 <h3>Organization Details:</h3>
@@ -31,6 +31,13 @@
                 <p><strong>Category:</strong> <?= esc(ucfirst(str_replace('_', ' ', $application['organization_category']))) ?></p>
             </div>
             
+            <?php if (!empty($application['admin_notes'])): ?>
+                <div class="info-box">
+                    <h3>Review Notes:</h3>
+                    <p><?= nl2br(esc($application['admin_notes'])) ?></p>
+                </div>
+            <?php endif; ?>
+
             <div class="info-box">
                 <h3>Next Steps:</h3>
                 <p>If you believe this decision was made in error or would like to discuss your application further, please contact the administration office.</p>

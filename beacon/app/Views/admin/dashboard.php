@@ -76,6 +76,12 @@
 
         <!-- Main Content -->
         <main class="dashboard-main">
+            <?php if (session()->getFlashdata('success')): ?>
+                <div class="alert alert-success" style="margin: 1rem 2rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-check-circle"></i>
+                    <span><?= session()->getFlashdata('success') ?></span>
+                </div>
+            <?php endif; ?>
             <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card">

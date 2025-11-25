@@ -24,6 +24,10 @@
                     <div class="alert alert-error"><?= session()->getFlashdata('error') ?></div>
                 <?php endif; ?>
 
+                <?php if (session()->getFlashdata('success')): ?>
+                    <div class="alert alert-success"><?= session()->getFlashdata('success') ?></div>
+                <?php endif; ?>
+
                 <form action="<?= base_url('admin/login') ?>" method="POST" class="auth-form">
                     <div class="form-group">
                         <label for="username">Username</label>
