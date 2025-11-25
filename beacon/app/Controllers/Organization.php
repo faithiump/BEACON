@@ -37,8 +37,8 @@ class Organization extends BaseController
             'primary_officer_phone' => 'required',
             'primary_officer_student_id' => 'required|min_length[5]',
             'current_members' => 'required|integer|greater_than[4]',
-            'constitution_file' => 'uploaded[constitution_file]|ext_in[constitution_file,pdf,doc,docx]|max_size[constitution_file,5120]',
-            'certification_file' => 'uploaded[certification_file]|ext_in[certification_file,pdf,doc,docx,jpg,jpeg,png]|max_size[certification_file,5120]'
+            'constitution_file' => 'uploaded[constitution_file]|max_size[constitution_file,5120]',
+            'certification_file' => 'uploaded[certification_file]|max_size[certification_file,5120]'
         ];
 
         if (!$this->validate($rules)) {
@@ -71,30 +71,203 @@ class Organization extends BaseController
             'submitted_at' => date('Y-m-d H:i:s')
         ];
 
+        // Ensure uploads directory exists
+        $uploadPath = WRITEPATH . 'uploads/organizations/';
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
         // Handle constitution file upload
         $constitutionFile = $this->request->getFile('constitution_file');
+        $constitutionFileName = null;
+        $constitutionFileSize = null;
+        $constitutionMimeType = null;
+        $constitutionOriginalName = null;
+        
         if ($constitutionFile && $constitutionFile->isValid() && !$constitutionFile->hasMoved()) {
+            // Validate file extension manually
+            $allowedExtensions = ['pdf', 'doc', 'docx'];
+            $extension = $constitutionFile->getExtension();
+            
+            if (!in_array(strtolower($extension), $allowedExtensions)) {
+                return redirect()->back()->withInput()->with('errors', ['Constitution file must be PDF, DOC, or DOCX format.']);
+            }
+            
+            $constitutionOriginalName = $constitutionFile->getName();
+            $constitutionFileSize = $constitutionFile->getSize();
+            $constitutionMimeType = $constitutionFile->getClientMimeType();
             $newName = $constitutionFile->getRandomName();
-            $constitutionFile->move(WRITEPATH . 'uploads/organizations/', $newName);
-            $data['constitution_file'] = $newName;
+            
+            if ($constitutionFile->move($uploadPath, $newName)) {
+                $constitutionFileName = $newName;
+            } else {
+                return redirect()->back()->withInput()->with('errors', ['Failed to upload constitution file. Please try again.']);
+            }
         }
 
         // Handle certification file upload
         $certificationFile = $this->request->getFile('certification_file');
+        $certificationFileName = null;
+        $certificationFileSize = null;
+        $certificationMimeType = null;
+        $certificationOriginalName = null;
+        
         if ($certificationFile && $certificationFile->isValid() && !$certificationFile->hasMoved()) {
+            // Validate file extension manually
+            $allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+            $extension = $certificationFile->getExtension();
+            
+            if (!in_array(strtolower($extension), $allowedExtensions)) {
+                return redirect()->back()->withInput()->with('errors', ['Certification file must be PDF, DOC, DOCX, JPG, JPEG, or PNG format.']);
+            }
+            
+            $certificationOriginalName = $certificationFile->getName();
+            $certificationFileSize = $certificationFile->getSize();
+            $certificationMimeType = $certificationFile->getClientMimeType();
             $newName = $certificationFile->getRandomName();
-            $certificationFile->move(WRITEPATH . 'uploads/organizations/', $newName);
-            $data['certification_file'] = $newName;
+            
+            if ($certificationFile->move($uploadPath, $newName)) {
+                $certificationFileName = $newName;
+            } else {
+                return redirect()->back()->withInput()->with('errors', ['Failed to upload certification file. Please try again.']);
+            }
         }
 
-        // TODO: Save to database and notify admin
-        // For now, we'll just show a success message
-        // In production, you would:
-        // 1. Save the application to database
-        // 2. Send email notification to admin
-        // 3. Store the file path in database
+        // Start database transaction
+        $db = \Config\Database::connect();
+        $db->transStart();
 
-        return redirect()->to(base_url('organization/launch'))->with('success', 'Your organization launch application has been submitted successfully! It will be reviewed by the administration. You will receive an email notification once a decision has been made.');
+        try {
+            // IMPORTANT: This only saves the APPLICATION for review (status: pending)
+            // The actual user account and organization record are created ONLY when admin approves
+            // This ensures data is only saved to users/organizations tables after approval
+            
+            // 1. Save organization application (only application data, not user/organization records)
+            // User and organization records will be created only when admin approves in approveOrganization()
+            $applicationData = [
+                'organization_name' => $this->request->getPost('organization_name'),
+                'organization_acronym' => $this->request->getPost('organization_acronym'),
+                'organization_type' => $this->request->getPost('organization_type'),
+                'organization_category' => $this->request->getPost('organization_category'),
+                'founding_date' => $this->request->getPost('founding_date'),
+                'mission' => $this->request->getPost('mission'),
+                'vision' => $this->request->getPost('vision'),
+                'objectives' => $this->request->getPost('objectives'),
+                'contact_email' => $this->request->getPost('contact_email'),
+                'contact_phone' => $this->request->getPost('contact_phone'),
+                'current_members' => $this->request->getPost('current_members'),
+                'status' => 'pending',
+                'submitted_at' => date('Y-m-d H:i:s')
+            ];
+            
+            $db->table('organization_applications')->insert($applicationData);
+            $applicationId = $db->insertID();
+            
+            if (!$applicationId) {
+                $error = $db->error();
+                throw new \Exception('Failed to save application. ' . ($error['message'] ?? 'Please ensure the organization_applications table exists in the database.'));
+            }
+
+            if (!$applicationId) {
+                throw new \Exception('Failed to get application ID after insert');
+            }
+
+            // 2. Save advisor information
+            $advisorData = [
+                'application_id' => $applicationId,
+                'name' => $this->request->getPost('advisor_name'),
+                'email' => $this->request->getPost('advisor_email'),
+                'phone' => $this->request->getPost('advisor_phone'),
+                'department' => $this->request->getPost('advisor_department')
+            ];
+            $db->table('organization_advisors')->insert($advisorData);
+            $advisorError = $db->error();
+            if (!empty($advisorError['message'])) {
+                throw new \Exception('Failed to save advisor info: ' . $advisorError['message']);
+            }
+
+            // 3. Save primary officer information
+            $officerData = [
+                'application_id' => $applicationId,
+                'position' => $this->request->getPost('officer_position'),
+                'name' => $this->request->getPost('primary_officer_name'),
+                'email' => $this->request->getPost('primary_officer_email'),
+                'phone' => $this->request->getPost('primary_officer_phone'),
+                'student_id' => $this->request->getPost('primary_officer_student_id')
+            ];
+            $db->table('organization_officers')->insert($officerData);
+            $officerError = $db->error();
+            if (!empty($officerError['message'])) {
+                throw new \Exception('Failed to save officer info: ' . $officerError['message']);
+            }
+
+            // 4. Save file information
+            if ($constitutionFileName) {
+                $constitutionFileData = [
+                    'application_id' => $applicationId,
+                    'file_type' => 'constitution',
+                    'file_name' => $constitutionOriginalName,
+                    'file_path' => 'uploads/organizations/' . $constitutionFileName,
+                    'file_size' => $constitutionFileSize,
+                    'mime_type' => $constitutionMimeType
+                ];
+                $db->table('organization_files')->insert($constitutionFileData);
+                $fileError = $db->error();
+                if (!empty($fileError['message'])) {
+                    log_message('warning', 'Failed to save constitution file info: ' . $fileError['message']);
+                    // Don't throw - file info is optional for the transaction
+                }
+            }
+
+            if ($certificationFileName) {
+                $certificationFileData = [
+                    'application_id' => $applicationId,
+                    'file_type' => 'certification',
+                    'file_name' => $certificationOriginalName,
+                    'file_path' => 'uploads/organizations/' . $certificationFileName,
+                    'file_size' => $certificationFileSize,
+                    'mime_type' => $certificationMimeType
+                ];
+                $db->table('organization_files')->insert($certificationFileData);
+                $fileError = $db->error();
+                if (!empty($fileError['message'])) {
+                    log_message('warning', 'Failed to save certification file info: ' . $fileError['message']);
+                    // Don't throw - file info is optional for the transaction
+                }
+            }
+
+            // Complete transaction
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                $error = $db->error();
+                throw new \Exception('Transaction failed: ' . ($error['message'] ?? 'Unknown database error'));
+            }
+
+            log_message('info', 'Organization application submitted successfully. ID: ' . $applicationId);
+            return redirect()->to(base_url('organization/launch'))->with('success', 'Your organization launch application has been submitted successfully! It will be reviewed by the administration. You will receive an email notification once a decision has been made.');
+
+        } catch (\Exception $e) {
+            if (isset($db) && $db->transStatus() !== false) {
+                $db->transRollback();
+            }
+            $errorMessage = $e->getMessage();
+            $dbError = $db->error();
+            
+            log_message('error', 'Organization application error: ' . $errorMessage);
+            if (!empty($dbError)) {
+                log_message('error', 'Database error: ' . json_encode($dbError));
+            }
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            // Always show detailed error for debugging
+            $displayError = $errorMessage;
+            if (!empty($dbError['message'])) {
+                $displayError .= ' (DB: ' . $dbError['message'] . ')';
+            }
+            
+            return redirect()->back()->withInput()->with('errors', [$displayError]);
+        }
     }
 }
 

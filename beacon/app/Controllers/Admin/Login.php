@@ -102,23 +102,31 @@ class Login extends BaseController
             ];
         }
 
-        // Fetch all users for User Management section
+        // Fetch all users for User Management section (students and organizations)
         $usersBuilder = $db->table('users u');
         $usersBuilder->select('u.id as user_id, u.email, u.role, u.is_active, u.created_at,
-                              up.firstname, up.middlename, up.lastname');
+                              up.firstname, up.middlename, up.lastname,
+                              o.organization_name');
         $usersBuilder->join('user_profiles up', 'u.id = up.user_id', 'left');
+        $usersBuilder->join('organizations o', 'u.id = o.user_id', 'left');
         $usersBuilder->orderBy('u.created_at', 'DESC');
         $allUsers = $usersBuilder->get()->getResultArray();
 
         // Format user data for display
         $userData = [];
         foreach ($allUsers as $user) {
-            $fullName = trim(($user['firstname'] ?? '') . ' ' . ($user['middlename'] ?? '') . ' ' . ($user['lastname'] ?? ''));
-            $fullName = preg_replace('/\s+/', ' ', $fullName);
+            // For organizations, use organization_name as Name
+            if ($user['role'] === 'organization' && !empty($user['organization_name'])) {
+                $displayName = $user['organization_name'];
+            } else {
+                // For students, use full name
+                $fullName = trim(($user['firstname'] ?? '') . ' ' . ($user['middlename'] ?? '') . ' ' . ($user['lastname'] ?? ''));
+                $displayName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+            }
             
             $userData[] = [
                 'id' => $user['user_id'],
-                'name' => $fullName ?: 'N/A',
+                'name' => $displayName,
                 'email' => $user['email'] ?? 'N/A',
                 'role' => ucfirst($user['role'] ?? 'N/A'),
                 'status' => $user['is_active'] ? 'Active' : 'Inactive',
@@ -126,19 +134,92 @@ class Login extends BaseController
             ];
         }
 
+        // Fetch pending organization applications
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Format pending applications for display
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        // Fetch approved organizations
+        $approvedOrgs = $db->table('organizations o')
+            ->select('o.id, o.organization_name, o.organization_category, o.is_active, o.created_at')
+            ->where('o.is_active', 1)
+            ->orderBy('o.created_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Get approved dates from organization_applications
+        $approvedDates = [];
+        if (!empty($approvedOrgs)) {
+            $orgNames = array_column($approvedOrgs, 'organization_name');
+            $approvedApps = $db->table('organization_applications')
+                ->select('organization_name, reviewed_at')
+                ->whereIn('organization_name', $orgNames)
+                ->where('status', 'approved')
+                ->get()
+                ->getResultArray();
+            
+            foreach ($approvedApps as $app) {
+                $approvedDates[$app['organization_name']] = $app['reviewed_at'];
+            }
+        }
+
+        // Format approved organizations for display
+        $approvedOrgsData = [];
+        foreach ($approvedOrgs as $org) {
+            $approvedDate = $approvedDates[$org['organization_name']] ?? $org['created_at'];
+            
+            $approvedOrgsData[] = [
+                'id' => $org['id'],
+                'name' => $org['organization_name'],
+                'category' => ucfirst(str_replace('_', ' ', $org['organization_category'])),
+                'status' => $org['is_active'] ? 'Approved' : 'Inactive',
+                'approved_date' => $approvedDate ? date('Y-m-d', strtotime($approvedDate)) : 'N/A'
+            ];
+        }
+
         // Calculate stats
         $activeStudentsCount = count($studentData);
         $totalStudentsCount = $db->table('users')->where('role', 'student')->countAllResults();
         
-        // Count approved organizations (assuming organizations table exists, or use users with role='organization' and is_active=1)
-        $approvedOrgsCount = $db->table('users')->where('role', 'organization')->where('is_active', 1)->countAllResults();
+        // Count approved organizations from organization_applications
+        $approvedOrgsCount = $db->table('organization_applications')->where('status', 'approved')->countAllResults();
         
-        // Count pending organizations (assuming organizations with is_active=0 or pending status)
-        $pendingOrgsCount = $db->table('users')->where('role', 'organization')->where('is_active', 0)->countAllResults();
+        // Count pending organizations
+        $pendingOrgsCount = count($pendingOrgsData);
 
         $data = [
             'students' => $studentData,
             'users' => $userData,
+            'pending_organizations' => $pendingOrgsData,
+            'approved_organizations' => $approvedOrgsData,
             'stats' => [
                 'active_students' => $activeStudentsCount,
                 'approved_organizations' => $approvedOrgsCount,
@@ -203,13 +284,124 @@ class Login extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // TODO: Implement organization approval logic
-        // Update organization status to 'approved' in database
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // Get application details
+            $application = $db->table('organization_applications')
+                ->where('id', $id)
+                ->where('status', 'pending')
+                ->get()
+                ->getRowArray();
+
+            if (!$application) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Application not found or already processed']);
+            }
+
+            // Update application status
+            $db->table('organization_applications')
+                ->where('id', $id)
+                ->update([
+                    'status' => 'approved',
+                    'reviewed_by' => session()->get('admin_id'),
+                    'reviewed_at' => date('Y-m-d H:i:s')
+                ]);
+
+            // Create user account for organization
+            $userData = [
+                'email' => $application['contact_email'],
+                'password' => password_hash('TempPassword123!', PASSWORD_DEFAULT), // Temporary password
+                'role' => 'organization',
+                'is_active' => 1,
+                'email_verified' => 0
+            ];
+            $db->table('users')->insert($userData);
+            $userId = $db->insertID();
+
+            // Create organization record
+            $orgData = [
+                'user_id' => $userId,
+                'organization_name' => $application['organization_name'],
+                'organization_acronym' => $application['organization_acronym'],
+                'organization_type' => $application['organization_type'],
+                'organization_category' => $application['organization_category'],
+                'founding_date' => $application['founding_date'],
+                'mission' => $application['mission'],
+                'vision' => $application['vision'],
+                'objectives' => $application['objectives'],
+                'contact_email' => $application['contact_email'],
+                'contact_phone' => $application['contact_phone'],
+                'current_members' => $application['current_members'],
+                'is_active' => 1
+            ];
+            $db->table('organizations')->insert($orgData);
+
+            // Get advisor and officer info for email
+            $advisor = $db->table('organization_advisors')
+                ->where('application_id', $id)
+                ->get()
+                ->getRowArray();
+
+            $officer = $db->table('organization_officers')
+                ->where('application_id', $id)
+                ->get()
+                ->getRowArray();
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Database transaction failed');
+            }
+
+            // Send approval email notification
+            $this->sendApprovalEmail($application, $advisor, $officer);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Organization approved successfully. Email notification sent.'
+            ]);
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Organization approval error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error approving organization: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send approval email notification
+     */
+    private function sendApprovalEmail($application, $advisor, $officer)
+    {
+        $email = \Config\Services::email();
         
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Organization approved successfully'
+        $subject = 'Organization Application Approved - ' . $application['organization_name'];
+        $message = view('emails/organization_approved', [
+            'application' => $application,
+            'advisor' => $advisor,
+            'officer' => $officer
         ]);
+
+        $email->setTo($application['contact_email']);
+        if ($advisor) {
+            $email->setCC($advisor['email']);
+        }
+        if ($officer) {
+            $email->setCC($officer['email']);
+        }
+        $email->setSubject($subject);
+        $email->setMessage($message);
+
+        try {
+            $email->send();
+            log_message('info', 'Approval email sent to: ' . $application['contact_email']);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to send approval email: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -221,13 +413,87 @@ class Login extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // TODO: Implement organization rejection logic
-        // Update organization status to 'rejected' in database
+        $db = \Config\Database::connect();
+
+        try {
+            // Get application details
+            $application = $db->table('organization_applications')
+                ->where('id', $id)
+                ->where('status', 'pending')
+                ->get()
+                ->getRowArray();
+
+            if (!$application) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Application not found or already processed']);
+            }
+
+            // Update application status
+            $db->table('organization_applications')
+                ->where('id', $id)
+                ->update([
+                    'status' => 'rejected',
+                    'reviewed_by' => session()->get('admin_id'),
+                    'reviewed_at' => date('Y-m-d H:i:s')
+                ]);
+
+            // Get advisor and officer info for email
+            $advisor = $db->table('organization_advisors')
+                ->where('application_id', $id)
+                ->get()
+                ->getRowArray();
+
+            $officer = $db->table('organization_officers')
+                ->where('application_id', $id)
+                ->get()
+                ->getRowArray();
+
+            // Send rejection email notification
+            $this->sendRejectionEmail($application, $advisor, $officer);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Organization rejected. Email notification sent.'
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Organization rejection error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error rejecting organization: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send rejection email notification
+     */
+    private function sendRejectionEmail($application, $advisor, $officer)
+    {
+        $email = \Config\Services::email();
         
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Organization rejected'
+        $subject = 'Organization Application Status - ' . $application['organization_name'];
+        $message = view('emails/organization_rejected', [
+            'application' => $application,
+            'advisor' => $advisor,
+            'officer' => $officer
         ]);
+
+        $email->setTo($application['contact_email']);
+        if ($advisor) {
+            $email->setCC($advisor['email']);
+        }
+        if ($officer) {
+            $email->setCC($officer['email']);
+        }
+        $email->setSubject($subject);
+        $email->setMessage($message);
+
+        try {
+            $email->send();
+            log_message('info', 'Rejection email sent to: ' . $application['contact_email']);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to send rejection email: ' . $e->getMessage());
+        }
     }
 
     /**

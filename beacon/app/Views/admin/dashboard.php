@@ -26,44 +26,32 @@
                     <div class="notification-wrapper">
                         <button class="notification-btn" id="notificationBtn">
                             <i class="fas fa-bell"></i>
-                            <span class="notification-badge" id="notificationBadge">3</span>
+                            <span class="notification-badge" id="notificationBadge"><?= isset($pending_organizations) ? count($pending_organizations) : 0 ?></span>
                         </button>
                         <div class="notification-dropdown" id="notificationDropdown">
                             <div class="notification-header">
                                 <h3>Pending Organization Approvals</h3>
-                                <span class="notification-count">3 new</span>
+                                <span class="notification-count"><?= isset($pending_organizations) ? count($pending_organizations) : 0 ?> new</span>
                             </div>
                             <div class="notification-list">
-                                <div class="notification-item" onclick="window.location.href='#organizations'">
-                                    <div class="notification-icon organization">
-                                        <i class="fas fa-building"></i>
+                                <?php if (!empty($pending_organizations)): ?>
+                                    <?php foreach (array_slice($pending_organizations, 0, 3) as $org): ?>
+                                        <div class="notification-item" onclick="window.location.href='#organizations'">
+                                            <div class="notification-icon organization">
+                                                <i class="fas fa-building"></i>
+                                            </div>
+                                            <div class="notification-content">
+                                                <p class="notification-title">Organization Pending Approval</p>
+                                                <p class="notification-text"><?= esc($org['name']) ?></p>
+                                                <span class="notification-time"><?= esc($org['submitted_at']) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div style="padding: 1rem; text-align: center; color: #64748b;">
+                                        No pending organizations
                                     </div>
-                                    <div class="notification-content">
-                                        <p class="notification-title">Organization Pending Approval</p>
-                                        <p class="notification-text">Tech Innovation Hub</p>
-                                        <span class="notification-time">2 hours ago</span>
-                                    </div>
-                                </div>
-                                <div class="notification-item" onclick="window.location.href='#organizations'">
-                                    <div class="notification-icon organization">
-                                        <i class="fas fa-building"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <p class="notification-title">Organization Pending Approval</p>
-                                        <p class="notification-text">Green Energy Initiative</p>
-                                        <span class="notification-time">5 hours ago</span>
-                                    </div>
-                                </div>
-                                <div class="notification-item" onclick="window.location.href='#organizations'">
-                                    <div class="notification-icon organization">
-                                        <i class="fas fa-building"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <p class="notification-title">Organization Pending Approval</p>
-                                        <p class="notification-text">CSPC Student Council</p>
-                                        <span class="notification-time">1 day ago</span>
-                                    </div>
-                                </div>
+                                <?php endif; ?>
                             </div>
                             <div class="notification-footer">
                                 <a href="#organizations" class="view-all-link">View All Pending Organizations</a>
@@ -164,82 +152,42 @@
                             <i class="fas fa-clipboard-check"></i>
                             Pending Organization Approvals
                         </h2>
-                        <span class="badge badge-warning">3</span>
+                        <span class="badge badge-warning"><?= isset($pending_organizations) ? count($pending_organizations) : 0 ?></span>
                     </div>
                     <div class="card-body">
                         <div class="approval-list">
-                            <div class="approval-item">
-                                <div class="approval-avatar organization">
-                                    <i class="fas fa-building"></i>
-                                </div>
-                                <div class="approval-info">
-                                    <h4>Tech Innovation Hub</h4>
-                                    <p>Technology • Registered 2 hours ago</p>
-                                    <div class="approval-details">
-                                        <span><i class="fas fa-envelope"></i> techhub@cspc.edu.ph</span>
-                                        <span><i class="fas fa-phone"></i> +63 912 345 6789</span>
+                            <?php if (!empty($pending_organizations)): ?>
+                                <?php foreach ($pending_organizations as $org): ?>
+                                    <div class="approval-item">
+                                        <div class="approval-avatar organization">
+                                            <i class="fas fa-building"></i>
+                                        </div>
+                                        <div class="approval-info">
+                                            <h4><?= esc($org['name']) ?></h4>
+                                            <p><?= esc($org['type']) ?> • Registered <?= esc($org['submitted_at']) ?></p>
+                                            <div class="approval-details">
+                                                <span><i class="fas fa-envelope"></i> <?= esc($org['email']) ?></span>
+                                                <span><i class="fas fa-phone"></i> <?= esc($org['phone']) ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="approval-actions">
+                                            <button class="btn-action approve" onclick="approveOrg(<?= esc($org['id']) ?>)" title="Approve">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button class="btn-action reject" onclick="rejectOrg(<?= esc($org['id']) ?>)" title="Reject">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                            <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>)" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div style="text-align: center; padding: 2rem; color: #64748b;">
+                                    No pending organization applications.
                                 </div>
-                                <div class="approval-actions">
-                                    <button class="btn-action approve" onclick="approveOrg(1)" title="Approve">
-                                        <i class="fas fa-check"></i> Approve
-                                    </button>
-                                    <button class="btn-action reject" onclick="rejectOrg(1)" title="Reject">
-                                        <i class="fas fa-times"></i> Reject
-                                    </button>
-                                    <button class="btn-action view" onclick="viewOrgDetails(1)" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="approval-item">
-                                <div class="approval-avatar organization">
-                                    <i class="fas fa-building"></i>
-                                </div>
-                                <div class="approval-info">
-                                    <h4>Green Energy Initiative</h4>
-                                    <p>Environmental • Registered 5 hours ago</p>
-                                    <div class="approval-details">
-                                        <span><i class="fas fa-envelope"></i> greenenergy@cspc.edu.ph</span>
-                                        <span><i class="fas fa-phone"></i> +63 912 345 6790</span>
-                                    </div>
-                                </div>
-                                <div class="approval-actions">
-                                    <button class="btn-action approve" onclick="approveOrg(2)" title="Approve">
-                                        <i class="fas fa-check"></i> Approve
-                                    </button>
-                                    <button class="btn-action reject" onclick="rejectOrg(2)" title="Reject">
-                                        <i class="fas fa-times"></i> Reject
-                                    </button>
-                                    <button class="btn-action view" onclick="viewOrgDetails(2)" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="approval-item">
-                                <div class="approval-avatar organization">
-                                    <i class="fas fa-building"></i>
-                                </div>
-                                <div class="approval-info">
-                                    <h4>CSPC Student Council</h4>
-                                    <p>Student Government • Registered 1 day ago</p>
-                                    <div class="approval-details">
-                                        <span><i class="fas fa-envelope"></i> studentcouncil@cspc.edu.ph</span>
-                                        <span><i class="fas fa-phone"></i> +63 912 345 6791</span>
-                                    </div>
-                                </div>
-                                <div class="approval-actions">
-                                    <button class="btn-action approve" onclick="approveOrg(3)" title="Approve">
-                                        <i class="fas fa-check"></i> Approve
-                                    </button>
-                                    <button class="btn-action reject" onclick="rejectOrg(3)" title="Reject">
-                                        <i class="fas fa-times"></i> Reject
-                                    </button>
-                                    <button class="btn-action view" onclick="viewOrgDetails(3)" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -264,26 +212,26 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>Computer Science Society</td>
-                                        <td>Technology</td>
-                                        <td><span class="status-badge approved">Approved</span></td>
-                                        <td>2024-01-15</td>
-                                        <td>
-                                            <button class="btn-action view" title="View"><i class="fas fa-eye"></i></button>
-                                            <button class="btn-action edit" title="Edit"><i class="fas fa-edit"></i></button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Business Administration Club</td>
-                                        <td>Business</td>
-                                        <td><span class="status-badge approved">Approved</span></td>
-                                        <td>2024-01-20</td>
-                                        <td>
-                                            <button class="btn-action view" title="View"><i class="fas fa-eye"></i></button>
-                                            <button class="btn-action edit" title="Edit"><i class="fas fa-edit"></i></button>
-                                        </td>
-                                    </tr>
+                                    <?php if (!empty($approved_organizations)): ?>
+                                        <?php foreach ($approved_organizations as $org): ?>
+                                            <tr>
+                                                <td><?= esc($org['name']) ?></td>
+                                                <td><?= esc($org['category']) ?></td>
+                                                <td><span class="status-badge approved"><?= esc($org['status']) ?></span></td>
+                                                <td><?= esc($org['approved_date']) ?></td>
+                                                <td>
+                                                    <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>)" title="View"><i class="fas fa-eye"></i></button>
+                                                    <button class="btn-action edit" title="Edit"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
+                                                No approved organizations found.
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
