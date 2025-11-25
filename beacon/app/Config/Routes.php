@@ -21,6 +21,7 @@ $routes->post('organization/launch', 'Organization::processLaunch');
 
 // Admin routes
 $routes->get('admin', 'Admin\\Login::index');
+$routes->get('admin/login', 'Admin\\Login::index');
 $routes->post('admin/login', 'Admin\\Login::process');
 $routes->get('admin/dashboard', 'Admin\\Login::dashboard');
 $routes->get('admin/logout', 'Admin\\Login::logout');

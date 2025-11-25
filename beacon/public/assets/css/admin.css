@@ -165,6 +165,12 @@ body {
     border: 1px solid #fecaca;
 }
 
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
 @media (max-width: 480px) {
     .auth-form-card {
         padding: 2rem 1.5rem;

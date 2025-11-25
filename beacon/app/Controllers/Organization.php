@@ -74,8 +74,7 @@ class Organization extends BaseController
 
         // Start database transaction
         $db = \Config\Database::connect();
-        $db->transStart();
-
+        
         // Ensure uploads directory exists
         $uploadPath = WRITEPATH . 'uploads/organizations/';
         if (!is_dir($uploadPath)) {
@@ -98,7 +97,7 @@ class Organization extends BaseController
                 return redirect()->back()->withInput()->with('errors', ['Constitution file must be PDF, DOC, or DOCX format.']);
             }
             
-            $constitutionOriginalName = $constitutionFile->getName();
+            $constitutionOriginalName = $constitutionFile->getClientName();
             $constitutionFileSize = $constitutionFile->getSize();
             $constitutionMimeType = $constitutionFile->getClientMimeType();
             $newName = $constitutionFile->getRandomName();
@@ -126,7 +125,7 @@ class Organization extends BaseController
                 return redirect()->back()->withInput()->with('errors', ['Certification file must be PDF, DOC, DOCX, JPG, JPEG, or PNG format.']);
             }
             
-            $certificationOriginalName = $certificationFile->getName();
+            $certificationOriginalName = $certificationFile->getClientName();
             $certificationFileSize = $certificationFile->getSize();
             $certificationMimeType = $certificationFile->getClientMimeType();
             $newName = $certificationFile->getRandomName();
@@ -138,8 +137,7 @@ class Organization extends BaseController
             }
         }
 
-        // Start database transaction
-        $db = \Config\Database::connect();
+        // Start database transaction AFTER file uploads (so we can rollback if DB fails)
         $db->transStart();
 
         try {
@@ -148,7 +146,6 @@ class Organization extends BaseController
             // This ensures data is only saved to users/organizations tables after approval
             
             // 1. Save organization application (only application data, not user/organization records)
-            // User and organization records will be created only when admin approves in approveOrganization()
             $applicationData = [
                 'organization_name' => $this->request->getPost('organization_name'),
                 'organization_acronym' => $this->request->getPost('organization_acronym'),
@@ -160,21 +157,23 @@ class Organization extends BaseController
                 'objectives' => $this->request->getPost('objectives'),
                 'contact_email' => $this->request->getPost('contact_email'),
                 'contact_phone' => $this->request->getPost('contact_phone'),
-                'current_members' => $this->request->getPost('current_members'),
+                'current_members' => (int)$this->request->getPost('current_members'),
                 'status' => 'pending',
                 'submitted_at' => date('Y-m-d H:i:s')
             ];
             
-            $db->table('organization_applications')->insert($applicationData);
+            $result = $db->table('organization_applications')->insert($applicationData);
+            
+            if (!$result) {
+                $error = $db->error();
+                log_message('error', 'Failed to insert application: ' . json_encode($error));
+                throw new \Exception('Failed to save application. ' . ($error['message'] ?? 'Database error occurred.'));
+            }
+            
             $applicationId = $db->insertID();
             
-            if (!$applicationId) {
-                $error = $db->error();
-                throw new \Exception('Failed to save application. ' . ($error['message'] ?? 'Please ensure the organization_applications table exists in the database.'));
-            }
-
-            if (!$applicationId) {
-                throw new \Exception('Failed to get application ID after insert');
+            if (!$applicationId || $applicationId <= 0) {
+                throw new \Exception('Failed to get application ID after insert. Please check database connection and table structure.');
             }
 
             // 2. Save advisor information
@@ -185,10 +184,12 @@ class Organization extends BaseController
                 'phone' => $this->request->getPost('advisor_phone'),
                 'department' => $this->request->getPost('advisor_department')
             ];
-            $db->table('organization_advisors')->insert($advisorData);
-            $advisorError = $db->error();
-            if (!empty($advisorError['message'])) {
-                throw new \Exception('Failed to save advisor info: ' . $advisorError['message']);
+            
+            $advisorResult = $db->table('organization_advisors')->insert($advisorData);
+            if (!$advisorResult) {
+                $error = $db->error();
+                log_message('error', 'Failed to insert advisor: ' . json_encode($error));
+                throw new \Exception('Failed to save advisor info: ' . ($error['message'] ?? 'Database error occurred.'));
             }
 
             // 3. Save primary officer information
@@ -200,10 +201,12 @@ class Organization extends BaseController
                 'phone' => $this->request->getPost('primary_officer_phone'),
                 'student_id' => $this->request->getPost('primary_officer_student_id')
             ];
-            $db->table('organization_officers')->insert($officerData);
-            $officerError = $db->error();
-            if (!empty($officerError['message'])) {
-                throw new \Exception('Failed to save officer info: ' . $officerError['message']);
+            
+            $officerResult = $db->table('organization_officers')->insert($officerData);
+            if (!$officerResult) {
+                $error = $db->error();
+                log_message('error', 'Failed to insert officer: ' . json_encode($error));
+                throw new \Exception('Failed to save officer info: ' . ($error['message'] ?? 'Database error occurred.'));
             }
 
             // 4. Save file information
@@ -216,10 +219,9 @@ class Organization extends BaseController
                     'file_size' => $constitutionFileSize,
                     'mime_type' => $constitutionMimeType
                 ];
-                $db->table('organization_files')->insert($constitutionFileData);
-                $fileError = $db->error();
-                if (!empty($fileError['message'])) {
-                    log_message('warning', 'Failed to save constitution file info: ' . $fileError['message']);
+                $fileResult = $db->table('organization_files')->insert($constitutionFileData);
+                if (!$fileResult) {
+                    log_message('warning', 'Failed to save constitution file info: ' . json_encode($db->error()));
                     // Don't throw - file info is optional for the transaction
                 }
             }
@@ -233,10 +235,9 @@ class Organization extends BaseController
                     'file_size' => $certificationFileSize,
                     'mime_type' => $certificationMimeType
                 ];
-                $db->table('organization_files')->insert($certificationFileData);
-                $fileError = $db->error();
-                if (!empty($fileError['message'])) {
-                    log_message('warning', 'Failed to save certification file info: ' . $fileError['message']);
+                $fileResult = $db->table('organization_files')->insert($certificationFileData);
+                if (!$fileResult) {
+                    log_message('warning', 'Failed to save certification file info: ' . json_encode($db->error()));
                     // Don't throw - file info is optional for the transaction
                 }
             }
@@ -246,6 +247,7 @@ class Organization extends BaseController
 
             if ($db->transStatus() === false) {
                 $error = $db->error();
+                log_message('error', 'Transaction failed: ' . json_encode($error));
                 throw new \Exception('Transaction failed: ' . ($error['message'] ?? 'Unknown database error'));
             }
 
@@ -253,145 +255,35 @@ class Organization extends BaseController
             return redirect()->to(base_url('organization/launch'))->with('success', 'Your organization launch application has been submitted successfully! It will be reviewed by the administration. You will receive an email notification once a decision has been made.');
 
         } catch (\Exception $e) {
-            if (isset($db) && $db->transStatus() !== false) {
+            // Rollback transaction if still active
+            if ($db->transStatus() !== false) {
                 $db->transRollback();
             }
+            
+            // Clean up uploaded files if transaction failed
+            if ($constitutionFileName && file_exists($uploadPath . $constitutionFileName)) {
+                @unlink($uploadPath . $constitutionFileName);
+            }
+            if ($certificationFileName && file_exists($uploadPath . $certificationFileName)) {
+                @unlink($uploadPath . $certificationFileName);
+            }
+            
             $errorMessage = $e->getMessage();
             $dbError = $db->error();
             
             log_message('error', 'Organization application error: ' . $errorMessage);
-            if (!empty($dbError)) {
+            if (!empty($dbError) && !empty($dbError['message'])) {
                 log_message('error', 'Database error: ' . json_encode($dbError));
             }
             log_message('error', 'Stack trace: ' . $e->getTraceAsString());
             
-            // Always show detailed error for debugging
+            // Show detailed error for debugging
             $displayError = $errorMessage;
-            if (!empty($dbError['message'])) {
+            if (!empty($dbError) && !empty($dbError['message'])) {
                 $displayError .= ' (DB: ' . $dbError['message'] . ')';
             }
             
             return redirect()->back()->withInput()->with('errors', [$displayError]);
-        }
-        try {
-            // 1. Save organization application
-            $applicationData = [
-                'organization_name' => $this->request->getPost('organization_name'),
-                'organization_acronym' => $this->request->getPost('organization_acronym'),
-                'organization_type' => $this->request->getPost('organization_type'),
-                'organization_category' => $this->request->getPost('organization_category'),
-                'mission' => $this->request->getPost('mission'),
-                'vision' => $this->request->getPost('vision'),
-                'objectives' => $this->request->getPost('objectives'),
-                'founding_date' => $this->request->getPost('founding_date'),
-                'contact_email' => $this->request->getPost('contact_email'),
-                'contact_phone' => $this->request->getPost('contact_phone'),
-                'current_members' => $this->request->getPost('current_members'),
-                'status' => 'pending',
-                'submitted_at' => date('Y-m-d H:i:s')
-            ];
-            
-            $applicationId = $this->applicationModel->insert($applicationData);
-            
-            if (!$applicationId) {
-                throw new \Exception('Failed to save organization application');
-            }
-
-            // 2. Save advisor information
-            $advisorData = [
-                'application_id' => $applicationId,
-                'name' => $this->request->getPost('advisor_name'),
-                'email' => $this->request->getPost('advisor_email'),
-                'phone' => $this->request->getPost('advisor_phone'),
-                'department' => $this->request->getPost('advisor_department')
-            ];
-            
-            $advisorId = $this->advisorModel->insert($advisorData);
-            
-            if (!$advisorId) {
-                throw new \Exception('Failed to save advisor information');
-            }
-
-            // 3. Save primary officer information
-            $officerData = [
-                'application_id' => $applicationId,
-                'position' => $this->request->getPost('officer_position'),
-                'name' => $this->request->getPost('primary_officer_name'),
-                'email' => $this->request->getPost('primary_officer_email'),
-                'phone' => $this->request->getPost('primary_officer_phone'),
-                'student_id' => $this->request->getPost('primary_officer_student_id')
-            ];
-            
-            $officerId = $this->officerModel->insert($officerData);
-            
-            if (!$officerId) {
-                throw new \Exception('Failed to save officer information');
-            }
-
-            // 4. Handle and save file uploads
-            $uploadPath = WRITEPATH . 'uploads/organizations/';
-            
-            // Ensure upload directory exists
-            if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
-            }
-
-            // Handle constitution file
-            $constitutionFile = $this->request->getFile('constitution_file');
-            if ($constitutionFile && $constitutionFile->isValid() && !$constitutionFile->hasMoved()) {
-                $newName = $constitutionFile->getRandomName();
-                $constitutionFile->move($uploadPath, $newName);
-                
-                $fileData = [
-                    'application_id' => $applicationId,
-                    'file_type' => 'constitution',
-                    'file_name' => $constitutionFile->getClientName(),
-                    'file_path' => 'uploads/organizations/' . $newName,
-                    'file_size' => $constitutionFile->getSize(),
-                    'mime_type' => $constitutionFile->getClientMimeType()
-                ];
-                
-                $this->fileModel->insert($fileData);
-            }
-
-            // Handle certification file
-            $certificationFile = $this->request->getFile('certification_file');
-            if ($certificationFile && $certificationFile->isValid() && !$certificationFile->hasMoved()) {
-                $newName = $certificationFile->getRandomName();
-                $certificationFile->move($uploadPath, $newName);
-                
-                $fileData = [
-                    'application_id' => $applicationId,
-                    'file_type' => 'certification',
-                    'file_name' => $certificationFile->getClientName(),
-                    'file_path' => 'uploads/organizations/' . $newName,
-                    'file_size' => $certificationFile->getSize(),
-                    'mime_type' => $certificationFile->getClientMimeType()
-                ];
-                
-                $this->fileModel->insert($fileData);
-            }
-
-            // Complete transaction
-            $db->transComplete();
-
-            if ($db->transStatus() === false) {
-                throw new \Exception('Database transaction failed');
-            }
-
-            return redirect()->to(base_url('organization/launch'))->with('success', 'Your organization launch application has been submitted successfully! It will be reviewed by the administration. You will receive an email notification once a decision has been made.');
-
-        } catch (\Exception $e) {
-            $db->transRollback();
-            log_message('error', 'Organization application error: ' . $e->getMessage());
-            
-            // Format error for display
-            $errorMessage = 'An error occurred while submitting your application. Please try again.';
-            if (ENVIRONMENT === 'development') {
-                $errorMessage .= ' Error: ' . $e->getMessage();
-            }
-            
-            return redirect()->back()->withInput()->with('errors', [$errorMessage]);
         }
     }
 }
