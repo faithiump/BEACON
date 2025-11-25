@@ -160,9 +160,7 @@ class Auth extends BaseController
             return redirect()->back()->withInput()->with('errors', ['An error occurred during registration. Please try again.']);
         }
     }
-
     
-
     public function googleLogin()
     {
         $config = new Google();
