@@ -12,3 +12,5 @@ $routes->get('auth/login', 'Auth::login');
 $routes->get('auth/register', 'Auth::register');
 $routes->post('auth/login', 'Auth::processLogin');
 $routes->post('auth/register', 'Auth::processRegister');
+$routes->get('auth/googleLogin', 'Auth::googleLogin');
+$routes->get('auth/googleCallback', 'Auth::googleCallback');

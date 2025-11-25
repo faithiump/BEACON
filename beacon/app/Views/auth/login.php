@@ -75,7 +75,7 @@
                     <span>or continue with</span>
                 </div>
 
-                <button type="button" class="btn-google">
+                <button type="button" class="btn-google" onclick="window.location='<?= base_url('auth/googleLogin') ?>'">
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.8449H13.8436C13.635 11.9699 13.0009 12.9231 12.0477 13.5613V15.8195H15.9564C17.1582 14.2527 17.64 12.2181 17.64 9.20454Z" fill="#4285F4"/>
                         <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67181 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>

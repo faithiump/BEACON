@@ -1,6 +1,10 @@
 <?php
 
 namespace App\Controllers;
+use Config\Google;
+use GuzzleHttp\Client as GuzzleClient;
+
+require_once APPPATH . '../vendor/autoload.php';
 
 class Auth extends BaseController
 {
@@ -57,5 +61,62 @@ class Auth extends BaseController
         // For now, just redirect to login
         return redirect()->to('/auth/login')->with('success', 'Registration successful! Please login.');
     }
+
+    
+
+    public function googleLogin()
+    {
+        $config = new Google();
+        $client = new \Google\Client();
+        $client->setClientId($config->clientID);
+        $client->setClientSecret($config->clientSecret);
+        $client->setRedirectUri($config->redirectUri);
+        $client->addScope('email');
+        $client->addScope('profile');
+    
+        // Disable SSL verification locally
+        $httpClient = new GuzzleClient(['verify' => false]);
+        $client->setHttpClient($httpClient);
+    
+        return redirect()->to($client->createAuthUrl());
+    }
+    
+    public function googleCallback()
+    {
+        $config = new Google();
+        $client = new \Google\Client();
+        $client->setClientId($config->clientID);
+        $client->setClientSecret($config->clientSecret);
+        $client->setRedirectUri($config->redirectUri);
+    
+        // Disable SSL verification locally
+        $httpClient = new GuzzleClient(['verify' => false]);
+        $client->setHttpClient($httpClient);
+    
+        if (! $this->request->getGet('code')) {
+            return redirect()->to('/auth/login');
+        }
+    
+        $token = $client->fetchAccessTokenWithAuthCode($this->request->getGet('code'));
+        if (isset($token['error'])) {
+            return redirect()->to('/auth/login')->with('error', 'Google login failed');
+        }
+    
+        $client->setAccessToken($token['access_token']);
+        $oauth2 = new \Google\Service\Oauth2($client);
+        $googleUser = $oauth2->userinfo->get();
+    
+        // Store info in session
+        session()->set([
+            'isLoggedIn' => true,
+            'email'      => $googleUser->email,
+            'name'       => $googleUser->name,
+            'photo'      => $googleUser->picture
+        ]);
+    
+        return redirect()->to('/');
+    }
+    
+
 }
 
