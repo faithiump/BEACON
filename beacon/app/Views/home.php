@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BEACON | Unified Campus Hub</title>
-    <?php
-    helper('url');
-    $cssPath = base_url('assets/css/home.css');
-    ?>
-    <link rel="stylesheet" href="<?= $cssPath ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/home.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -41,6 +37,7 @@
                 <div class="hero-actions">
                     <a href="<?= base_url('auth/register') ?>" class="btn primary">Get Started</a>
                     <a href="<?= base_url('auth/login') ?>" class="btn secondary">Sign In</a>
+                    <a href="<?= base_url('organization/launch') ?>" class="btn tertiary">Launch Organization</a>
                 </div>
                 <div class="hero-stats">
                     <div class="stat-card">

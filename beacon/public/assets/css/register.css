@@ -7,6 +7,7 @@
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow-x: hidden;
+    overflow-y: auto;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -107,29 +108,33 @@ body {
     display: flex;
     min-height: 100vh;
     padding-top: 72px;
-    padding-left: 3rem;
-    padding-right: 3rem;
-    padding-bottom: 3rem;
-    align-items: center;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-bottom: 2rem;
+    align-items: flex-start;
     justify-content: center;
+    overflow-y: auto;
 }
 
 /* Form Container */
 .auth-form-container {
     width: 100%;
-    max-width: 480px;
+    max-width: 700px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding: 1.5rem 0;
 }
 
 .auth-form-card {
     width: 100%;
     background: #ffffff;
     border-radius: 24px;
-    padding: 3rem;
+    padding: 3.5rem;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(10px);
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
 }
 
 .auth-header {
@@ -187,8 +192,38 @@ body {
     margin-bottom: 1.75rem;
 }
 
+.form-section {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 1.75rem;
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.01em;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.375rem;
+}
+
 .form-group {
     margin-bottom: 1.375rem;
+}
+
+.form-group-half {
+    flex: 1;
+    margin-bottom: 0;
 }
 
 .role-dependent {
@@ -236,9 +271,39 @@ body {
     background-color: #ffffff;
 }
 
+.form-control:disabled {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+    border-color: #e2e8f0;
+    opacity: 0.7;
+}
+
+.form-control:disabled:hover {
+    border-color: #e2e8f0;
+}
+
 .form-control::placeholder {
     color: #94a3b8;
     font-weight: 400;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Role-dependent fields - hidden by default */
+.role-dependent,
+.student-fields,
+.organization-fields {
+    display: none;
+}
+
+.role-dependent.visible,
+.student-fields.visible,
+.organization-fields.visible {
+    display: block;
 }
 
 .select-wrapper {
@@ -409,8 +474,16 @@ body {
 /* Responsive Design */
 @media (max-width: 1024px) {
     .auth-container {
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .auth-form-container {
+        max-width: 650px;
+    }
+
+    .auth-form-card {
+        padding: 3rem;
     }
 
     .nav-container {
@@ -424,9 +497,13 @@ body {
 
 @media (max-width: 768px) {
     .auth-container {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
         padding-bottom: 2rem;
+    }
+
+    .auth-form-container {
+        max-width: 100%;
     }
 
     .nav-container {
@@ -442,7 +519,7 @@ body {
     }
 
     .auth-form-card {
-        padding: 2.5rem 2rem;
+        padding: 3rem 2rem;
     }
 
     .auth-title {
@@ -452,6 +529,16 @@ body {
     .auth-subtitle {
         font-size: 0.875rem;
         margin-bottom: 1.75rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
     }
 
     .form-group {
@@ -489,6 +576,16 @@ body {
 
     .auth-title {
         font-size: 1.625rem;
+    }
+
+    .form-section {
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.25rem;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 1.25rem;
     }
 
     .form-group {

@@ -6,9 +6,27 @@ use GuzzleHttp\Client as GuzzleClient;
 
 require_once APPPATH . '../vendor/autoload.php';
 
+use App\Models\UserModel;
+use App\Models\UserProfileModel;
+use App\Models\AddressModel;
+use App\Models\StudentModel;
+
 class Auth extends BaseController
 {
     protected $helpers = ['url'];
+    
+    protected $userModel;
+    protected $userProfileModel;
+    protected $addressModel;
+    protected $studentModel;
+    
+    public function __construct()
+    {
+        $this->userModel = new UserModel();
+        $this->userProfileModel = new UserProfileModel();
+        $this->addressModel = new AddressModel();
+        $this->studentModel = new StudentModel();
+    }
 
     public function login(): string
     {
@@ -45,21 +63,102 @@ class Auth extends BaseController
         // Handle registration logic here
         $validation = \Config\Services::validation();
         
+        // Role is automatically set to 'student' for register page
+        $role = 'student';
+        
         $rules = [
-            'fullname' => 'required|min_length[3]',
-            'role' => 'required',
+            'firstname' => 'required|min_length[2]',
+            'lastname' => 'required|min_length[2]',
+            'birthday' => 'required|valid_date',
+            'gender' => 'required',
+            'phone' => 'required',
+            'region' => 'required|min_length[3]',
+            'city_municipality' => 'required|min_length[3]',
+            'barangay' => 'required|min_length[3]',
+            'role' => 'required|in_list[student]',
             'email' => 'required|valid_email|is_unique[users.email]',
-            'password' => 'required|min_length[6]',
-            'confirm_password' => 'required|matches[password]'
+            'password' => 'required|min_length[8]',
+            'confirm_password' => 'required|matches[password]',
+            'student_id' => 'required|min_length[5]',
+            'department' => 'required|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
+            'course' => 'required',
+            'year_level' => 'required|in_list[1,2,3,4,5]',
+            'in_organization' => 'required|in_list[yes,no]'
         ];
+        
+        // If student is in organization, require organization name
+        if ($this->request->getPost('in_organization') === 'yes') {
+            $rules['organization_name'] = 'required|min_length[3]';
+        }
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $validation->getErrors());
         }
 
-        // Add your registration logic here
-        // For now, just redirect to login
-        return redirect()->to('/auth/login')->with('success', 'Registration successful! Please login.');
+        // Start database transaction
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // 1. Create address record
+            $addressData = [
+                'region' => $this->request->getPost('region'),
+                'city_municipality' => $this->request->getPost('city_municipality'),
+                'barangay' => $this->request->getPost('barangay')
+            ];
+            $addressId = $this->addressModel->insert($addressData);
+
+            // 2. Create user account
+            $userData = [
+                'email' => $this->request->getPost('email'),
+                'password' => $this->request->getPost('password'), // Will be hashed by model
+                'role' => 'student',
+                'is_active' => 1,
+                'email_verified' => 0
+            ];
+            $userId = $this->userModel->insert($userData);
+
+            // 3. Create user profile
+            $profileData = [
+                'user_id' => $userId,
+                'firstname' => $this->request->getPost('firstname'),
+                'middlename' => $this->request->getPost('middlename'),
+                'lastname' => $this->request->getPost('lastname'),
+                'birthday' => $this->request->getPost('birthday'),
+                'gender' => $this->request->getPost('gender'),
+                'phone' => $this->request->getPost('phone'),
+                'address_id' => $addressId
+            ];
+            $this->userProfileModel->insert($profileData);
+
+            // 4. Create student record
+            $studentData = [
+                'user_id' => $userId,
+                'student_id' => $this->request->getPost('student_id'),
+                'department' => $this->request->getPost('department'),
+                'course' => $this->request->getPost('course'),
+                'year_level' => $this->request->getPost('year_level'),
+                'in_organization' => $this->request->getPost('in_organization'),
+                'organization_name' => $this->request->getPost('in_organization') === 'yes' 
+                    ? $this->request->getPost('organization_name') 
+                    : null
+            ];
+            $this->studentModel->insert($studentData);
+
+            // Complete transaction
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return redirect()->back()->withInput()->with('errors', ['Database error occurred. Please try again.']);
+            }
+
+            return redirect()->to(base_url('auth/login'))->with('success', 'Registration successful! Please login.');
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Registration error: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('errors', ['An error occurred during registration. Please try again.']);
+        }
     }
 
     
