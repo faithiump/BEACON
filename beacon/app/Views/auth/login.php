@@ -37,7 +37,17 @@
                 </div>
                 <h1 class="auth-title">Welcome back!</h1>
                 <p class="auth-subtitle">Access the unified platform for events, announcements, and campus organizations.</p>
-                
+                <?php if(session()->getFlashdata('error')): ?>
+                    <div class="alert alert-danger">
+                        <?= session()->getFlashdata('error') ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if(session()->getFlashdata('success')): ?>
+                    <div class="alert alert-success">
+                        <?= session()->getFlashdata('success') ?>
+                    </div>
+                <?php endif; ?>
                 <form action="<?= base_url('auth/login') ?>" method="POST" class="auth-form">
                     <div class="form-group">
                         <label for="role">Role</label>
