@@ -95,7 +95,7 @@
                         <i class="fas fa-user-graduate"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 class="stat-value">1,247</h3>
+                        <h3 class="stat-value"><?= isset($stats['active_students']) ? number_format($stats['active_students']) : '0' ?></h3>
                         <p class="stat-label">Active Students</p>
                         <span class="stat-change positive">
                             <i class="fas fa-arrow-up"></i> 12% this month
@@ -107,7 +107,7 @@
                         <i class="fas fa-building"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 class="stat-value">89</h3>
+                        <h3 class="stat-value"><?= isset($stats['approved_organizations']) ? number_format($stats['approved_organizations']) : '0' ?></h3>
                         <p class="stat-label">Approved Organizations</p>
                         <span class="stat-change positive">
                             <i class="fas fa-arrow-up"></i> 5% this month
@@ -119,7 +119,7 @@
                         <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 class="stat-value">3</h3>
+                        <h3 class="stat-value"><?= isset($stats['pending_organizations']) ? number_format($stats['pending_organizations']) : '0' ?></h3>
                         <p class="stat-label">Pending Org Approvals</p>
                         <span class="stat-change warning">
                             <i class="fas fa-exclamation-circle"></i> Requires attention
@@ -314,39 +314,27 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>John Doe</td>
-                                            <td>Computer Science</td>
-                                            <td><span class="status-badge active">Active</span></td>
-                                            <td>3</td>
-                                            <td>
-                                                <button class="btn-action view" onclick="viewStudentDetails(1)" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Jane Smith</td>
-                                            <td>Business Administration</td>
-                                            <td><span class="status-badge active">Active</span></td>
-                                            <td>2</td>
-                                            <td>
-                                                <button class="btn-action view" onclick="viewStudentDetails(2)" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Sarah Johnson</td>
-                                            <td>Information Technology</td>
-                                            <td><span class="status-badge active">Active</span></td>
-                                            <td>1</td>
-                                            <td>
-                                                <button class="btn-action view" onclick="viewStudentDetails(3)" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
+                                        <?php if (!empty($students)): ?>
+                                            <?php foreach ($students as $student): ?>
+                                                <tr>
+                                                    <td><?= esc($student['name']) ?></td>
+                                                    <td><?= esc($student['course']) ?></td>
+                                                    <td><span class="status-badge active"><?= esc($student['status']) ?></span></td>
+                                                    <td><?= esc($student['org_count']) ?></td>
+                                                    <td>
+                                                        <button class="btn-action view" onclick="viewStudentDetails(<?= esc($student['id']) ?>)" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <tr>
+                                                <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
+                                                    No active students found.
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
                                     </tbody>
                                 </table>
                             </div>
@@ -527,30 +515,34 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>John Doe</td>
-                                        <td>john.doe@student.cspc.edu.ph</td>
-                                        <td><span class="role-badge student">Student</span></td>
-                                        <td><span class="status-badge active">Active</span></td>
-                                        <td>2024-01-10</td>
-                                        <td>
-                                            <button class="btn-action view" title="View"><i class="fas fa-eye"></i></button>
-                                            <button class="btn-action edit" title="Edit"><i class="fas fa-edit"></i></button>
-                                            <button class="btn-action suspend" title="Suspend"><i class="fas fa-ban"></i></button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Tech Innovation Hub</td>
-                                        <td>techhub@cspc.edu.ph</td>
-                                        <td><span class="role-badge organization">Organization</span></td>
-                                        <td><span class="status-badge pending">Pending</span></td>
-                                        <td>2024-01-25</td>
-                                        <td>
-                                            <button class="btn-action view" title="View"><i class="fas fa-eye"></i></button>
-                                            <button class="btn-action approve" title="Approve"><i class="fas fa-check"></i></button>
-                                            <button class="btn-action reject" title="Reject"><i class="fas fa-times"></i></button>
-                                        </td>
-                                    </tr>
+                                    <?php if (!empty($users)): ?>
+                                        <?php foreach ($users as $user): ?>
+                                            <tr>
+                                                <td><?= esc($user['name']) ?></td>
+                                                <td><?= esc($user['email']) ?></td>
+                                                <td><span class="role-badge <?= strtolower($user['role']) ?>"><?= esc($user['role']) ?></span></td>
+                                                <td><span class="status-badge <?= strtolower($user['status']) === 'active' ? 'active' : 'pending' ?>"><?= esc($user['status']) ?></span></td>
+                                                <td><?= esc($user['registration_date']) ?></td>
+                                                <td>
+                                                    <?php if (strtolower($user['role']) === 'student'): ?>
+                                                        <button class="btn-action view" onclick="viewStudentDetails(<?= esc($user['id']) ?>)" title="View"><i class="fas fa-eye"></i></button>
+                                                        <button class="btn-action edit" title="Edit"><i class="fas fa-edit"></i></button>
+                                                        <button class="btn-action suspend" title="Suspend"><i class="fas fa-ban"></i></button>
+                                                    <?php else: ?>
+                                                        <button class="btn-action view" title="View"><i class="fas fa-eye"></i></button>
+                                                        <button class="btn-action approve" title="Approve"><i class="fas fa-check"></i></button>
+                                                        <button class="btn-action reject" title="Reject"><i class="fas fa-times"></i></button>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
+                                                No users found.
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
