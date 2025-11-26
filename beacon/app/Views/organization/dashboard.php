@@ -54,6 +54,10 @@
                     <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
                     <?php endif; ?>
                 </a>
+                <a href="#forum" class="nav-link" data-section="forum">
+                    <i class="fas fa-comments"></i>
+                    <span>Forum</span>
+                </a>
             </nav>
 
             <!-- Right Side Actions -->
@@ -234,6 +238,9 @@
                 <?php if(($stats['pending_payments'] ?? 0) > 0): ?>
                 <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
                 <?php endif; ?>
+            </a>
+            <a href="#forum" class="mobile-nav-link" data-section="forum">
+                <i class="fas fa-comments"></i> Forum
             </a>
             <div class="mobile-nav-divider"></div>
             <a href="#settings" class="mobile-nav-link" data-section="settings">
@@ -886,6 +893,282 @@
                             <p>No pending payments to review</p>
                         </div>
                     <?php endif; ?>
+                </div>
+            </section>
+
+            <!-- Forum Section -->
+            <section id="forum" class="dashboard-section">
+                <div class="section-header">
+                    <div>
+                        <h1 class="section-title">Community Forum</h1>
+                        <p class="section-subtitle">Engage with students and other organizations</p>
+                    </div>
+                    <button class="btn-primary" onclick="openCreatePostModal()">
+                        <i class="fas fa-plus"></i> New Post
+                    </button>
+                </div>
+
+                <div class="forum-layout">
+                    <!-- Forum Sidebar -->
+                    <aside class="forum-sidebar">
+                        <div class="forum-categories-card">
+                            <h4 class="forum-sidebar-title"><i class="fas fa-folder"></i> Categories</h4>
+                            <ul class="forum-category-list">
+                                <li class="forum-category-item active" data-category="all">
+                                    <i class="fas fa-globe"></i>
+                                    <span>All Posts</span>
+                                    <span class="category-count">24</span>
+                                </li>
+                                <li class="forum-category-item" data-category="announcements">
+                                    <i class="fas fa-bullhorn"></i>
+                                    <span>Our Announcements</span>
+                                    <span class="category-count">5</span>
+                                </li>
+                                <li class="forum-category-item" data-category="events">
+                                    <i class="fas fa-calendar-star"></i>
+                                    <span>Events & Activities</span>
+                                    <span class="category-count">8</span>
+                                </li>
+                                <li class="forum-category-item" data-category="products">
+                                    <i class="fas fa-store"></i>
+                                    <span>Product Updates</span>
+                                    <span class="category-count">4</span>
+                                </li>
+                                <li class="forum-category-item" data-category="members">
+                                    <i class="fas fa-users"></i>
+                                    <span>Member Discussions</span>
+                                    <span class="category-count">7</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="forum-stats-card">
+                            <h4 class="forum-sidebar-title"><i class="fas fa-chart-bar"></i> Forum Stats</h4>
+                            <div class="forum-stats-grid">
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">156</span>
+                                    <span class="forum-stat-label">Total Posts</span>
+                                </div>
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">48</span>
+                                    <span class="forum-stat-label">Your Posts</span>
+                                </div>
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">324</span>
+                                    <span class="forum-stat-label">Engagements</span>
+                                </div>
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">89</span>
+                                    <span class="forum-stat-label">Followers</span>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Forum Main Content -->
+                    <div class="forum-main">
+                        <!-- Create Post Box -->
+                        <div class="forum-create-box">
+                            <div class="create-box-avatar">
+                                <?php if(!empty($organization['photo'])): ?>
+                                    <img src="<?= esc($organization['photo']) ?>" alt="<?= esc($organization['name']) ?>">
+                                <?php else: ?>
+                                    <div class="avatar-placeholder-sm"><?= strtoupper(substr($organization['acronym'] ?? 'O', 0, 2)) ?></div>
+                                <?php endif; ?>
+                            </div>
+                            <input type="text" class="create-box-input" placeholder="Share an update or announcement..." onclick="openCreatePostModal()">
+                            <button class="create-box-btn" onclick="openCreatePostModal()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+
+                        <!-- Forum Filter Bar -->
+                        <div class="forum-filter-bar">
+                            <div class="forum-tabs">
+                                <button class="forum-tab active" data-filter="all">
+                                    <i class="fas fa-stream"></i> All Posts
+                                </button>
+                                <button class="forum-tab" data-filter="yours">
+                                    <i class="fas fa-user"></i> Your Posts
+                                </button>
+                                <button class="forum-tab" data-filter="popular">
+                                    <i class="fas fa-fire-alt"></i> Popular
+                                </button>
+                            </div>
+                            <div class="forum-search">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Search posts...">
+                            </div>
+                        </div>
+
+                        <!-- Forum Posts -->
+                        <div class="forum-posts-list">
+                            <!-- Organization's Own Post -->
+                            <article class="forum-post own-post">
+                                <div class="post-vote">
+                                    <button class="vote-btn upvote active">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <span class="vote-count">67</span>
+                                    <button class="vote-btn downvote">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <img src="https://ui-avatars.com/api/?name=<?= urlencode($organization['acronym'] ?? 'ORG') ?>&background=8b5cf6&color=fff" alt="<?= esc($organization['name'] ?? 'Organization') ?>" class="post-author-img">
+                                        <div class="post-meta">
+                                            <div class="post-author">
+                                                <span class="author-name"><?= esc($organization['name'] ?? 'Your Organization') ?></span>
+                                                <span class="author-badge org">Your Post</span>
+                                            </div>
+                                            <span class="post-time">3 hours ago • <span class="post-category">Announcements</span></span>
+                                        </div>
+                                        <div class="post-actions-menu">
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                            <div class="post-menu-dropdown">
+                                                <button><i class="fas fa-edit"></i> Edit Post</button>
+                                                <button><i class="fas fa-pin"></i> Pin Post</button>
+                                                <button class="danger"><i class="fas fa-trash"></i> Delete Post</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h3 class="post-title">📢 Membership Drive - Join Our Organization!</h3>
+                                    <p class="post-body">
+                                        We're excited to announce our membership drive for the new semester! 
+                                        If you're passionate about making a difference and growing with a dynamic team, 
+                                        we'd love to have you join us. Benefits include exclusive events, workshops, and networking opportunities.
+                                    </p>
+                                    <div class="post-tags">
+                                        <span class="post-tag">recruitment</span>
+                                        <span class="post-tag">membership</span>
+                                        <span class="post-tag">join-us</span>
+                                    </div>
+                                    <div class="post-footer">
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-comment"></i>
+                                            <span>23 Comments</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-share"></i>
+                                            <span>Share</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-chart-line"></i>
+                                            <span>View Insights</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <!-- Student Post -->
+                            <article class="forum-post">
+                                <div class="post-vote">
+                                    <button class="vote-btn upvote">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <span class="vote-count">31</span>
+                                    <button class="vote-btn downvote">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <img src="https://ui-avatars.com/api/?name=Ana+Reyes&background=10b981&color=fff" alt="Ana Reyes" class="post-author-img">
+                                        <div class="post-meta">
+                                            <div class="post-author">
+                                                <span class="author-name">Ana Reyes</span>
+                                                <span class="author-badge student">Student</span>
+                                            </div>
+                                            <span class="post-time">6 hours ago • <span class="post-category">Member Discussions</span></span>
+                                        </div>
+                                        <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                    </div>
+                                    <h3 class="post-title">Question about upcoming workshop</h3>
+                                    <p class="post-body">
+                                        Hi! I'm interested in attending the leadership workshop next week. 
+                                        Is it open to non-members as well? Also, do we need to bring anything specific?
+                                    </p>
+                                    <div class="post-tags">
+                                        <span class="post-tag">question</span>
+                                        <span class="post-tag">workshop</span>
+                                    </div>
+                                    <div class="post-footer">
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-comment"></i>
+                                            <span>5 Comments</span>
+                                        </button>
+                                        <button class="post-action-btn reply-btn">
+                                            <i class="fas fa-reply"></i>
+                                            <span>Reply</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-bookmark"></i>
+                                            <span>Save</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <!-- Another Organization Post -->
+                            <article class="forum-post">
+                                <div class="post-vote">
+                                    <button class="vote-btn upvote">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <span class="vote-count">45</span>
+                                    <button class="vote-btn downvote">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <img src="https://ui-avatars.com/api/?name=Tech+Org&background=6366f1&color=fff" alt="Tech Org" class="post-author-img">
+                                        <div class="post-meta">
+                                            <div class="post-author">
+                                                <span class="author-name">Tech Society</span>
+                                                <span class="author-badge org">Organization</span>
+                                            </div>
+                                            <span class="post-time">Yesterday • <span class="post-category">Events & Activities</span></span>
+                                        </div>
+                                        <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                    </div>
+                                    <h3 class="post-title">🤝 Collaboration Opportunity - Joint Workshop</h3>
+                                    <p class="post-body">
+                                        We're looking for partner organizations to co-host a tech and innovation workshop! 
+                                        If your organization is interested in collaborating, let's connect. 
+                                        Great opportunity for cross-org networking and shared resources.
+                                    </p>
+                                    <div class="post-tags">
+                                        <span class="post-tag">collaboration</span>
+                                        <span class="post-tag">partnership</span>
+                                        <span class="post-tag">workshop</span>
+                                    </div>
+                                    <div class="post-footer">
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-comment"></i>
+                                            <span>12 Comments</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-handshake"></i>
+                                            <span>Express Interest</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-share"></i>
+                                            <span>Share</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+
+                        <!-- Load More -->
+                        <div class="forum-load-more">
+                            <button class="btn-load-more">
+                                <i class="fas fa-sync-alt"></i> Load More Posts
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 

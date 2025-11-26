@@ -46,6 +46,10 @@
                         <i class="fas fa-store"></i>
                         <span>Shop</span>
                     </a>
+                    <a href="#forum" class="nav-link" data-section="forum">
+                        <i class="fas fa-comments"></i>
+                        <span>Forum</span>
+                    </a>
                 </nav>
 
                 <!-- Right Side Actions -->
@@ -224,6 +228,9 @@
                 </a>
                 <a href="#shop" class="mobile-nav-link" data-section="shop">
                     <i class="fas fa-store"></i> Shop
+                </a>
+                <a href="#forum" class="mobile-nav-link" data-section="forum">
+                    <i class="fas fa-comments"></i> Forum
                 </a>
                 <div class="mobile-nav-divider"></div>
                 <a href="#profile" class="mobile-nav-link" data-section="profile">
@@ -1047,6 +1054,327 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Forum Section -->
+                <section class="content-section" id="forum">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Community Forum</h1>
+                            <p class="section-subtitle">Discuss with fellow students and organizations</p>
+                        </div>
+                        <button class="btn-primary" onclick="openCreatePostModal()">
+                            <i class="fas fa-plus"></i> New Post
+                        </button>
+                    </div>
+
+                    <div class="forum-layout">
+                        <!-- Forum Sidebar -->
+                        <aside class="forum-sidebar">
+                            <div class="forum-categories-card">
+                                <h4 class="forum-sidebar-title"><i class="fas fa-folder"></i> Categories</h4>
+                                <ul class="forum-category-list">
+                                    <li class="forum-category-item active" data-category="all">
+                                        <i class="fas fa-globe"></i>
+                                        <span>All Posts</span>
+                                        <span class="category-count">24</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="general">
+                                        <i class="fas fa-comment-dots"></i>
+                                        <span>General Discussion</span>
+                                        <span class="category-count">8</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="events">
+                                        <i class="fas fa-calendar-star"></i>
+                                        <span>Events & Activities</span>
+                                        <span class="category-count">5</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="academics">
+                                        <i class="fas fa-graduation-cap"></i>
+                                        <span>Academics</span>
+                                        <span class="category-count">6</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="marketplace">
+                                        <i class="fas fa-store"></i>
+                                        <span>Buy & Sell</span>
+                                        <span class="category-count">3</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="help">
+                                        <i class="fas fa-question-circle"></i>
+                                        <span>Help & Support</span>
+                                        <span class="category-count">2</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="forum-trending-card">
+                                <h4 class="forum-sidebar-title"><i class="fas fa-fire"></i> Trending Topics</h4>
+                                <ul class="trending-list">
+                                    <li class="trending-item">
+                                        <span class="trending-rank">#1</span>
+                                        <span class="trending-topic">University Week 2025</span>
+                                    </li>
+                                    <li class="trending-item">
+                                        <span class="trending-rank">#2</span>
+                                        <span class="trending-topic">Enrollment Tips</span>
+                                    </li>
+                                    <li class="trending-item">
+                                        <span class="trending-rank">#3</span>
+                                        <span class="trending-topic">Org Recruitment</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </aside>
+
+                        <!-- Forum Main Content -->
+                        <div class="forum-main">
+                            <!-- Create Post Box -->
+                            <div class="forum-create-box">
+                                <div class="create-box-avatar">
+                                    <?php if(session()->get('photo')): ?>
+                                        <img src="<?= esc(session()->get('photo')) ?>" alt="Profile">
+                                    <?php else: ?>
+                                        <div class="avatar-placeholder-sm"><?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1)) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <input type="text" class="create-box-input" placeholder="What's on your mind, <?= esc($profile['firstname'] ?? 'Student') ?>?" onclick="openCreatePostModal()">
+                                <button class="create-box-btn" onclick="openCreatePostModal()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+
+                            <!-- Forum Filter Bar -->
+                            <div class="forum-filter-bar">
+                                <div class="forum-tabs">
+                                    <button class="forum-tab active" data-filter="latest">
+                                        <i class="fas fa-clock"></i> Latest
+                                    </button>
+                                    <button class="forum-tab" data-filter="popular">
+                                        <i class="fas fa-fire-alt"></i> Popular
+                                    </button>
+                                    <button class="forum-tab" data-filter="following">
+                                        <i class="fas fa-user-friends"></i> Following
+                                    </button>
+                                </div>
+                                <div class="forum-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" placeholder="Search posts...">
+                                </div>
+                            </div>
+
+                            <!-- Forum Posts -->
+                            <div class="forum-posts-list">
+                                <!-- Post 1 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote" onclick="votePost(1, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">42</span>
+                                        <button class="vote-btn downvote" onclick="votePost(1, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Tech+Society&background=6366f1&color=fff" alt="Tech Society" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Tech Society</span>
+                                                    <span class="author-badge org">Organization</span>
+                                                </div>
+                                                <span class="post-time">2 hours ago • <span class="post-category">Events & Activities</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">🚀 Hackathon 2025 Registration Now Open!</h3>
+                                        <p class="post-body">
+                                            Join us for the biggest coding event of the year! This 48-hour hackathon will challenge you to build innovative solutions. 
+                                            Great prizes await including ₱50,000 for the winning team! Registration ends Nov 30.
+                                        </p>
+                                        <div class="post-tags">
+                                            <span class="post-tag">hackathon</span>
+                                            <span class="post-tag">coding</span>
+                                            <span class="post-tag">competition</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>15 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Save</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <!-- Post 2 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote active" onclick="votePost(2, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">28</span>
+                                        <button class="vote-btn downvote" onclick="votePost(2, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Juan+Cruz&background=10b981&color=fff" alt="Juan Cruz" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Juan Cruz</span>
+                                                    <span class="author-badge student">Student</span>
+                                                </div>
+                                                <span class="post-time">5 hours ago • <span class="post-category">General Discussion</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">Best study spots on campus?</h3>
+                                        <p class="post-body">
+                                            Hey everyone! I'm looking for quiet places to study on campus. The library is always full during exam season. 
+                                            Any recommendations? I prefer places with good WiFi and outlets for charging.
+                                        </p>
+                                        <div class="post-tags">
+                                            <span class="post-tag">study</span>
+                                            <span class="post-tag">campus</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>23 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Save</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <!-- Post 3 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote" onclick="votePost(3, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">19</span>
+                                        <button class="vote-btn downvote" onclick="votePost(3, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Arts+Club&background=f59e0b&color=fff" alt="Arts Club" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Arts & Culture Club</span>
+                                                    <span class="author-badge org">Organization</span>
+                                                </div>
+                                                <span class="post-time">Yesterday • <span class="post-category">Events & Activities</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">🎨 Art Exhibition: "Expressions" - Free Entry!</h3>
+                                        <p class="post-body">
+                                            We're excited to announce our annual art exhibition featuring works from talented student artists! 
+                                            The exhibition runs from Dec 1-5 at the University Gallery. Free admission for all students.
+                                        </p>
+                                        <div class="post-image">
+                                            <img src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600" alt="Art Exhibition">
+                                        </div>
+                                        <div class="post-tags">
+                                            <span class="post-tag">art</span>
+                                            <span class="post-tag">exhibition</span>
+                                            <span class="post-tag">free</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>8 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn saved">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Saved</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <!-- Post 4 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote" onclick="votePost(4, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">12</span>
+                                        <button class="vote-btn downvote" onclick="votePost(4, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Maria+Santos&background=ec4899&color=fff" alt="Maria Santos" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Maria Santos</span>
+                                                    <span class="author-badge student">Student</span>
+                                                </div>
+                                                <span class="post-time">Yesterday • <span class="post-category">Buy & Sell</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">Selling: Calculus Textbook (10th Edition) - ₱500</h3>
+                                        <p class="post-body">
+                                            Selling my calculus textbook, barely used! Still in great condition with no highlights or markings. 
+                                            Perfect for Math 101 students. Meet up at the library. DM me if interested!
+                                        </p>
+                                        <div class="post-tags">
+                                            <span class="post-tag">selling</span>
+                                            <span class="post-tag">textbook</span>
+                                            <span class="post-tag">math</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>5 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Save</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+                            </div>
+
+                            <!-- Load More -->
+                            <div class="forum-load-more">
+                                <button class="btn-load-more">
+                                    <i class="fas fa-sync-alt"></i> Load More Posts
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
