@@ -475,15 +475,17 @@
                             <!-- Announcement Post -->
                             <div class="feed-post announcement-post <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>">
                                 <div class="post-header">
-                                    <div class="post-author-avatar org">
-                                        <?php if(!empty($announcement['org_photo'])): ?>
-                                            <img src="<?= esc($announcement['org_photo']) ?>" alt="<?= esc($announcement['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                        <?php else: ?>
-                                            <?= strtoupper(substr($announcement['org_acronym'] ?? 'ORG', 0, 2)) ?>
-                                        <?php endif; ?>
-                                    </div>
+                                    <a href="<?= base_url('student/organization/' . $announcement['org_id']) ?>" style="text-decoration: none; color: inherit; cursor: pointer;">
+                                        <div class="post-author-avatar org">
+                                            <?php if(!empty($announcement['org_photo'])): ?>
+                                                <img src="<?= esc($announcement['org_photo']) ?>" alt="<?= esc($announcement['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                            <?php else: ?>
+                                                <?= strtoupper(substr($announcement['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </a>
                                     <div class="post-author-info">
-                                        <span class="post-author-name"><?= esc($announcement['org_name'] ?? 'Organization') ?></span>
+                                        <a href="<?= base_url('student/organization/' . $announcement['org_id']) ?>" class="post-author-name" style="text-decoration: none; color: inherit; cursor: pointer;"><?= esc($announcement['org_name'] ?? 'Organization') ?></a>
                                         <span class="post-time">
                                             <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($announcement['created_at'])) ?>
                                             <?php if($announcement['priority'] === 'high'): ?>
@@ -509,15 +511,17 @@
                             <!-- Event Post -->
                             <div class="feed-post event-post-card">
                                 <div class="post-header">
-                                    <div class="post-author-avatar org">
-                                        <?php if(!empty($event['org_photo'])): ?>
-                                            <img src="<?= esc($event['org_photo']) ?>" alt="<?= esc($event['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                        <?php else: ?>
-                                            <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
-                                        <?php endif; ?>
-                                    </div>
+                                    <a href="<?= base_url('student/organization/' . $event['org_id']) ?>" style="text-decoration: none; color: inherit; cursor: pointer;">
+                                        <div class="post-author-avatar org">
+                                            <?php if(!empty($event['org_photo'])): ?>
+                                                <img src="<?= esc($event['org_photo']) ?>" alt="<?= esc($event['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                            <?php else: ?>
+                                                <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </a>
                                     <div class="post-author-info">
-                                        <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?></span>
+                                        <a href="<?= base_url('student/organization/' . $event['org_id']) ?>" class="post-author-name" style="text-decoration: none; color: inherit; cursor: pointer;"><?= esc($event['org_name'] ?? 'Organization') ?></a>
                                         <span class="post-time">
                                             <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($event['created_at'] ?? $event['date'])) ?>
                                         </span>
@@ -781,7 +785,7 @@
                                 <h3><?= esc($announcement['title']) ?></h3>
                                 <p><?= nl2br(esc($announcement['content'])) ?></p>
                                 <div class="announcement-footer">
-                                    <span class="announcement-author"><i class="fas fa-building"></i> <?= esc($announcement['org_name']) ?></span>
+                                    <a href="<?= base_url('student/organization/' . $announcement['org_id']) ?>" class="announcement-author" style="text-decoration: none; color: inherit; cursor: pointer;"><i class="fas fa-building"></i> <?= esc($announcement['org_name']) ?></a>
                                     <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>)">
                                         <i class="fas fa-comment"></i> Comment
                                     </button>

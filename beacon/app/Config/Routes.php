@@ -86,6 +86,7 @@ $routes->get('student/events', 'Student::viewEvents');
 $routes->post('student/events/join', 'Student::joinEvent');
 $routes->get('student/announcements', 'Student::viewAnnouncements');
 $routes->get('student/organizations', 'Student::viewOrganizations');
+$routes->get('student/organization/(:num)', 'Student::viewOrganization/$1');
 $routes->post('student/organizations/join', 'Student::joinOrg');
 $routes->post('student/followOrg', 'Student::followOrg');
 $routes->post('student/unfollowOrg', 'Student::unfollowOrg');

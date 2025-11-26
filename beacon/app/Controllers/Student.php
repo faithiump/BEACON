@@ -1019,6 +1019,181 @@ class Student extends BaseController
     }
 
     /**
+     * View Organization Page
+     */
+    public function viewOrganization($orgId)
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $authCheck;
+        }
+
+        $orgModel = new OrganizationModel();
+        $organization = $orgModel->find($orgId);
+        
+        if (!$organization) {
+            return redirect()->to(base_url('student/dashboard'))->with('error', 'Organization not found');
+        }
+
+        // Get student data
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        $profile = $this->userProfileModel->where('user_id', $userId)->first();
+        $user = $this->userModel->find($userId);
+        
+        // Get photo from user_photos table
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        $userPhoto = $userPhotoModel->where('user_id', $userId)->first();
+        $photoUrl = null;
+        if ($userPhoto && !empty($userPhoto['photo_path'])) {
+            $photoUrl = base_url($userPhoto['photo_path']);
+        }
+
+        // Get organization photo
+        $orgPhoto = null;
+        if (!empty($organization['user_id'])) {
+            $orgUserPhoto = $userPhotoModel->where('user_id', $organization['user_id'])->first();
+            if ($orgUserPhoto && !empty($orgUserPhoto['photo_path'])) {
+                $orgPhoto = base_url($orgUserPhoto['photo_path']);
+            }
+        }
+
+        // Get all announcements from this organization
+        $announcementModel = new AnnouncementModel();
+        $announcements = $announcementModel->getAnnouncementsByOrg($orgId);
+        $formattedAnnouncements = [];
+        foreach ($announcements as $announcement) {
+            $formattedAnnouncements[] = [
+                'id' => $announcement['announcement_id'] ?? $announcement['id'],
+                'title' => $announcement['title'],
+                'content' => $announcement['content'],
+                'priority' => $announcement['priority'] ?? 'normal',
+                'created_at' => $announcement['created_at'],
+                'views' => $announcement['views'] ?? 0,
+                'org_id' => $orgId,
+                'org_name' => $organization['organization_name'],
+                'org_acronym' => $organization['organization_acronym'],
+                'org_photo' => $orgPhoto
+            ];
+        }
+
+        // Sort announcements by date (newest first)
+        usort($formattedAnnouncements, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
+        // Get all events from this organization
+        $eventModel = new EventModel();
+        $events = $eventModel->getEventsByOrg($orgId);
+        $formattedEvents = [];
+        foreach ($events as $event) {
+            // Format time
+            $timeFormatted = $event['time'];
+            if (strpos($timeFormatted, ':') !== false) {
+                $timeParts = explode(':', $timeFormatted);
+                $hour = (int)$timeParts[0];
+                $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                $period = $hour >= 12 ? 'PM' : 'AM';
+                $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+            }
+            
+            // Format date for display
+            $eventDate = date('F j, Y', strtotime($event['date']));
+            
+            $formattedEvents[] = [
+                'id' => $event['event_id'] ?? $event['id'],
+                'title' => $event['event_name'] ?? $event['title'],
+                'description' => $event['description'],
+                'date' => $event['date'],
+                'date_formatted' => $eventDate,
+                'time' => $timeFormatted,
+                'location' => $event['venue'] ?? $event['location'],
+                'attendees' => $event['current_attendees'] ?? 0,
+                'max_attendees' => $event['max_attendees'],
+                'status' => $event['status'] ?? 'upcoming',
+                'image' => $event['image'] ?? null,
+                'created_at' => $event['created_at'] ?? $event['date'],
+                'org_id' => $orgId,
+                'org_name' => $organization['organization_name'],
+                'org_acronym' => $organization['organization_acronym'],
+                'org_photo' => $orgPhoto
+            ];
+        }
+
+        // Sort events by date (newest first)
+        usort($formattedEvents, function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+
+        // Combine announcements and events into posts
+        $allPosts = [];
+        foreach ($formattedAnnouncements as $announcement) {
+            $allPosts[] = [
+                'type' => 'announcement',
+                'data' => $announcement,
+                'date' => strtotime($announcement['created_at'])
+            ];
+        }
+        foreach ($formattedEvents as $event) {
+            $allPosts[] = [
+                'type' => 'event',
+                'data' => $event,
+                'date' => strtotime($event['created_at'] ?? $event['date'])
+            ];
+        }
+        
+        // Sort by date (newest first)
+        usort($allPosts, function($a, $b) {
+            return $b['date'] - $a['date'];
+        });
+
+        // Check if student is following this organization
+        $isFollowing = false;
+        if ($student) {
+            $followModel = new \App\Models\OrganizationFollowModel();
+            $isFollowing = $followModel->isFollowing($student['id'], $orgId);
+        }
+
+        // Check if student is a member
+        $isMember = false;
+        $isPending = false;
+        if ($student) {
+            $membershipModel = new StudentOrganizationMembershipModel();
+            $membership = $membershipModel->hasMembership($student['id'], $orgId);
+            if ($membership) {
+                $isMember = ($membership['status'] === 'active');
+                $isPending = ($membership['status'] === 'pending');
+            }
+        }
+
+        $data = [
+            'student' => $student,
+            'profile' => $profile,
+            'user' => $user,
+            'organization' => [
+                'id' => $organization['id'],
+                'name' => $organization['organization_name'],
+                'acronym' => $organization['organization_acronym'],
+                'type' => ucfirst(str_replace('_', ' ', $organization['organization_type'] ?? 'academic')),
+                'mission' => $organization['mission'] ?? '',
+                'vision' => $organization['vision'] ?? '',
+                'members' => $organization['current_members'] ?? 0,
+                'photo' => $orgPhoto,
+                'is_following' => $isFollowing,
+                'is_member' => $isMember,
+                'is_pending' => $isPending
+            ],
+            'allPosts' => $allPosts,
+            'announcements' => $formattedAnnouncements,
+            'events' => $formattedEvents,
+            'pageTitle' => $organization['organization_name'] . ' - BEACON'
+        ];
+
+        return view('student/organization', $data);
+    }
+
+    /**
      * View Organizations
      */
     public function viewOrganizations()
