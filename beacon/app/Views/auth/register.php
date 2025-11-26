@@ -105,45 +105,48 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="lastname">Last Name</label>
-                            <input type="text" name="lastname" id="lastname" class="form-control" placeholder="Enter your last name" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="birthday">Date of Birth</label>
-                            <input type="date" name="birthday" id="birthday" class="form-control" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="gender">Gender</label>
-                            <div class="select-wrapper">
-                                <select name="gender" id="gender" class="form-control" required>
-                                    <option value="">Select gender</option>
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                                    <option value="prefer_not_to_say">Prefer not to say</option>
-                                </select>
-                                <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lastname">Last Name</label>
+                                <input type="text" name="lastname" id="lastname" class="form-control" placeholder="Enter your last name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="birthday">Date of Birth</label>
+                                <input type="date" name="birthday" id="birthday" class="form-control" required>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" name="phone" id="phone" class="form-control" placeholder="Enter your phone number" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="gender">Gender</label>
+                                <div class="select-wrapper">
+                                    <select name="gender" id="gender" class="form-control" required>
+                                        <option value="">Select gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                        <option value="prefer_not_to_say">Prefer not to say</option>
+                                    </select>
+                                    <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" name="phone" id="phone" class="form-control" placeholder="Enter your phone number" required>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="region">Region</label>
-                            <input type="text" name="region" id="region" class="form-control" placeholder="Enter your region" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="city_municipality">City/Municipality</label>
-                            <input type="text" name="city_municipality" id="city_municipality" class="form-control" placeholder="Enter your city or municipality" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="region">Region</label>
+                                <input type="text" name="region" id="region" class="form-control" placeholder="Enter your region" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="city_municipality">City/Municipality</label>
+                                <input type="text" name="city_municipality" id="city_municipality" class="form-control" placeholder="Enter your city or municipality" required>
+                            </div>
                         </div>
 
                         <div class="form-group">
