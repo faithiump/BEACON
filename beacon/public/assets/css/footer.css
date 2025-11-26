@@ -1,9 +1,10 @@
 /* Unified footer styles */
 .site-footer {
-    margin-top: 4rem;
-    background: #0f172a;
+    background: #210042c7;
     color: #e2e8f0;
     padding-top: 3.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .footer-container {
