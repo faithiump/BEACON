@@ -94,6 +94,8 @@ $routes->get('student/payments/pending', 'Student::viewPendingPayments');
 $routes->get('student/payments/history', 'Student::viewPaymentHistory');
 $routes->get('student/profile/edit', 'Student::editUserInfo');
 $routes->post('student/profile/edit', 'Student::editUserInfo');
+$routes->post('student/updateProfile', 'Student::updateProfile');
+$routes->post('student/uploadPhoto', 'Student::uploadPhoto');
 $routes->post('student/comment', 'Student::comment');
 $routes->get('student/search', 'Student::search');
 $routes->get('student/notifications', 'Student::getNotifications');
