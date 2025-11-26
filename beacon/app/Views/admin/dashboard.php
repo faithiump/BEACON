@@ -183,7 +183,7 @@
                                             <button class="btn-action reject" onclick="rejectOrg(<?= esc($org['id']) ?>)" title="Reject">
                                                 <i class="fas fa-times"></i> Reject
                                             </button>
-                                            <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>)" title="View Details">
+                                            <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>, 'organizations')" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                         </div>
@@ -226,8 +226,7 @@
                                                 <td><span class="status-badge approved"><?= esc($org['status']) ?></span></td>
                                                 <td><?= esc($org['approved_date']) ?></td>
                                                 <td>
-                                                    <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>)" title="View"><i class="fas fa-eye"></i></button>
-                                                    <button class="btn-action edit" title="Edit"><i class="fas fa-edit"></i></button>
+                                                    <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>, 'organizations')" title="View"><i class="fas fa-eye"></i> View</button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -276,9 +275,7 @@
                                                     <td><span class="status-badge active"><?= esc($student['status']) ?></span></td>
                                                     <td><?= esc($student['org_count']) ?></td>
                                                     <td>
-                                                        <button class="btn-action view" onclick="viewStudentDetails(<?= esc($student['id']) ?>)" title="View Details">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
+                                                        <button class="btn-action view" onclick="viewStudentDetails(<?= esc($student['id']) ?>, 'students')" title="View"><i class="fas fa-eye"></i> View</button>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -479,13 +476,11 @@
                                                 <td><?= esc($user['registration_date']) ?></td>
                                                 <td>
                                                     <?php if (strtolower($user['role']) === 'student'): ?>
-                                                        <button class="btn-action view" onclick="viewStudentDetails(<?= esc($user['id']) ?>)" title="View"><i class="fas fa-eye"></i></button>
-                                                        <button class="btn-action edit" title="Edit"><i class="fas fa-edit"></i></button>
-                                                        <button class="btn-action suspend" title="Suspend"><i class="fas fa-ban"></i></button>
+                                                        <button class="btn-action view" onclick="viewStudentDetails(<?= esc($user['id']) ?>, 'users')" title="View"><i class="fas fa-eye"></i> View</button>
                                                     <?php else: ?>
-                                                        <button class="btn-action view" title="View"><i class="fas fa-eye"></i></button>
-                                                        <button class="btn-action approve" title="Approve"><i class="fas fa-check"></i></button>
-                                                        <button class="btn-action reject" title="Reject"><i class="fas fa-times"></i></button>
+                                                        <?php if (!empty($user['organization_id'])): ?>
+                                                            <button class="btn-action view" onclick="viewOrgDetails(<?= esc($user['organization_id']) ?>, 'users')" title="View"><i class="fas fa-eye"></i> View</button>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>
@@ -680,19 +675,33 @@
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
 
+        function switchTab(tabId) {
+            // Remove active class from all tabs and contents
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to target tab and corresponding content
+            const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+            const targetContent = document.getElementById(tabId);
+            
+            if (targetBtn && targetContent) {
+                targetBtn.classList.add('active');
+                targetContent.classList.add('active');
+            }
+        }
+
         tabBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 const targetTab = this.getAttribute('data-tab');
-                
-                // Remove active class from all tabs and contents
-                tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                
-                // Add active class to clicked tab and corresponding content
-                this.classList.add('active');
-                document.getElementById(targetTab).classList.add('active');
+                switchTab(targetTab);
             });
         });
+
+        // Handle hash navigation (for returning from detail pages)
+        if (window.location.hash) {
+            const hash = window.location.hash.substring(1); // Remove #
+            switchTab(hash);
+        }
 
         // Organization approval functions
         function approveOrg(id) {
@@ -735,14 +744,86 @@
             }
         }
 
-        function viewOrgDetails(id) {
+        function viewOrgDetails(id, returnTo) {
             // Open modal or navigate to details page
-            window.location.href = '<?= base_url('admin/organizations/view') ?>/' + id;
+            const returnParam = returnTo ? '?return=' + returnTo : '';
+            window.location.href = '<?= base_url('admin/organizations/view') ?>/' + id + returnParam;
         }
 
-        function viewStudentDetails(id) {
+        function viewStudentDetails(id, returnTo) {
             // Open modal or navigate to details page
-            window.location.href = '<?= base_url('admin/students/view') ?>/' + id;
+            const returnParam = returnTo ? '?return=' + returnTo : '';
+            window.location.href = '<?= base_url('admin/students/view') ?>/' + id + returnParam;
+        }
+
+        // User Management Search and Filter
+        const userSearchInput = document.getElementById('userSearch');
+        const userFilterSelect = document.getElementById('userFilter');
+        const userTableBody = document.querySelector('#users tbody');
+
+        function filterUsers() {
+            if (!userTableBody) return;
+
+            const searchTerm = userSearchInput.value.toLowerCase().trim();
+            const filterRole = userFilterSelect.value.toLowerCase();
+            const rows = userTableBody.querySelectorAll('tr');
+            
+            // Remove existing "no results" message first
+            const existingNoResults = userTableBody.querySelector('tr td[colspan="6"]');
+            if (existingNoResults) {
+                existingNoResults.parentElement.remove();
+            }
+
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 0) return; // Skip empty rows
+
+                const name = cells[0].textContent.toLowerCase();
+                const email = cells[1].textContent.toLowerCase();
+                const roleCell = cells[2];
+                const roleText = roleCell.textContent.toLowerCase();
+                const roleBadge = roleCell.querySelector('.role-badge');
+                const roleClass = roleBadge ? roleBadge.className.toLowerCase() : '';
+                
+                // Check role filter - check both text and class
+                let roleMatch = true;
+                if (filterRole !== 'all') {
+                    roleMatch = roleText.includes(filterRole) || roleClass.includes(filterRole);
+                }
+                
+                // Check search filter
+                let searchMatch = true;
+                if (searchTerm) {
+                    searchMatch = name.includes(searchTerm) || email.includes(searchTerm);
+                }
+                
+                // Show/hide row based on both filters
+                if (roleMatch && searchMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Only show "no results" message if there are no visible rows AND we have filters applied
+            const hasFilter = searchTerm || filterRole !== 'all';
+            if (visibleCount === 0 && hasFilter && rows.length > 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">No users found matching your criteria.</td>';
+                userTableBody.appendChild(tr);
+            }
+        }
+
+        // Add event listeners
+        if (userSearchInput) {
+            userSearchInput.addEventListener('input', filterUsers);
+        }
+        
+        if (userFilterSelect) {
+            userFilterSelect.addEventListener('change', filterUsers);
         }
     </script>
 </body>

@@ -106,7 +106,7 @@ class Login extends BaseController
         $usersBuilder = $db->table('users u');
         $usersBuilder->select('u.id as user_id, u.email, u.role, u.is_active, u.created_at,
                               up.firstname, up.middlename, up.lastname,
-                              o.organization_name');
+                              o.id as organization_id, o.organization_name');
         $usersBuilder->join('user_profiles up', 'u.id = up.user_id', 'left');
         $usersBuilder->join('organizations o', 'u.id = o.user_id', 'left');
         $usersBuilder->orderBy('u.created_at', 'DESC');
@@ -126,6 +126,7 @@ class Login extends BaseController
             
             $userData[] = [
                 'id' => $user['user_id'],
+                'organization_id' => $user['organization_id'] ?? null,
                 'name' => $displayName,
                 'email' => $user['email'] ?? 'N/A',
                 'role' => ucfirst($user['role'] ?? 'N/A'),
@@ -555,14 +556,98 @@ class Login extends BaseController
             return redirect()->to('/admin/login');
         }
 
-        // TODO: Fetch organization details from database
+        $db = \Config\Database::connect();
+
+        // Fetch organization details
+        $organization = $db->table('organizations')
+            ->where('id', $id)
+            ->get()
+            ->getRowArray();
+
+        if (!$organization) {
+            return redirect()->to('/admin/dashboard')->with('error', 'Organization not found');
+        }
+
+        // Find related application
+        $application = $db->table('organization_applications')
+            ->where('organization_name', $organization['organization_name'])
+            ->where('status', 'approved')
+            ->orderBy('reviewed_at', 'DESC')
+            ->get()
+            ->getRowArray();
+
+        // Get advisor information (from application)
+        $advisor = null;
+        if ($application) {
+            $advisor = $db->table('organization_advisors')
+                ->where('application_id', $application['id'])
+                ->get()
+                ->getRowArray();
+        }
+
+        // Get officers information (from application)
+        $officers = [];
+        if ($application) {
+            $officers = $db->table('organization_officers')
+                ->where('application_id', $application['id'])
+                ->get()
+                ->getResultArray();
+        }
+
+        // Get files (from application)
+        $files = [];
+        if ($application) {
+            $files = $db->table('organization_files')
+                ->where('application_id', $application['id'])
+                ->get()
+                ->getResultArray();
+        }
+
+        // Get organization statistics
+        $eventsCount = $db->table('events')
+            ->where('org_id', $id)
+            ->countAllResults();
+
+        $announcementsCount = $db->table('announcements')
+            ->where('org_id', $id)
+            ->countAllResults();
+
+        $productsCount = $db->table('products')
+            ->where('org_id', $id)
+            ->countAllResults();
+
+        $membersCount = $db->table('student_organization_memberships')
+            ->where('org_id', $id)
+            ->where('status', 'active')
+            ->countAllResults();
+
+        // Get user account info
+        $user = null;
+        if ($organization['user_id']) {
+            $user = $db->table('users')
+                ->where('id', $organization['user_id'])
+                ->get()
+                ->getRowArray();
+        }
+
+        // Get return parameter
+        $returnTo = $this->request->getGet('return') ?? 'organizations';
+        
+        // Format data for view
         $data = [
-            'organization' => [
-                'id' => $id,
-                'name' => 'Sample Organization',
-                'email' => 'org@example.com',
-                'status' => 'pending'
-            ]
+            'organization' => $organization,
+            'application' => $application,
+            'advisor' => $advisor,
+            'officers' => $officers,
+            'files' => $files,
+            'user' => $user,
+            'stats' => [
+                'events' => $eventsCount,
+                'announcements' => $announcementsCount,
+                'products' => $productsCount,
+                'members' => $membersCount
+            ],
+            'returnTo' => $returnTo
         ];
 
         return view('admin/organization_details', $data);
@@ -577,17 +662,109 @@ class Login extends BaseController
             return redirect()->to('/admin/login');
         }
 
-        // TODO: Fetch student details, comments, activities, transactions from database
+        $db = \Config\Database::connect();
+
+        // Fetch user account info
+        $user = $db->table('users')
+            ->where('id', $id)
+            ->where('role', 'student')
+            ->get()
+            ->getRowArray();
+
+        if (!$user) {
+            return redirect()->to('/admin/dashboard')->with('error', 'Student not found');
+        }
+
+        // Fetch user profile
+        $profile = $db->table('user_profiles')
+            ->where('user_id', $id)
+            ->get()
+            ->getRowArray();
+
+        // Fetch student info
+        $student = $db->table('students')
+            ->where('user_id', $id)
+            ->get()
+            ->getRowArray();
+
+        if (!$student) {
+            return redirect()->to('/admin/dashboard')->with('error', 'Student information not found');
+        }
+
+        // Get full name
+        $fullName = trim(($profile['firstname'] ?? '') . ' ' . ($profile['middlename'] ?? '') . ' ' . ($profile['lastname'] ?? ''));
+        $fullName = preg_replace('/\s+/', ' ', $fullName);
+
+        // Get course name
+        $courseName = $this->getCourseName($student['course'] ?? '');
+
+        // Get organization memberships
+        $memberships = $db->table('student_organization_memberships som')
+            ->select('som.*, o.organization_name, o.organization_acronym, o.organization_type, o.organization_category')
+            ->join('organizations o', 'o.id = som.org_id', 'inner')
+            ->where('som.student_id', $student['id'])
+            ->orderBy('som.joined_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Get address if available
+        $address = null;
+        if ($profile && $profile['address_id']) {
+            $address = $db->table('addresses')
+                ->where('id', $profile['address_id'])
+                ->get()
+                ->getRowArray();
+        }
+
+        // Format address string
+        $addressString = '';
+        if ($address) {
+            $parts = array_filter([
+                $address['street'] ?? '',
+                $address['barangay'] ?? '',
+                $address['city'] ?? '',
+                $address['province'] ?? '',
+                $address['postal_code'] ?? ''
+            ]);
+            $addressString = implode(', ', $parts);
+        }
+
+        // Get statistics
+        $activeMembershipsCount = $db->table('student_organization_memberships')
+            ->where('student_id', $student['id'])
+            ->where('status', 'active')
+            ->countAllResults();
+
+        // Get return parameter
+        $returnTo = $this->request->getGet('return') ?? 'students';
+        
+        // Format data for view
         $data = [
             'student' => [
-                'id' => $id,
-                'name' => 'Sample Student',
-                'email' => 'student@example.com',
-                'course' => 'Computer Science',
-                'organizations' => [],
-                'comments' => [],
-                'transactions' => []
-            ]
+                'id' => $user['id'],
+                'student_id' => $student['student_id'],
+                'name' => $fullName ?: 'N/A',
+                'firstname' => $profile['firstname'] ?? '',
+                'middlename' => $profile['middlename'] ?? '',
+                'lastname' => $profile['lastname'] ?? '',
+                'email' => $user['email'],
+                'phone' => $profile['phone'] ?? 'N/A',
+                'birthday' => $profile['birthday'] ?? null,
+                'gender' => $profile['gender'] ?? 'N/A',
+                'address' => $addressString,
+                'course' => $courseName ?: ($student['course'] ?? 'N/A'),
+                'department' => $student['department'] ?? 'N/A',
+                'year_level' => $student['year_level'] ?? 'N/A',
+                'is_active' => $user['is_active'],
+                'email_verified' => $user['email_verified'],
+                'created_at' => $user['created_at'],
+                'updated_at' => $user['updated_at']
+            ],
+            'memberships' => $memberships,
+            'stats' => [
+                'organizations' => $activeMembershipsCount
+            ],
+            'returnTo' => $returnTo
         ];
 
         return view('admin/student_details', $data);

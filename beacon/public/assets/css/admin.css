@@ -1124,6 +1124,12 @@ body {
 .btn-action.view {
     background: rgba(59, 130, 246, 0.1);
     color: #3b82f6;
+    padding: 0.5rem 1rem;
+    width: auto;
+    height: auto;
+    font-size: 0.85rem;
+    font-weight: 600;
+    gap: 0.5rem;
 }
 
 .btn-action.view:hover {
