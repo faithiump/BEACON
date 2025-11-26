@@ -131,11 +131,15 @@ body {
 
 /* Container */
 .launch-container {
-    min-height: 100vh;
     display: flex;
+    width: 100%;
+    min-height: 100vh;
+    padding-top: 60px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 2rem;
     align-items: flex-start;
     justify-content: center;
-    padding: 60px 1rem 2rem;
     position: relative;
     z-index: 1;
 }
@@ -505,9 +509,42 @@ textarea.form-control {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+    .launch-container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .launch-form-container {
+        max-width: 650px;
+    }
+
     .launch-form-card {
-        padding: 2.5rem 2rem;
+        padding: 3rem;
+    }
+
+    .nav-container {
+        padding: 0 2rem;
+    }
+
+    .nav-links {
+        gap: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .launch-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 2rem;
+    }
+
+    .launch-form-container {
+        max-width: 100%;
+    }
+
+    .launch-form-card {
+        padding: 3rem 2rem;
     }
 
     .launch-title {
@@ -539,20 +576,26 @@ textarea.form-control {
 
 @media (max-width: 480px) {
     .launch-container {
-        padding: 90px 1rem 1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 1.5rem;
     }
 
     .launch-form-card {
-        padding: 1.5rem 1rem;
+        padding: 2rem 1.5rem;
         border-radius: 16px;
     }
 
     .launch-title {
-        font-size: 1.25rem;
+        font-size: 1.625rem;
     }
 
     .section-title {
         font-size: 1.1rem;
+    }
+
+    .nav-container {
+        padding: 0 1rem;
     }
 }
 

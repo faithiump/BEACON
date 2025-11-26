@@ -17,9 +17,7 @@
             <div class="nav-container">
                 <!-- Logo -->
                 <div class="nav-brand">
-                    <div class="logo-icon">
-                        <i class="fas fa-broadcast-tower"></i>
-                    </div>
+                    <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="nav-logo-img">
                     <span class="logo-text">BEACON</span>
                 </div>
 
@@ -204,9 +202,7 @@
         <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
         <div class="mobile-nav" id="mobileNav">
             <div class="mobile-nav-header">
-                <div class="logo-icon">
-                    <i class="fas fa-broadcast-tower"></i>
-                </div>
+                <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="nav-logo-img">
                 <span class="logo-text">BEACON</span>
                 <button class="close-mobile-nav" id="closeMobileNav">
                     <i class="fas fa-times"></i>
