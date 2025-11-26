@@ -13,6 +13,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="stars-container">
+        <!-- Flares -->
+        <div class="flare blue" style="width: 200px; height: 200px; top: 10%; left: 5%; animation-delay: 0s;"></div>
+        <div class="flare purple" style="width: 250px; height: 250px; top: 60%; right: 8%; animation-delay: 3s;"></div>
+        <div class="flare yellow" style="width: 180px; height: 180px; bottom: 15%; left: 15%; animation-delay: 6s;"></div>
+        <div class="flare blue" style="width: 220px; height: 220px; top: 30%; right: 20%; animation-delay: 9s;"></div>
+        
+        <!-- Stars -->
+        <div class="star small" style="top: 15%; left: 10%; animation-delay: 0s;"></div>
+        <div class="star medium" style="top: 20%; left: 25%; animation-delay: 0.5s;"></div>
+        <div class="star small" style="top: 12%; left: 40%; animation-delay: 1s;"></div>
+        <div class="star large" style="top: 25%; left: 55%; animation-delay: 1.5s;"></div>
+        <div class="star medium" style="top: 18%; left: 70%; animation-delay: 2s;"></div>
+        <div class="star small" style="top: 22%; left: 85%; animation-delay: 2.5s;"></div>
+        
+        <div class="star medium" style="top: 35%; left: 8%; animation-delay: 0.3s;"></div>
+        <div class="star small" style="top: 40%; left: 22%; animation-delay: 0.8s;"></div>
+        <div class="star large" style="top: 38%; left: 38%; animation-delay: 1.3s;"></div>
+        <div class="star small" style="top: 42%; left: 52%; animation-delay: 1.8s;"></div>
+        <div class="star medium" style="top: 36%; left: 68%; animation-delay: 2.3s;"></div>
+        <div class="star small" style="top: 39%; left: 82%; animation-delay: 2.8s;"></div>
+        
+        <div class="star small" style="top: 55%; left: 12%; animation-delay: 0.2s;"></div>
+        <div class="star medium" style="top: 58%; left: 28%; animation-delay: 0.7s;"></div>
+        <div class="star large" style="top: 56%; left: 45%; animation-delay: 1.2s;"></div>
+        <div class="star small" style="top: 60%; left: 60%; animation-delay: 1.7s;"></div>
+        <div class="star medium" style="top: 57%; left: 75%; animation-delay: 2.2s;"></div>
+        <div class="star small" style="top: 59%; left: 90%; animation-delay: 2.7s;"></div>
+        
+        <div class="star medium" style="top: 72%; left: 5%; animation-delay: 0.4s;"></div>
+        <div class="star small" style="top: 75%; left: 18%; animation-delay: 0.9s;"></div>
+        <div class="star large" style="top: 73%; left: 32%; animation-delay: 1.4s;"></div>
+        <div class="star small" style="top: 77%; left: 48%; animation-delay: 1.9s;"></div>
+        <div class="star medium" style="top: 74%; left: 63%; animation-delay: 2.4s;"></div>
+        <div class="star small" style="top: 76%; left: 78%; animation-delay: 2.9s;"></div>
+        
+        <div class="star small" style="top: 88%; left: 15%; animation-delay: 0.6s;"></div>
+        <div class="star medium" style="top: 91%; left: 30%; animation-delay: 1.1s;"></div>
+        <div class="star small" style="top: 89%; left: 50%; animation-delay: 1.6s;"></div>
+        <div class="star large" style="top: 93%; left: 65%; animation-delay: 2.1s;"></div>
+        <div class="star small" style="top: 90%; left: 80%; animation-delay: 2.6s;"></div>
+    </div>
+    
     <!-- Navigation Panel -->
     <?= view('components/nav', ['active' => 'register']) ?>
 
@@ -20,12 +63,6 @@
         <!-- Left Side - Register Form -->
         <div class="auth-form-container">
             <div class="auth-form-card">
-                <div class="auth-header">
-                    <div class="logo-placeholder">
-                        <span class="logo-text">BEACON</span>
-                    </div>
-                    <p class="logo-subtitle">Camarines Sur Polytechnic Colleges</p>
-                </div>
                 <h1 class="auth-title">Create Account!</h1>
                 <p class="auth-subtitle">Join the CSPC community and access events, announcements, and campus organizations.</p>
                 
