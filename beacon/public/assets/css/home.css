@@ -9,30 +9,157 @@ body {
     color: #f9fafb;
     min-height: 100vh;
     background-image:
-        linear-gradient(135deg, rgba(15, 23, 42, 0.582), rgba(49, 46, 129, 0.616)),
+        linear-gradient(135deg, rgba(27, 0, 37, 0.671), rgba(25, 0, 50, 0.62)),
         url('../images/home-bg-v1.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+    position: relative;
+}
+
+.stars-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+/* Sparkle/Star styles - All yellow with movement */
+.star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fbbf24;
+    animation: sparkleFloat 10s ease-in-out infinite;
+}
+
+.star.small {
+    animation-duration: 12s;
+}
+
+.star.medium {
+    animation-duration: 10s;
+}
+
+.star.large {
+    animation-duration: 8s;
+}
+
+.star.small {
+    width: 3px;
+    height: 3px;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.8), 0 0 12px rgba(251, 191, 36, 0.6);
+}
+
+.star.medium {
+    width: 4px;
+    height: 4px;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.9), 0 0 16px rgba(251, 191, 36, 0.7);
+}
+
+.star.large {
+    width: 6px;
+    height: 6px;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 1), 0 0 20px rgba(251, 191, 36, 0.8);
+}
+
+.star.color-blue,
+.star.color-purple,
+.star.color-yellow {
+    background: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.9), 0 0 16px rgba(251, 191, 36, 0.7);
+}
+
+/* Flare styles */
+.flare {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.4;
+    animation: pulse 8s ease-in-out infinite;
+}
+
+.flare.blue {
+    background: #ffd0009f;
+}
+
+.flare.purple {
+    background: #a955f7a6;
+}
+
+.flare.yellow {
+    background: #fbbe249e;
+}
+
+/* Animations */
+@keyframes sparkleFloat {
+    0%, 100% {
+        opacity: 0.3;
+        transform: translate(0, 0) scale(0.8);
+    }
+    12.5% {
+        opacity: 1;
+        transform: translate(15px, -20px) scale(1.2);
+    }
+    25% {
+        opacity: 0.5;
+        transform: translate(30px, -40px) scale(1);
+    }
+    37.5% {
+        opacity: 1;
+        transform: translate(20px, -50px) scale(1.3);
+    }
+    50% {
+        opacity: 0.4;
+        transform: translate(-10px, -60px) scale(0.9);
+    }
+    62.5% {
+        opacity: 1;
+        transform: translate(-20px, -50px) scale(1.2);
+    }
+    75% {
+        opacity: 0.6;
+        transform: translate(-5px, -30px) scale(1.1);
+    }
+    87.5% {
+        opacity: 1;
+        transform: translate(10px, -10px) scale(1.3);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
 }
 
 .home-wrapper {
-    padding: 6.5rem 2rem 4rem;
+    padding: 5rem 2rem 2rem;
     max-width: 1200px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 }
 
 .hero {
     display: flex;
     flex-wrap: wrap;
-    gap: 3rem;
-    align-items: center;
-    margin-bottom: 4rem;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 2rem;
 }
 
 .hero-text {
-    flex: 1 1 420px;
+    flex: 1 1 400px;
 }
 
 .status-pill {
@@ -49,9 +176,8 @@ body {
 }
 
 .hero h1 {
-    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-size: clamp(1rem, 3.9vw, 3.5rem);
     font-weight: 700;
-    margin-top: 1rem;
     margin-bottom: 1rem;
     line-height: 1.2;
 }
@@ -76,7 +202,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.9rem 1.75rem;
+    padding: 0.9rem 1.5rem;
     border-radius: 999px;
     font-weight: 600;
     text-decoration: none;
@@ -85,20 +211,19 @@ body {
 }
 
 .btn.primary {
-    background: linear-gradient(135deg, #38bdf8, #a855f7);
+    background: rgba(97, 28, 166, 0.695);
     color: #ffffff;
-    box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4);
 }
 
 .btn.secondary {
-    background: rgba(226, 232, 240, 0.1);
+    background: rgba(91, 79, 121, 0.1);
     color: #e2e8f0;
     border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .btn.tertiary {
-    background: rgba(34, 197, 94, 0.15);
-    color: #86efac;
+    background: #facc15;
+    color: #000000;
     border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
@@ -113,7 +238,7 @@ body {
 }
 
 .stat-card {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(0, 0, 0, 0.486);
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 16px;
     padding: 1rem 1.25rem;
@@ -132,61 +257,272 @@ body {
 }
 
 .hero-visual {
-    flex: 1 1 340px;
+    flex: 1 1 500px;
     position: relative;
-    min-height: 360px;
+    min-height: 450px;
+    width: 100%;
+    align-self: flex-start;
 }
 
 .floating-card {
     position: absolute;
     padding: 1.5rem;
-    border-radius: 18px;
+    border-radius: 16px;
     color: #0f172a;
     background: #ffffff;
-    width: 260px;
-    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+    width: 280px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(148, 163, 184, 0.1);
+    z-index: 1;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    overflow: hidden;
 }
 
-.floating-card.schedule {
+.floating-card::before {
+    content: '';
+    position: absolute;
     top: 0;
+    left: 0;
     right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(248, 250, 252, 0.05) 100%);
+    border-radius: 16px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.floating-card.announcement {
-    bottom: 10px;
-    left: 10px;
+.floating-card:hover {
+    transform: translateY(-8px) scale(1.05) rotate(1deg);
+    box-shadow: 0 30px 70px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(148, 163, 184, 0.2);
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.floating-card.schedule-one:hover {
+    box-shadow: 0 30px 70px rgba(250, 204, 21, 0.25), 0 0 30px rgba(250, 204, 21, 0.15);
+}
+
+.floating-card.schedule-two:hover {
+    box-shadow: 0 30px 70px rgba(168, 85, 247, 0.25), 0 0 30px rgba(168, 85, 247, 0.15);
+}
+
+.floating-card.schedule-three:hover {
+    box-shadow: 0 30px 70px rgba(255, 255, 255, 0.2), 0 0 30px rgba(255, 255, 255, 0.1);
+}
+
+.floating-card.schedule-one {
+    top: 0;
+    right: 5%;
+    animation: backgroundFloat1 6s ease-in-out infinite;
+}
+
+.floating-card.schedule-one:hover {
+    animation-play-state: paused;
+}
+
+.floating-card.schedule-one:hover::before {
+    opacity: 1;
+}
+
+.floating-card.schedule-two {
+    top: 140px;
+    left: 5%;
+    animation: backgroundFloat2 7s ease-in-out infinite;
+}
+
+.floating-card.schedule-two:hover {
+    transform: translateY(-8px) scale(1.05) rotate(-1deg);
+}
+
+.floating-card.schedule-two:hover::before {
+    opacity: 1;
+}
+
+.floating-card.schedule-three {
+    top: 280px;
+    right: 5%;
+    animation: backgroundFloat3 8s ease-in-out infinite;
+}
+
+.floating-card.schedule-three:hover {
+    animation-play-state: paused;
+}
+
+.floating-card.schedule-three:hover::before {
+    opacity: 1;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.875rem;
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.floating-card:hover .card-header {
+    transform: translateX(2px);
+}
+
+.card-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+}
+
+.floating-card:hover .card-badge {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-one .card-badge {
+    background: linear-gradient(135deg, #facc15, #fbbf24);
+    color: #000000;
+}
+
+.schedule-two .card-badge {
+    background: linear-gradient(135deg, #a855f7, #9333ea);
+    color: #ffffff;
+}
+
+.schedule-three .card-badge {
+    background: linear-gradient(135deg, #ffffff, #f3f4f6);
+    color: #000000;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.card-date {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    background: rgba(148, 163, 184, 0.1);
+    padding: 0.3rem 0.65rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.floating-card:hover .card-date {
+    background: rgba(148, 163, 184, 0.15);
+    transform: scale(1.05);
 }
 
 .floating-card h3 {
-    font-size: 0.95rem;
-    color: #475569;
-    margin-bottom: 0.75rem;
-}
-
-.floating-card p {
-    font-size: 1.05rem;
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 700;
     color: #0f172a;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    transition: color 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
-.floating-card span {
-    display: block;
-    margin-top: 0.5rem;
+.floating-card:hover h3 {
+    color: #1e293b;
+}
+
+.card-location {
+    font-size: 0.85rem;
     color: #64748b;
-    font-size: 0.9rem;
+    margin-bottom: 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: transform 0.3s ease, color 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.card-location::before {
+    content: "📍";
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.floating-card:hover .card-location {
+    transform: translateX(3px);
+    color: #475569;
+}
+
+.floating-card:hover .card-location::before {
+    transform: scale(1.2);
+}
+
+.card-time {
+    font-size: 0.8rem;
+    color: #7b648b;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: transform 0.3s ease, color 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.card-time::before {
+    content: "🕐";
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.floating-card:hover .card-time {
+    transform: translateX(3px);
+    color: #6366f1;
+}
+
+.floating-card:hover .card-time::before {
+    transform: scale(1.2) rotate(15deg);
+}
+
+@keyframes backgroundFloat1 {
+    0%, 100% {
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(148, 163, 184, 0.1), 0 0 20px rgba(250, 204, 21, 0.1);
+    }
+    50% {
+        box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(148, 163, 184, 0.15), 0 0 30px rgba(250, 204, 21, 0.2);
+    }
+}
+
+@keyframes backgroundFloat2 {
+    0%, 100% {
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(148, 163, 184, 0.1), 0 0 20px rgba(168, 85, 247, 0.1);
+    }
+    50% {
+        box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(148, 163, 184, 0.15), 0 0 30px rgba(168, 85, 247, 0.2);
+    }
+}
+
+@keyframes backgroundFloat3 {
+    0%, 100% {
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(148, 163, 184, 0.1), 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    50% {
+        box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(148, 163, 184, 0.15), 0 0 30px rgba(255, 255, 255, 0.2);
+    }
 }
 
 .glow-ring {
     position: absolute;
     border-radius: 50%;
     filter: blur(40px);
-    opacity: 0.35;
+    opacity: 0.2;
+    z-index: 0;
 }
 
 .ring-one {
     width: 260px;
     height: 260px;
-    background: #38bdf8;
+    background: #fbbf24;
     top: 20%;
     left: 20%;
 }
@@ -202,7 +538,7 @@ body {
 .ring-three {
     width: 200px;
     height: 200px;
-    background: #f97316;
+    background: #ffffff;
     top: 50%;
     left: -10%;
 }
@@ -214,7 +550,7 @@ body {
 }
 
 .feature-card {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(26, 0, 43, 0.6);
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 18px;
     padding: 1.75rem;
@@ -250,7 +586,31 @@ body {
     .hero-visual {
         order: -1;
         width: 100%;
-        min-height: 320px;
+        min-height: 500px;
+    }
+
+    .floating-card {
+        width: 260px;
+        padding: 1.25rem;
+    }
+
+    .floating-card.schedule-one {
+        top: 0;
+        right: 5%;
+    }
+
+    .floating-card.schedule-two {
+        top: 140px;
+        left: 5%;
+    }
+
+    .floating-card.schedule-two:hover {
+        transform: translateY(-8px) scale(1.05) rotate(-1deg);
+    }
+
+    .floating-card.schedule-three {
+        top: 280px;
+        right: 5%;
     }
 }
 

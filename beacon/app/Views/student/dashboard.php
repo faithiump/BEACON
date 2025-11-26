@@ -17,9 +17,7 @@
             <div class="nav-container">
                 <!-- Logo -->
                 <div class="nav-brand">
-                    <div class="logo-icon">
-                        <i class="fas fa-broadcast-tower"></i>
-                    </div>
+                    <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="nav-logo-img">
                     <span class="logo-text">BEACON</span>
                 </div>
 
@@ -204,9 +202,7 @@
         <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
         <div class="mobile-nav" id="mobileNav">
             <div class="mobile-nav-header">
-                <div class="logo-icon">
-                    <i class="fas fa-broadcast-tower"></i>
-                </div>
+                <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="nav-logo-img">
                 <span class="logo-text">BEACON</span>
                 <button class="close-mobile-nav" id="closeMobileNav">
                     <i class="fas fa-times"></i>
@@ -257,10 +253,11 @@
                                 </div>
                                 <div class="student-profile-info">
                                     <div class="student-avatar-large">
-                                        <?php if(!empty($profile['photo'])): ?>
-                                            <img src="<?= $profile['photo'] ?>" alt="Profile">
+                                        <?php if(session()->get('photo')): ?>
+                                            <img src="<?= esc(session()->get('photo')) ?>" alt="Profile" id="sidebarProfilePhoto">
                                         <?php else: ?>
-                                            <div class="avatar-placeholder-lg">
+                                            <img src="" alt="Profile" id="sidebarProfilePhoto" style="display: none;">
+                                            <div class="avatar-placeholder-lg" id="sidebarProfilePlaceholder">
                                                 <?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1) . substr($profile['lastname'] ?? 'T', 0, 1)) ?>
                                             </div>
                                         <?php endif; ?>
@@ -269,7 +266,7 @@
                                     <span class="student-id"><?= session()->get('student_number') ?? 'Student' ?></span>
                                     <p class="student-course">
                                         <i class="fas fa-graduation-cap"></i>
-                                        <?= $profile['course'] ?? 'Bachelor of Science' ?>
+                                        <?= esc(strtoupper($student['course'] ?? 'Bachelor of Science')) ?>
                                     </p>
                                 </div>
                                 <div class="student-stats-row">
@@ -1392,11 +1389,13 @@
                             <div class="profile-header">
                                 <div class="profile-avatar-large">
                                     <?php if(session()->get('photo')): ?>
-                                        <img src="<?= esc(session()->get('photo')) ?>" alt="Profile">
+                                        <img src="<?= esc(session()->get('photo')) ?>" alt="Profile" id="profilePhotoPreview">
                                     <?php else: ?>
-                                        <i class="fas fa-user"></i>
+                                        <i class="fas fa-user" id="profilePhotoIcon"></i>
+                                        <img src="" alt="Profile" id="profilePhotoPreview" style="display: none;">
                                     <?php endif; ?>
-                                    <button class="change-photo-btn"><i class="fas fa-camera"></i></button>
+                                    <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                                    <button type="button" class="change-photo-btn" onclick="document.getElementById('profilePhotoInput').click()"><i class="fas fa-camera"></i></button>
                                 </div>
                                 <div class="profile-header-info">
                                     <h2><?= esc(($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? '')) ?></h2>
@@ -1405,6 +1404,11 @@
                                 </div>
                             </div>
                             <form class="profile-form" id="profileForm">
+                                <!-- Personal Information -->
+                                <div class="form-section-header">
+                                    <i class="fas fa-user"></i>
+                                    <span>Personal Information</span>
+                                </div>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>First Name</label>
@@ -1421,9 +1425,17 @@
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label>Email</label>
-                                        <input type="email" value="<?= esc($user['email'] ?? '') ?>" class="form-control" disabled>
-                                        <small class="form-hint">Email cannot be changed</small>
+                                        <label>Date of Birth</label>
+                                        <input type="date" name="birthday" value="<?= esc($profile['birthday'] ?? '') ?>" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Gender</label>
+                                        <select name="gender" class="form-control">
+                                            <option value="">Select gender</option>
+                                            <option value="male" <?= ($profile['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Male</option>
+                                            <option value="female" <?= ($profile['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
+                                            <option value="other" <?= ($profile['gender'] ?? '') === 'other' ? 'selected' : '' ?>>Other</option>
+                                        </select>
                                     </div>
                                     <div class="form-group">
                                         <label>Phone Number</label>
@@ -1432,14 +1444,71 @@
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
+                                        <label>Region</label>
+                                        <input type="text" name="region" value="<?= esc($address['region'] ?? '') ?>" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>City/Municipality</label>
+                                        <input type="text" name="city_municipality" value="<?= esc($address['city_municipality'] ?? '') ?>" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Barangay</label>
+                                        <input type="text" name="barangay" value="<?= esc($address['barangay'] ?? '') ?>" class="form-control">
+                                    </div>
+                                </div>
+                                
+                                <!-- Student Information -->
+                                <div class="form-section-header">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>Student Information</span>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
                                         <label>Student ID</label>
-                                        <input type="text" value="<?= esc($student['student_id'] ?? '') ?>" class="form-control" disabled>
+                                        <input type="text" name="student_id" value="<?= esc($student['student_id'] ?? '') ?>" class="form-control">
                                     </div>
                                     <div class="form-group">
                                         <label>Year Level</label>
-                                        <input type="text" value="<?= esc($student['year_level'] ?? '') ?>rd Year" class="form-control" disabled>
+                                        <select name="year_level" class="form-control">
+                                            <option value="">Select year level</option>
+                                            <option value="1" <?= ($student['year_level'] ?? '') == '1' ? 'selected' : '' ?>>1st Year</option>
+                                            <option value="2" <?= ($student['year_level'] ?? '') == '2' ? 'selected' : '' ?>>2nd Year</option>
+                                            <option value="3" <?= ($student['year_level'] ?? '') == '3' ? 'selected' : '' ?>>3rd Year</option>
+                                            <option value="4" <?= ($student['year_level'] ?? '') == '4' ? 'selected' : '' ?>>4th Year</option>
+                                            <option value="5" <?= ($student['year_level'] ?? '') == '5' ? 'selected' : '' ?>>5th Year</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Department</label>
+                                        <input type="text" name="department" value="<?= esc($student['department'] ?? '') ?>" class="form-control">
                                     </div>
                                 </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Course/Program</label>
+                                        <input type="text" name="course" value="<?= esc($student['course'] ?? '') ?>" class="form-control">
+                                    </div>
+                                    <?php if(isset($student['in_organization']) && $student['in_organization'] == 1): ?>
+                                    <div class="form-group">
+                                        <label>Organization</label>
+                                        <input type="text" name="organization_name" value="<?= esc($student['organization_name'] ?? '') ?>" class="form-control">
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <!-- Account Credentials -->
+                                <div class="form-section-header">
+                                    <i class="fas fa-lock"></i>
+                                    <span>Account Credentials</span>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Email</label>
+                                        <input type="email" value="<?= esc($user['email'] ?? '') ?>" class="form-control" disabled>
+                                        <small class="form-hint">Email cannot be changed</small>
+                                    </div>
+                                </div>
+                                
                                 <div class="form-actions">
                                     <button type="button" class="btn-secondary" onclick="resetForm()">Cancel</button>
                                     <button type="submit" class="btn-primary">
@@ -1987,8 +2056,13 @@
             e.preventDefault();
             
             const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
             
-            fetch(baseUrl + 'student/profile/edit', {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+            
+            fetch(baseUrl + 'student/updateProfile', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: new URLSearchParams(formData)
@@ -1996,7 +2070,95 @@
             .then(response => response.json())
             .then(data => {
                 showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) {
+                    setTimeout(() => location.reload(), 1500);
+                }
+            })
+            .catch(error => {
+                showToast('An error occurred while saving your profile', 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             });
+        });
+        
+        // Reset Form (Cancel button)
+        function resetForm() {
+            document.getElementById('profileForm').reset();
+            showToast('Changes discarded', 'info');
+            setTimeout(() => {
+                // Navigate to overview (dashboard) section
+                switchSection('overview');
+            }, 1500);
+        }
+        
+        // Profile Photo Upload
+        document.getElementById('profilePhotoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please select an image file', 'error');
+                    return;
+                }
+                
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('Image size must be less than 5MB', 'error');
+                    return;
+                }
+                
+                // Preview the image
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('profilePhotoPreview');
+                    const icon = document.getElementById('profilePhotoIcon');
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                    if (icon) icon.style.display = 'none';
+                    
+                    // Update left sidebar profile photo
+                    const sidebarPhoto = document.getElementById('sidebarProfilePhoto');
+                    const sidebarPlaceholder = document.getElementById('sidebarProfilePlaceholder');
+                    if (sidebarPhoto) {
+                        sidebarPhoto.src = event.target.result;
+                        sidebarPhoto.style.display = 'block';
+                        if (sidebarPlaceholder) sidebarPlaceholder.style.display = 'none';
+                    }
+                };
+                reader.readAsDataURL(file);
+                
+                // Upload the photo
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                fetch(baseUrl + 'student/uploadPhoto', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showToast(data.message, data.success ? 'success' : 'error');
+                    if (data.success) {
+                        // Update left sidebar with the new photo URL if provided
+                        if (data.photo) {
+                            const sidebarPhoto = document.getElementById('sidebarProfilePhoto');
+                            const sidebarPlaceholder = document.getElementById('sidebarProfilePlaceholder');
+                            if (sidebarPhoto) {
+                                sidebarPhoto.src = data.photo;
+                                sidebarPhoto.style.display = 'block';
+                                if (sidebarPlaceholder) sidebarPlaceholder.style.display = 'none';
+                            }
+                        }
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                })
+                .catch(error => {
+                    showToast('An error occurred while uploading photo', 'error');
+                });
+            }
         });
 
         // Toast Notification
