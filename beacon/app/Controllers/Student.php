@@ -6,6 +6,11 @@ use App\Models\UserModel;
 use App\Models\UserProfileModel;
 use App\Models\AddressModel;
 use App\Models\StudentModel;
+use App\Models\OrganizationModel;
+use App\Models\EventModel;
+use App\Models\AnnouncementModel;
+use App\Models\ProductModel;
+use App\Models\StudentOrganizationMembershipModel;
 
 class Student extends BaseController
 {
@@ -53,10 +58,276 @@ class Student extends BaseController
         $profile = $this->userProfileModel->where('user_id', $userId)->first();
         $user = $this->userModel->find($userId);
 
+        // Get student's organization memberships
+        $membershipModel = new StudentOrganizationMembershipModel();
+        $joinedOrganizations = [];
+        $organizationPosts = [
+            'announcements' => [],
+            'events' => []
+        ];
+        $eventCount = 0;
+        $orgCount = 0;
+        $hasJoinedOrg = false;
+        $upcomingEvents = [];
+        $allEventsList = [];
+        $allAnnouncementsList = [];
+        $allProductsList = [];
+
+        if ($student) {
+            // Get all organizations the student has joined (active only for posts)
+            $memberships = $membershipModel->getStudentOrganizations($student['id']);
+            $orgCount = count($memberships);
+            $hasJoinedOrg = $orgCount > 0;
+            
+            // Get all memberships including pending for sidebar display
+            $allMemberships = $membershipModel->getStudentAllOrganizations($student['id']);
+            
+            if ($hasJoinedOrg) {
+                $orgModel = new OrganizationModel();
+                $announcementModel = new AnnouncementModel();
+                $eventModel = new EventModel();
+                $orgIds = [];
+                
+                // Build joined organizations list and collect org IDs
+                foreach ($memberships as $membership) {
+                    $joinedOrganizations[] = [
+                        'id' => $membership['org_id'],
+                        'name' => $membership['organization_name'],
+                        'acronym' => $membership['organization_acronym'],
+                        'status' => $membership['status']
+                    ];
+                    $orgIds[] = $membership['org_id'];
+                }
+                
+                // Get announcements from all joined organizations
+                $allAnnouncementsList = [];
+                foreach ($orgIds as $orgId) {
+                    $announcements = $announcementModel->getAnnouncementsByOrg($orgId);
+                    
+                    // Get organization info for each announcement
+                    $org = $orgModel->find($orgId);
+                    
+                    foreach ($announcements as $announcement) {
+                        $announcementData = [
+                            'id' => $announcement['announcement_id'] ?? $announcement['id'],
+                            'title' => $announcement['title'],
+                            'content' => $announcement['content'],
+                            'priority' => $announcement['priority'] ?? 'normal',
+                            'created_at' => $announcement['created_at'],
+                            'views' => $announcement['views'] ?? 0,
+                            'org_id' => $orgId,
+                            'org_name' => $org['organization_name'] ?? '',
+                            'org_acronym' => $org['organization_acronym'] ?? '',
+                        ];
+                        
+                        $organizationPosts['announcements'][] = $announcementData;
+                        $allAnnouncementsList[] = $announcementData;
+                    }
+                }
+                
+                // Sort all announcements by date (newest first) for announcements section
+                usort($allAnnouncementsList, function($a, $b) {
+                    return strtotime($b['created_at']) - strtotime($a['created_at']);
+                });
+                
+                // Get events from all joined organizations
+                $allUpcomingEvents = [];
+                $allEventsList = [];
+                foreach ($orgIds as $orgId) {
+                    $events = $eventModel->getEventsByOrg($orgId);
+                    $eventCount += count($events);
+                    
+                    // Get organization info for each event
+                    $org = $orgModel->find($orgId);
+                    
+                    foreach ($events as $event) {
+                        // Format time
+                        $timeFormatted = $event['time'];
+                        if (strpos($timeFormatted, ':') !== false) {
+                            $timeParts = explode(':', $timeFormatted);
+                            $hour = (int)$timeParts[0];
+                            $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                            $period = $hour >= 12 ? 'PM' : 'AM';
+                            $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                            $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+                        }
+                        
+                        // Format date for display
+                        $eventDate = date('F j, Y', strtotime($event['date']));
+                        
+                        $eventData = [
+                            'id' => $event['event_id'] ?? $event['id'],
+                            'title' => $event['event_name'] ?? $event['title'],
+                            'description' => $event['description'],
+                            'date' => $event['date'],
+                            'date_formatted' => $eventDate,
+                            'time' => $timeFormatted,
+                            'location' => $event['venue'] ?? $event['location'],
+                            'attendees' => $event['current_attendees'] ?? 0,
+                            'max_attendees' => $event['max_attendees'],
+                            'status' => $event['status'] ?? 'upcoming',
+                            'image' => $event['image'] ?? null,
+                            'created_at' => $event['created_at'] ?? $event['date'],
+                            'org_id' => $orgId,
+                            'org_name' => $org['organization_name'] ?? '',
+                            'org_acronym' => $org['organization_acronym'] ?? '',
+                            'org_type' => ucfirst(str_replace('_', ' ', $event['org_type'] ?? 'academic')),
+                        ];
+                        
+                        $organizationPosts['events'][] = $eventData;
+                        $allEventsList[] = $eventData;
+                        
+                        // Collect upcoming events for sidebar (only future events)
+                        if (strtotime($event['date']) >= strtotime(date('Y-m-d'))) {
+                            $allUpcomingEvents[] = $eventData;
+                        }
+                    }
+                }
+                
+                // Sort upcoming events by date and limit to 3 for sidebar
+                usort($allUpcomingEvents, function($a, $b) {
+                    return strtotime($a['date']) - strtotime($b['date']);
+                });
+                $upcomingEvents = array_slice($allUpcomingEvents, 0, 3);
+                
+                // Sort all events by date (newest first) for events section
+                usort($allEventsList, function($a, $b) {
+                    return strtotime($b['date']) - strtotime($a['date']);
+                });
+            }
+            
+            // Get products from all joined organizations
+            $productModel = new ProductModel();
+            $orgModelForProducts = new OrganizationModel();
+            $allProductsList = [];
+            foreach ($orgIds as $orgId) {
+                $products = $productModel->getProductsByOrg($orgId);
+                
+                // Get organization info for each product
+                $org = $orgModelForProducts->find($orgId);
+                
+                foreach ($products as $product) {
+                    $productData = [
+                        'id' => $product['product_id'] ?? $product['id'],
+                        'name' => $product['product_name'] ?? $product['name'],
+                        'description' => $product['description'] ?? '',
+                        'price' => number_format((float)$product['price'], 2, '.', ''),
+                        'stock' => $product['stock'] ?? 0,
+                        'sold' => $product['sold'] ?? 0,
+                        'status' => $product['status'] ?? 'available',
+                        'image' => $product['image'] ?? null,
+                        'sizes' => $product['sizes'] ?? null,
+                        'org_id' => $orgId,
+                        'org_name' => $org['organization_name'] ?? '',
+                        'org_acronym' => $org['organization_acronym'] ?? '',
+                    ];
+                    
+                    $allProductsList[] = $productData;
+                }
+            }
+            
+            // Sort all products by date (newest first) for shop section
+            usort($allProductsList, function($a, $b) {
+                // We'll use the order they were added, but we can sort by name or price if needed
+                return 0;
+            });
+        }
+
+        // Get available organizations from database
+        $orgModel = new OrganizationModel();
+        $organizations = $orgModel->where('is_active', 1)
+            ->orderBy('organization_name', 'ASC')
+            ->findAll();
+
+        // Format organizations for display
+        $formattedOrgs = [];
+        $eventModel = new EventModel();
+        $membershipModel = new StudentOrganizationMembershipModel();
+        
+        // Get student's membership status for all organizations
+        $studentMemberships = [];
+        if ($student) {
+            $allStudentMemberships = $membershipModel->getStudentAllOrganizations($student['id']);
+            foreach ($allStudentMemberships as $membership) {
+                $studentMemberships[$membership['org_id']] = $membership['status'];
+            }
+        }
+        
+        foreach ($organizations as $org) {
+            // Get event count for this organization
+            $orgEvents = $eventModel->getEventsByOrg($org['id']);
+            $orgEventCount = count($orgEvents);
+            
+            // Check if student is a member (active) or has pending request
+            $membershipStatus = $studentMemberships[$org['id']] ?? null;
+            $isMember = ($membershipStatus === 'active');
+            $isPending = ($membershipStatus === 'pending');
+            
+            $formattedOrgs[] = [
+                'id' => $org['id'],
+                'name' => $org['organization_name'],
+                'acronym' => $org['organization_acronym'],
+                'type' => ucfirst(str_replace('_', ' ', $org['organization_type'] ?? 'academic')),
+                'members' => $org['current_members'] ?? 0,
+                'description' => $org['mission'] ?? '',
+                'event_count' => $orgEventCount,
+                'is_member' => $isMember,
+                'is_pending' => $isPending,
+            ];
+        }
+
+        // Get suggested organizations (organizations student hasn't joined)
+        $suggestedOrganizations = [];
+        if ($student && isset($allMemberships)) {
+            // Get all organization IDs the student has joined (active or pending)
+            $joinedOrgIds = array_column($allMemberships, 'org_id');
+            
+            // Filter out organizations student has already joined (active or pending)
+            foreach ($formattedOrgs as $org) {
+                if (!in_array($org['id'], $joinedOrgIds)) {
+                    $suggestedOrganizations[] = $org;
+                }
+            }
+            
+            // Sort by member count (most popular first) and limit to 3
+            usort($suggestedOrganizations, function($a, $b) {
+                return ($b['members'] ?? 0) - ($a['members'] ?? 0);
+            });
+            $suggestedOrganizations = array_slice($suggestedOrganizations, 0, 3);
+        } else {
+            // If no student or no memberships, just show first 3 organizations
+            $suggestedOrganizations = array_slice($formattedOrgs, 0, 3);
+        }
+        
+        // Format all memberships (including pending) for sidebar
+        $allJoinedOrgs = [];
+        if ($student && isset($allMemberships)) {
+            foreach ($allMemberships as $membership) {
+                $allJoinedOrgs[] = [
+                    'id' => $membership['org_id'],
+                    'name' => $membership['organization_name'],
+                    'acronym' => $membership['organization_acronym'],
+                    'status' => $membership['status']
+                ];
+            }
+        }
+
         $data = [
             'student' => $student,
             'profile' => $profile,
             'user' => $user,
+            'hasJoinedOrg' => $hasJoinedOrg,
+            'organizationPosts' => $organizationPosts,
+            'availableOrganizations' => $formattedOrgs,
+            'joinedOrganizations' => $joinedOrganizations,
+            'allJoinedOrganizations' => $allJoinedOrgs,
+            'suggestedOrganizations' => $suggestedOrganizations ?? [],
+            'upcomingEvents' => $upcomingEvents ?? [],
+            'allEvents' => $allEventsList ?? [],
+            'allAnnouncements' => $allAnnouncementsList ?? [],
+            'allProducts' => $allProductsList ?? [],
+            'eventCount' => $eventCount,
+            'orgCount' => $orgCount,
             'pageTitle' => 'Student Dashboard'
         ];
 
@@ -343,11 +614,62 @@ class Student extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Organization ID is required']);
         }
 
-        // Mock organization joining - implement actual database logic
+        // Get student data
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'Student record not found'
+            ]);
+        }
+
+        // Get organization data
+        $orgModel = new OrganizationModel();
+        $organization = $orgModel->find($orgId);
+        
+        if (!$organization) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'Organization not found'
+            ]);
+        }
+
+        // Check if student already has a membership request (pending or active) for this organization
+        $membershipModel = new StudentOrganizationMembershipModel();
+        $existingMembership = $membershipModel->hasMembership($student['id'], $orgId);
+        
+        if ($existingMembership) {
+            $statusMsg = $existingMembership['status'] === 'pending' 
+                ? 'You have a pending request to join ' . $organization['organization_name']
+                : 'You are already a member of ' . $organization['organization_name'];
+            
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => $statusMsg
+            ]);
+        }
+
+        // Create pending membership request
+        $membershipData = [
+            'student_id' => $student['id'],
+            'org_id' => $orgId,
+            'status' => 'pending'
+        ];
+
+        if ($membershipModel->insert($membershipData)) {
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => 'Membership request sent to ' . $organization['organization_name'] . '. Waiting for approval.',
+                'org_id' => $orgId,
+                'status' => 'pending'
+            ]);
+        }
+
         return $this->response->setJSON([
-            'success' => true, 
-            'message' => 'Membership request submitted successfully!',
-            'org_id' => $orgId
+            'success' => false, 
+            'message' => 'Failed to join organization. Please try again.'
         ]);
     }
 
