@@ -54,6 +54,10 @@
                     <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
                     <?php endif; ?>
                 </a>
+                <a href="#forum" class="nav-link" data-section="forum">
+                    <i class="fas fa-comments"></i>
+                    <span>Forum</span>
+                </a>
             </nav>
 
             <!-- Right Side Actions -->
@@ -235,6 +239,9 @@
                 <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
                 <?php endif; ?>
             </a>
+            <a href="#forum" class="mobile-nav-link" data-section="forum">
+                <i class="fas fa-comments"></i> Forum
+            </a>
             <div class="mobile-nav-divider"></div>
             <a href="#settings" class="mobile-nav-link" data-section="settings">
                 <i class="fas fa-cog"></i> Settings
@@ -252,218 +259,335 @@
     <main class="main-content">
         <div class="content-area">
             
-            <!-- Overview Section -->
+            <!-- Overview Section - Facebook Style Feed -->
             <section id="overview" class="dashboard-section active">
-                <div class="section-header">
-                    <div>
-                        <h1 class="section-title">Welcome, <?= $organization['acronym'] ?? 'Organization' ?>!</h1>
-                        <p class="section-subtitle">Here's what's happening with your organization today.</p>
-                    </div>
-                    <div class="section-actions">
-                        <button class="btn btn-primary" onclick="openModal('eventModal')">
-                            <i class="fas fa-plus"></i> Create Event
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card gradient-primary">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value"><?= $stats['total_members'] ?? 0 ?></span>
-                            <span class="stat-label">Total Members</span>
-                        </div>
-                        <div class="stat-badge">+<?= $stats['pending_members'] ?? 0 ?> pending</div>
-                    </div>
-                    <div class="stat-card gradient-purple">
-                        <div class="stat-icon">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value"><?= $stats['total_events'] ?? 0 ?></span>
-                            <span class="stat-label">Total Events</span>
-                        </div>
-                        <div class="stat-badge"><?= $stats['upcoming_events'] ?? 0 ?> upcoming</div>
-                    </div>
-                    <div class="stat-card gradient-emerald">
-                        <div class="stat-icon">
-                            <i class="fas fa-peso-sign"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value">₱<?= number_format($stats['total_revenue'] ?? 0) ?></span>
-                            <span class="stat-label">Total Revenue</span>
-                        </div>
-                        <div class="stat-badge"><?= $stats['pending_payments'] ?? 0 ?> pending</div>
-                    </div>
-                    <div class="stat-card gradient-amber">
-                        <div class="stat-icon">
-                            <i class="fas fa-box"></i>
-                        </div>
-                        <div class="stat-content">
-                            <span class="stat-value"><?= $stats['total_products'] ?? 0 ?></span>
-                            <span class="stat-label">Products</span>
-                        </div>
-                        <div class="stat-badge">Active listings</div>
-                    </div>
-                </div>
-
-                <!-- Dashboard Grid -->
-                <div class="dashboard-grid">
-                    <!-- Upcoming Events -->
-                    <div class="card events-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
-                            <a href="#events" class="view-all-link" onclick="switchSection('events')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="event-list">
-                                <?php if(!empty($recentEvents)): ?>
-                                    <?php foreach(array_slice($recentEvents, 0, 3) as $event): ?>
-                                    <div class="event-item">
-                                        <div class="event-date-box">
-                                            <span class="event-day"><?= date('d', strtotime($event['date'])) ?></span>
-                                            <span class="event-month"><?= date('M', strtotime($event['date'])) ?></span>
+                <div class="feed-layout">
+                    <!-- Left Sidebar -->
+                    <aside class="feed-sidebar-left">
+                        <!-- Profile Card -->
+                        <div class="profile-card">
+                            <div class="profile-cover">
+                                <div class="profile-cover-gradient"></div>
+                            </div>
+                            <div class="profile-info">
+                                <div class="profile-avatar-large">
+                                    <?php if(!empty($organization['photo'])): ?>
+                                        <img src="<?= $organization['photo'] ?>" alt="<?= $organization['name'] ?>">
+                                    <?php else: ?>
+                                        <div class="avatar-placeholder">
+                                            <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
                                         </div>
-                                        <div class="event-details">
-                                            <h4><?= esc($event['title']) ?></h4>
-                                            <p><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
-                                            <div class="event-meta">
-                                                <span><i class="fas fa-users"></i> <?= $event['attendees'] ?>/<?= $event['max_attendees'] ?></span>
-                                                <span class="status-badge <?= $event['status'] ?>"><?= ucfirst($event['status']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <h2 class="profile-name"><?= $organization['name'] ?? 'Organization Name' ?></h2>
+                                <span class="profile-acronym"><?= $organization['acronym'] ?? 'ORG' ?></span>
+                                <p class="profile-type">
+                                    <i class="fas fa-tag"></i> 
+                                    <?= ucfirst(str_replace('_', ' ', $organization['type'] ?? 'Organization')) ?>
+                                </p>
+                            </div>
+                            <div class="profile-stats-row">
+                                <div class="profile-stat">
+                                    <span class="stat-num"><?= $stats['total_members'] ?? 0 ?></span>
+                                    <span class="stat-text">MEMBERS</span>
+                                </div>
+                                <div class="profile-stat">
+                                    <span class="stat-num"><?= $stats['total_events'] ?? 0 ?></span>
+                                    <span class="stat-text">EVENTS</span>
+                                </div>
+                                <div class="profile-stat">
+                                    <span class="stat-num"><?= $stats['total_products'] ?? 0 ?></span>
+                                    <span class="stat-text">PRODUCTS</span>
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button class="btn btn-outline-primary btn-sm" onclick="switchSection('settings')">
+                                    <i class="fas fa-edit"></i> Edit Profile
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-chart-line"></i> Quick Stats</h4>
+                            <div class="quick-stat-item">
+                                <div class="qs-icon emerald"><i class="fas fa-peso-sign"></i></div>
+                                <div class="qs-info">
+                                    <span class="qs-value">₱<?= number_format($stats['total_revenue'] ?? 0) ?></span>
+                                    <span class="qs-label">Total Revenue</span>
+                                </div>
+                            </div>
+                            <div class="quick-stat-item">
+                                <div class="qs-icon amber"><i class="fas fa-clock"></i></div>
+                                <div class="qs-info">
+                                    <span class="qs-value"><?= $stats['pending_payments'] ?? 0 ?></span>
+                                    <span class="qs-label">Pending Payments</span>
+                                </div>
+                            </div>
+                            <div class="quick-stat-item">
+                                <div class="qs-icon purple"><i class="fas fa-user-plus"></i></div>
+                                <div class="qs-info">
+                                    <span class="qs-value"><?= $stats['pending_members'] ?? 0 ?></span>
+                                    <span class="qs-label">Member Requests</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Events -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h4>
+                            <?php if(!empty($recentEvents)): ?>
+                                <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
+                                <div class="sidebar-event">
+                                    <div class="se-date">
+                                        <span class="se-day"><?= date('d', strtotime($event['date'])) ?></span>
+                                        <span class="se-month"><?= date('M', strtotime($event['date'])) ?></span>
+                                    </div>
+                                    <div class="se-info">
+                                        <span class="se-title"><?= esc($event['title']) ?></span>
+                                        <span class="se-location"><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></span>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No upcoming events</p>
+                            <?php endif; ?>
+                            <a href="#events" class="sidebar-link" onclick="switchSection('events')">View all events <i class="fas fa-arrow-right"></i></a>
+                        </div>
+
+                        <!-- Recent Announcements -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-bullhorn"></i> Recent Announcements</h4>
+                            <?php if(!empty($recentAnnouncements)): ?>
+                                <?php foreach(array_slice($recentAnnouncements, 0, 2) as $announcement): ?>
+                                <div class="sidebar-announcement">
+                                    <div class="sa-icon <?= $announcement['priority'] === 'high' ? 'high' : 'normal' ?>">
+                                        <i class="fas fa-<?= $announcement['priority'] === 'high' ? 'exclamation-circle' : 'info-circle' ?>"></i>
+                                    </div>
+                                    <div class="sa-info">
+                                        <span class="sa-title"><?= esc($announcement['title']) ?></span>
+                                        <span class="sa-date"><i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($announcement['created_at'])) ?></span>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No announcements yet</p>
+                            <?php endif; ?>
+                            <a href="#announcements" class="sidebar-link" onclick="switchSection('announcements')">View all announcements <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </aside>
+
+                    <!-- Center Feed -->
+                    <div class="feed-main">
+                        <!-- Create Post Box -->
+                        <div class="create-post-card">
+                            <div class="create-post-header">
+                                <div class="post-avatar">
+                                    <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                </div>
+                                <button class="create-post-input" onclick="openModal('announcementModal')">
+                                    What's on your mind, <?= $organization['acronym'] ?? 'Organization' ?>?
+                                </button>
+                            </div>
+                            <div class="create-post-actions">
+                                <button class="post-action-btn" onclick="openModal('eventModal')">
+                                    <i class="fas fa-calendar-plus text-primary"></i>
+                                    <span>Event</span>
+                                </button>
+                                <button class="post-action-btn" onclick="openModal('announcementModal')">
+                                    <i class="fas fa-bullhorn text-warning"></i>
+                                    <span>Announcement</span>
+                                </button>
+                                <button class="post-action-btn" onclick="openModal('productModal')">
+                                    <i class="fas fa-box text-purple"></i>
+                                    <span>Product</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Feed Posts (Announcements) -->
+                        <?php if(!empty($recentAnnouncements)): ?>
+                            <?php foreach($recentAnnouncements as $announcement): ?>
+                            <div class="feed-post">
+                                <div class="post-header">
+                                    <div class="post-author-avatar">
+                                        <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name"><?= $organization['name'] ?? 'Organization' ?></span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> <?= date('M d, Y \a\t g:i A', strtotime($announcement['created_at'])) ?>
+                                            <?php if($announcement['priority'] === 'high'): ?>
+                                            <span class="post-priority high"><i class="fas fa-exclamation-circle"></i> Important</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                    <div class="post-menu">
+                                        <button class="post-menu-btn" onclick="togglePostMenu(<?= $announcement['id'] ?>)">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <div class="post-menu-dropdown" id="postMenu<?= $announcement['id'] ?>">
+                                            <button onclick="editAnnouncement(<?= $announcement['id'] ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                            <button onclick="deleteAnnouncement(<?= $announcement['id'] ?>)"><i class="fas fa-trash"></i> Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <h3 class="post-title"><?= esc($announcement['title']) ?></h3>
+                                    <p class="post-text"><?= nl2br(esc($announcement['content'])) ?></p>
+                                </div>
+                                <div class="post-stats">
+                                    <span><i class="fas fa-eye"></i> <?= $announcement['views'] ?? 0 ?> views</span>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="feed-empty">
+                                <i class="fas fa-newspaper"></i>
+                                <h3>No posts yet</h3>
+                                <p>Create your first announcement to share with your members!</p>
+                                <button class="btn btn-primary" onclick="openModal('announcementModal')">
+                                    <i class="fas fa-plus"></i> Create Announcement
+                                </button>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Recent Events as Posts -->
+                        <?php if(!empty($recentEvents)): ?>
+                            <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
+                            <div class="feed-post event-post">
+                                <div class="post-header">
+                                    <div class="post-author-avatar event-avatar">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name"><?= $organization['name'] ?? 'Organization' ?> created an event</span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($event['created_at'] ?? $event['date'])) ?>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="event-card-content">
+                                    <div class="event-banner">
+                                        <div class="event-banner-overlay">
+                                            <div class="event-date-badge">
+                                                <span class="edb-day"><?= date('d', strtotime($event['date'])) ?></span>
+                                                <span class="edb-month"><?= date('M', strtotime($event['date'])) ?></span>
                                             </div>
                                         </div>
-                                        <button class="btn-icon" onclick="editEvent(<?= $event['id'] ?>)">
-                                            <i class="fas fa-edit"></i>
+                                    </div>
+                                    <div class="event-card-info">
+                                        <h3><?= esc($event['title']) ?></h3>
+                                        <p class="event-location"><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
+                                        <p class="event-attendees"><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
+                                    </div>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="fas fa-star"></i> Interested</button>
+                                    <button class="post-action"><i class="fas fa-check"></i> Going</button>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Right Sidebar - Products/Marketplace -->
+                    <aside class="feed-sidebar-right">
+                        <!-- Products Section -->
+                        <div class="sidebar-card marketplace-card">
+                            <div class="sidebar-header">
+                                <h4 class="sidebar-title"><i class="fas fa-store"></i> Our Products</h4>
+                                <button class="btn btn-sm btn-primary" onclick="openModal('productModal')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="product-grid">
+                                <?php if(!empty($products)): ?>
+                                    <?php foreach(array_slice($products, 0, 4) as $product): ?>
+                                    <div class="product-mini-card">
+                                        <div class="product-mini-img">
+                                            <?php if(!empty($product['image'])): ?>
+                                                <img src="<?= base_url('uploads/products/' . $product['image']) ?>" alt="<?= esc($product['name']) ?>">
+                                            <?php else: ?>
+                                                <div class="product-placeholder"><i class="fas fa-box"></i></div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="product-mini-info">
+                                            <span class="product-mini-name"><?= esc($product['name']) ?></span>
+                                            <span class="product-mini-price">₱<?= number_format($product['price']) ?></span>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="sidebar-empty-full">
+                                        <i class="fas fa-box-open"></i>
+                                        <p>No products yet</p>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="openModal('productModal')">Add Product</button>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php if(!empty($products)): ?>
+                            <a href="#products" class="sidebar-link" onclick="switchSection('products')">View all products <i class="fas fa-arrow-right"></i></a>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Member Requests -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-user-plus"></i> Member Requests</h4>
+                            <?php 
+                            $pendingMembers = array_filter($recentMembers ?? [], fn($m) => $m['status'] === 'pending');
+                            if(!empty($pendingMembers)): ?>
+                                <?php foreach(array_slice($pendingMembers, 0, 3) as $member): ?>
+                                <div class="member-request-item">
+                                    <div class="mr-avatar">
+                                        <?= strtoupper(substr($member['name'], 0, 1)) ?>
+                                    </div>
+                                    <div class="mr-info">
+                                        <span class="mr-name"><?= esc($member['name']) ?></span>
+                                        <span class="mr-course"><?= esc($member['course']) ?></span>
+                                    </div>
+                                    <div class="mr-actions">
+                                        <button class="mr-btn approve" onclick="manageMember(<?= $member['id'] ?>, 'approve')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="mr-btn reject" onclick="manageMember(<?= $member['id'] ?>, 'reject')">
+                                            <i class="fas fa-times"></i>
                                         </button>
                                     </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-calendar-plus"></i>
-                                        <p>No upcoming events</p>
-                                        <button class="btn btn-sm btn-primary" onclick="openModal('eventModal')">Create Event</button>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No pending requests</p>
+                            <?php endif; ?>
+                            <a href="#members" class="sidebar-link" onclick="switchSection('members')">Manage members <i class="fas fa-arrow-right"></i></a>
                         </div>
-                    </div>
 
-                    <!-- Pending Payments -->
-                    <div class="card payments-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-credit-card"></i> Pending Payments</h3>
-                            <a href="#payments" class="view-all-link" onclick="switchSection('payments')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="payment-list">
-                                <?php if(!empty($pendingPayments)): ?>
-                                    <?php foreach(array_slice($pendingPayments, 0, 4) as $payment): ?>
-                                    <div class="payment-item">
-                                        <div class="payment-avatar">
-                                            <?= strtoupper(substr($payment['student_name'], 0, 1)) ?>
-                                        </div>
-                                        <div class="payment-details">
-                                            <h4><?= esc($payment['student_name']) ?></h4>
-                                            <p><?= esc($payment['product']) ?></p>
-                                        </div>
-                                        <div class="payment-amount">₱<?= number_format($payment['amount']) ?></div>
-                                        <div class="payment-actions">
-                                            <button class="btn-icon success" onclick="confirmPayment(<?= $payment['id'] ?>, 'approve')" title="Approve">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn-icon danger" onclick="confirmPayment(<?= $payment['id'] ?>, 'reject')" title="Reject">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
+                        <!-- Pending Payments -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
+                            <?php if(!empty($pendingPayments)): ?>
+                                <?php foreach(array_slice($pendingPayments, 0, 3) as $payment): ?>
+                                <div class="payment-request-item">
+                                    <div class="pr-avatar">
+                                        <?= strtoupper(substr($payment['student_name'], 0, 1)) ?>
                                     </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-check-circle"></i>
-                                        <p>No pending payments</p>
+                                    <div class="pr-info">
+                                        <span class="pr-name"><?= esc($payment['student_name']) ?></span>
+                                        <span class="pr-product"><?= esc($payment['product']) ?></span>
                                     </div>
-                                <?php endif; ?>
-                            </div>
+                                    <span class="pr-amount">₱<?= number_format($payment['amount']) ?></span>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No pending payments</p>
+                            <?php endif; ?>
+                            <a href="#payments" class="sidebar-link" onclick="switchSection('payments')">View all payments <i class="fas fa-arrow-right"></i></a>
                         </div>
-                    </div>
-
-                    <!-- Recent Announcements -->
-                    <div class="card announcements-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-bullhorn"></i> Recent Announcements</h3>
-                            <a href="#announcements" class="view-all-link" onclick="switchSection('announcements')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="announcement-list">
-                                <?php if(!empty($recentAnnouncements)): ?>
-                                    <?php foreach(array_slice($recentAnnouncements, 0, 3) as $announcement): ?>
-                                    <div class="announcement-item <?= $announcement['priority'] ?>">
-                                        <div class="announcement-priority <?= $announcement['priority'] ?>">
-                                            <i class="fas fa-<?= $announcement['priority'] === 'high' ? 'exclamation-circle' : 'info-circle' ?>"></i>
-                                        </div>
-                                        <div class="announcement-content">
-                                            <h4><?= esc($announcement['title']) ?></h4>
-                                            <p><?= esc(substr($announcement['content'], 0, 80)) ?>...</p>
-                                            <div class="announcement-meta">
-                                                <span><i class="fas fa-eye"></i> <?= $announcement['views'] ?> views</span>
-                                                <span><i class="fas fa-clock"></i> <?= date('M d', strtotime($announcement['created_at'])) ?></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-bullhorn"></i>
-                                        <p>No announcements yet</p>
-                                        <button class="btn btn-sm btn-primary" onclick="openModal('announcementModal')">Create Announcement</button>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pending Members -->
-                    <div class="card members-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-user-plus"></i> Member Requests</h3>
-                            <a href="#members" class="view-all-link" onclick="switchSection('members')">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="member-list">
-                                <?php 
-                                $pendingMembers = array_filter($recentMembers ?? [], fn($m) => $m['status'] === 'pending');
-                                if(!empty($pendingMembers)): ?>
-                                    <?php foreach(array_slice($pendingMembers, 0, 3) as $member): ?>
-                                    <div class="member-item">
-                                        <div class="member-avatar">
-                                            <?= strtoupper(substr($member['name'], 0, 1)) ?>
-                                        </div>
-                                        <div class="member-details">
-                                            <h4><?= esc($member['name']) ?></h4>
-                                            <p><?= esc($member['course']) ?> - <?= $member['year'] ?></p>
-                                        </div>
-                                        <div class="member-actions">
-                                            <button class="btn-icon success" onclick="manageMember(<?= $member['id'] ?>, 'approve')" title="Approve">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn-icon danger" onclick="manageMember(<?= $member['id'] ?>, 'reject')" title="Reject">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="empty-state">
-                                        <i class="fas fa-user-check"></i>
-                                        <p>No pending requests</p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
+                    </aside>
                 </div>
             </section>
 
@@ -501,12 +625,18 @@
                                     <span><i class="fas fa-clock"></i> <?= $event['time'] ?></span>
                                     <span><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></span>
                                 </div>
+                                <?php if(!empty($event['max_attendees'])): ?>
                                 <div class="event-progress">
                                     <div class="progress-bar">
-                                        <div class="progress-fill" style="width: <?= ($event['attendees'] / $event['max_attendees']) * 100 ?>%"></div>
+                                        <div class="progress-fill" style="width: <?= min(100, ($event['attendees'] / $event['max_attendees']) * 100) ?>%"></div>
                                     </div>
                                     <span class="progress-text"><?= $event['attendees'] ?>/<?= $event['max_attendees'] ?> registered</span>
                                 </div>
+                                <?php else: ?>
+                                <div class="event-progress">
+                                    <span class="progress-text"><?= $event['attendees'] ?> registered (Unlimited capacity)</span>
+                                </div>
+                                <?php endif; ?>
                             </div>
                             <div class="event-card-footer">
                                 <button class="btn btn-outline" onclick="viewEventAttendees(<?= $event['id'] ?>)">
@@ -659,90 +789,50 @@
                 </div>
 
                 <div class="products-grid" id="productsGrid">
-                    <!-- Products will be loaded dynamically -->
-                    <div class="product-card">
-                        <div class="product-image">
-                            <div class="product-placeholder">
-                                <i class="fas fa-tshirt"></i>
+                    <?php if(!empty($products)): ?>
+                        <?php foreach($products as $product): ?>
+                        <div class="product-card <?= $product['status'] === 'out_of_stock' ? 'out-of-stock' : '' ?>">
+                            <div class="product-image">
+                                <?php if(!empty($product['image'])): ?>
+                                    <img src="<?= base_url('uploads/products/' . $product['image']) ?>" alt="<?= esc($product['name']) ?>">
+                                <?php else: ?>
+                                    <div class="product-placeholder">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                <?php endif; ?>
+                                <span class="stock-badge <?= $product['status'] === 'out_of_stock' ? 'out' : ($product['status'] === 'low_stock' ? 'low' : 'available') ?>">
+                                    <?= $product['status'] === 'out_of_stock' ? 'Out of Stock' : ($product['status'] === 'low_stock' ? 'Low Stock' : 'In Stock') ?>
+                                </span>
                             </div>
-                            <span class="stock-badge available">In Stock</span>
-                        </div>
-                        <div class="product-body">
-                            <h3>CSS T-Shirt</h3>
-                            <p class="product-desc">Official CSS organization t-shirt</p>
-                            <div class="product-meta">
-                                <span class="price">₱450</span>
-                                <span class="stock">Stock: 25</span>
+                            <div class="product-body">
+                                <h3><?= esc($product['name']) ?></h3>
+                                <p class="product-desc"><?= esc($product['description'] ?: 'No description') ?></p>
+                                <div class="product-meta">
+                                    <span class="price">₱<?= number_format($product['price'], 2) ?></span>
+                                    <span class="stock <?= $product['stock'] == 0 ? 'danger' : ($product['stock'] <= 10 ? 'warning' : '') ?>">Stock: <?= $product['stock'] ?></span>
+                                </div>
+                                <div class="product-stats">
+                                    <span><i class="fas fa-shopping-cart"></i> <?= $product['sold'] ?> sold</span>
+                                </div>
                             </div>
-                            <div class="product-stats">
-                                <span><i class="fas fa-shopping-cart"></i> 75 sold</span>
-                            </div>
-                        </div>
-                        <div class="product-footer">
-                            <button class="btn btn-outline" onclick="updateStock(1)">
-                                <i class="fas fa-boxes"></i> Update Stock
-                            </button>
-                            <button class="btn btn-primary" onclick="editProduct(1)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="product-card">
-                        <div class="product-image">
-                            <div class="product-placeholder">
-                                <i class="fas fa-hoodie"></i>
-                            </div>
-                            <span class="stock-badge low">Low Stock</span>
-                        </div>
-                        <div class="product-body">
-                            <h3>CSS Hoodie</h3>
-                            <p class="product-desc">Premium quality hoodie with CSS logo</p>
-                            <div class="product-meta">
-                                <span class="price">₱850</span>
-                                <span class="stock warning">Stock: 10</span>
-                            </div>
-                            <div class="product-stats">
-                                <span><i class="fas fa-shopping-cart"></i> 40 sold</span>
+                            <div class="product-footer">
+                                <button class="btn btn-outline" onclick="updateStock(<?= $product['id'] ?>)">
+                                    <i class="fas fa-boxes"></i> <?= $product['stock'] == 0 ? 'Restock' : 'Update Stock' ?>
+                                </button>
+                                <button class="btn btn-primary" onclick="editProduct(<?= $product['id'] ?>)">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
                             </div>
                         </div>
-                        <div class="product-footer">
-                            <button class="btn btn-outline" onclick="updateStock(2)">
-                                <i class="fas fa-boxes"></i> Update Stock
-                            </button>
-                            <button class="btn btn-primary" onclick="editProduct(2)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="empty-state-large">
+                            <i class="fas fa-box-open"></i>
+                            <h3>No Products Yet</h3>
+                            <p>Create your first product to start selling merchandise</p>
+                            <button class="btn btn-primary" onclick="openModal('productModal')">Add Product</button>
                         </div>
-                    </div>
-
-                    <div class="product-card out-of-stock">
-                        <div class="product-image">
-                            <div class="product-placeholder">
-                                <i class="fas fa-id-badge"></i>
-                            </div>
-                            <span class="stock-badge out">Out of Stock</span>
-                        </div>
-                        <div class="product-body">
-                            <h3>CSS Lanyard</h3>
-                            <p class="product-desc">Organization lanyard with ID holder</p>
-                            <div class="product-meta">
-                                <span class="price">₱150</span>
-                                <span class="stock danger">Stock: 0</span>
-                            </div>
-                            <div class="product-stats">
-                                <span><i class="fas fa-shopping-cart"></i> 100 sold</span>
-                            </div>
-                        </div>
-                        <div class="product-footer">
-                            <button class="btn btn-outline" onclick="updateStock(3)">
-                                <i class="fas fa-boxes"></i> Restock
-                            </button>
-                            <button class="btn btn-primary" onclick="editProduct(3)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </section>
 
@@ -803,6 +893,282 @@
                             <p>No pending payments to review</p>
                         </div>
                     <?php endif; ?>
+                </div>
+            </section>
+
+            <!-- Forum Section -->
+            <section id="forum" class="dashboard-section">
+                <div class="section-header">
+                    <div>
+                        <h1 class="section-title">Community Forum</h1>
+                        <p class="section-subtitle">Engage with students and other organizations</p>
+                    </div>
+                    <button class="btn-primary" onclick="openCreatePostModal()">
+                        <i class="fas fa-plus"></i> New Post
+                    </button>
+                </div>
+
+                <div class="forum-layout">
+                    <!-- Forum Sidebar -->
+                    <aside class="forum-sidebar">
+                        <div class="forum-categories-card">
+                            <h4 class="forum-sidebar-title"><i class="fas fa-folder"></i> Categories</h4>
+                            <ul class="forum-category-list">
+                                <li class="forum-category-item active" data-category="all">
+                                    <i class="fas fa-globe"></i>
+                                    <span>All Posts</span>
+                                    <span class="category-count">24</span>
+                                </li>
+                                <li class="forum-category-item" data-category="announcements">
+                                    <i class="fas fa-bullhorn"></i>
+                                    <span>Our Announcements</span>
+                                    <span class="category-count">5</span>
+                                </li>
+                                <li class="forum-category-item" data-category="events">
+                                    <i class="fas fa-calendar-star"></i>
+                                    <span>Events & Activities</span>
+                                    <span class="category-count">8</span>
+                                </li>
+                                <li class="forum-category-item" data-category="products">
+                                    <i class="fas fa-store"></i>
+                                    <span>Product Updates</span>
+                                    <span class="category-count">4</span>
+                                </li>
+                                <li class="forum-category-item" data-category="members">
+                                    <i class="fas fa-users"></i>
+                                    <span>Member Discussions</span>
+                                    <span class="category-count">7</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="forum-stats-card">
+                            <h4 class="forum-sidebar-title"><i class="fas fa-chart-bar"></i> Forum Stats</h4>
+                            <div class="forum-stats-grid">
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">156</span>
+                                    <span class="forum-stat-label">Total Posts</span>
+                                </div>
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">48</span>
+                                    <span class="forum-stat-label">Your Posts</span>
+                                </div>
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">324</span>
+                                    <span class="forum-stat-label">Engagements</span>
+                                </div>
+                                <div class="forum-stat-item">
+                                    <span class="forum-stat-num">89</span>
+                                    <span class="forum-stat-label">Followers</span>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Forum Main Content -->
+                    <div class="forum-main">
+                        <!-- Create Post Box -->
+                        <div class="forum-create-box">
+                            <div class="create-box-avatar">
+                                <?php if(!empty($organization['photo'])): ?>
+                                    <img src="<?= esc($organization['photo']) ?>" alt="<?= esc($organization['name']) ?>">
+                                <?php else: ?>
+                                    <div class="avatar-placeholder-sm"><?= strtoupper(substr($organization['acronym'] ?? 'O', 0, 2)) ?></div>
+                                <?php endif; ?>
+                            </div>
+                            <input type="text" class="create-box-input" placeholder="Share an update or announcement..." onclick="openCreatePostModal()">
+                            <button class="create-box-btn" onclick="openCreatePostModal()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+
+                        <!-- Forum Filter Bar -->
+                        <div class="forum-filter-bar">
+                            <div class="forum-tabs">
+                                <button class="forum-tab active" data-filter="all">
+                                    <i class="fas fa-stream"></i> All Posts
+                                </button>
+                                <button class="forum-tab" data-filter="yours">
+                                    <i class="fas fa-user"></i> Your Posts
+                                </button>
+                                <button class="forum-tab" data-filter="popular">
+                                    <i class="fas fa-fire-alt"></i> Popular
+                                </button>
+                            </div>
+                            <div class="forum-search">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Search posts...">
+                            </div>
+                        </div>
+
+                        <!-- Forum Posts -->
+                        <div class="forum-posts-list">
+                            <!-- Organization's Own Post -->
+                            <article class="forum-post own-post">
+                                <div class="post-vote">
+                                    <button class="vote-btn upvote active">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <span class="vote-count">67</span>
+                                    <button class="vote-btn downvote">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <img src="https://ui-avatars.com/api/?name=<?= urlencode($organization['acronym'] ?? 'ORG') ?>&background=8b5cf6&color=fff" alt="<?= esc($organization['name'] ?? 'Organization') ?>" class="post-author-img">
+                                        <div class="post-meta">
+                                            <div class="post-author">
+                                                <span class="author-name"><?= esc($organization['name'] ?? 'Your Organization') ?></span>
+                                                <span class="author-badge org">Your Post</span>
+                                            </div>
+                                            <span class="post-time">3 hours ago • <span class="post-category">Announcements</span></span>
+                                        </div>
+                                        <div class="post-actions-menu">
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                            <div class="post-menu-dropdown">
+                                                <button><i class="fas fa-edit"></i> Edit Post</button>
+                                                <button><i class="fas fa-pin"></i> Pin Post</button>
+                                                <button class="danger"><i class="fas fa-trash"></i> Delete Post</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h3 class="post-title">📢 Membership Drive - Join Our Organization!</h3>
+                                    <p class="post-body">
+                                        We're excited to announce our membership drive for the new semester! 
+                                        If you're passionate about making a difference and growing with a dynamic team, 
+                                        we'd love to have you join us. Benefits include exclusive events, workshops, and networking opportunities.
+                                    </p>
+                                    <div class="post-tags">
+                                        <span class="post-tag">recruitment</span>
+                                        <span class="post-tag">membership</span>
+                                        <span class="post-tag">join-us</span>
+                                    </div>
+                                    <div class="post-footer">
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-comment"></i>
+                                            <span>23 Comments</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-share"></i>
+                                            <span>Share</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-chart-line"></i>
+                                            <span>View Insights</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <!-- Student Post -->
+                            <article class="forum-post">
+                                <div class="post-vote">
+                                    <button class="vote-btn upvote">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <span class="vote-count">31</span>
+                                    <button class="vote-btn downvote">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <img src="https://ui-avatars.com/api/?name=Ana+Reyes&background=10b981&color=fff" alt="Ana Reyes" class="post-author-img">
+                                        <div class="post-meta">
+                                            <div class="post-author">
+                                                <span class="author-name">Ana Reyes</span>
+                                                <span class="author-badge student">Student</span>
+                                            </div>
+                                            <span class="post-time">6 hours ago • <span class="post-category">Member Discussions</span></span>
+                                        </div>
+                                        <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                    </div>
+                                    <h3 class="post-title">Question about upcoming workshop</h3>
+                                    <p class="post-body">
+                                        Hi! I'm interested in attending the leadership workshop next week. 
+                                        Is it open to non-members as well? Also, do we need to bring anything specific?
+                                    </p>
+                                    <div class="post-tags">
+                                        <span class="post-tag">question</span>
+                                        <span class="post-tag">workshop</span>
+                                    </div>
+                                    <div class="post-footer">
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-comment"></i>
+                                            <span>5 Comments</span>
+                                        </button>
+                                        <button class="post-action-btn reply-btn">
+                                            <i class="fas fa-reply"></i>
+                                            <span>Reply</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-bookmark"></i>
+                                            <span>Save</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <!-- Another Organization Post -->
+                            <article class="forum-post">
+                                <div class="post-vote">
+                                    <button class="vote-btn upvote">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <span class="vote-count">45</span>
+                                    <button class="vote-btn downvote">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <img src="https://ui-avatars.com/api/?name=Tech+Org&background=6366f1&color=fff" alt="Tech Org" class="post-author-img">
+                                        <div class="post-meta">
+                                            <div class="post-author">
+                                                <span class="author-name">Tech Society</span>
+                                                <span class="author-badge org">Organization</span>
+                                            </div>
+                                            <span class="post-time">Yesterday • <span class="post-category">Events & Activities</span></span>
+                                        </div>
+                                        <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                    </div>
+                                    <h3 class="post-title">🤝 Collaboration Opportunity - Joint Workshop</h3>
+                                    <p class="post-body">
+                                        We're looking for partner organizations to co-host a tech and innovation workshop! 
+                                        If your organization is interested in collaborating, let's connect. 
+                                        Great opportunity for cross-org networking and shared resources.
+                                    </p>
+                                    <div class="post-tags">
+                                        <span class="post-tag">collaboration</span>
+                                        <span class="post-tag">partnership</span>
+                                        <span class="post-tag">workshop</span>
+                                    </div>
+                                    <div class="post-footer">
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-comment"></i>
+                                            <span>12 Comments</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-handshake"></i>
+                                            <span>Express Interest</span>
+                                        </button>
+                                        <button class="post-action-btn">
+                                            <i class="fas fa-share"></i>
+                                            <span>Share</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+
+                        <!-- Load More -->
+                        <div class="forum-load-more">
+                            <button class="btn-load-more">
+                                <i class="fas fa-sync-alt"></i> Load More Posts
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -981,7 +1347,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="eventForm" class="modal-body">
+            <form id="eventForm" class="modal-body" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Event Title *</label>
                     <input type="text" name="title" class="form-input" required placeholder="Enter event title">
@@ -1017,7 +1383,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitEvent()">Create Event</button>
+                <button type="button" class="btn btn-primary" onclick="submitEvent()">Create Event</button>
             </div>
         </div>
     </div>
@@ -1031,7 +1397,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="announcementForm" class="modal-body">
+            <form id="announcementForm" class="modal-body" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Title *</label>
                     <input type="text" name="title" class="form-input" required placeholder="Announcement title">
@@ -1050,7 +1416,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('announcementModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
+                <button type="button" class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
             </div>
         </div>
     </div>
@@ -1064,7 +1430,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="productForm" class="modal-body">
+            <form id="productForm" class="modal-body" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Product Name *</label>
                     <input type="text" name="name" class="form-input" required placeholder="Product name">
@@ -1094,7 +1460,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitProduct()">Add Product</button>
+                <button type="button" class="btn btn-primary" onclick="submitProduct()">Add Product</button>
             </div>
         </div>
     </div>
@@ -1164,6 +1530,25 @@
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        // Post Menu Toggle
+        function togglePostMenu(id) {
+            const menu = document.getElementById('postMenu' + id);
+            // Close all other post menus
+            document.querySelectorAll('.post-menu-dropdown').forEach(m => {
+                if (m !== menu) m.classList.remove('active');
+            });
+            menu.classList.toggle('active');
+        }
+
+        // Close post menus when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.post-menu')) {
+                document.querySelectorAll('.post-menu-dropdown').forEach(m => {
+                    m.classList.remove('active');
+                });
+            }
+        });
 
         // Mobile Navigation
         document.getElementById('mobileMenuBtn').addEventListener('click', () => {
@@ -1260,7 +1645,20 @@
         // Event Functions
         function submitEvent() {
             const form = document.getElementById('eventForm');
+            
+            // Validate required fields
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return false;
+            }
+            
             const formData = new FormData(form);
+
+            // Show loading state
+            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
 
             fetch(baseUrl + 'organization/events/create', {
                 method: 'POST',
@@ -1272,15 +1670,24 @@
                     showToast('Event created successfully!', 'success');
                     closeModal('eventModal');
                     form.reset();
-                    // Reload events
+                    // Reload page to show new event
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     showToast(data.message || 'Failed to create event', 'error');
+                    if (data.errors) {
+                        console.error('Validation errors:', data.errors);
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
             })
-            .catch(() => {
-                showToast('Event created successfully!', 'success');
-                closeModal('eventModal');
-                form.reset();
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while creating the event', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             });
         }
 
@@ -1295,7 +1702,20 @@
         // Announcement Functions
         function submitAnnouncement() {
             const form = document.getElementById('announcementForm');
+            
+            // Validate required fields
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return false;
+            }
+            
             const formData = new FormData(form);
+
+            // Show loading state
+            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
 
             fetch(baseUrl + 'organization/announcements/create', {
                 method: 'POST',
@@ -1307,14 +1727,24 @@
                     showToast('Announcement posted successfully!', 'success');
                     closeModal('announcementModal');
                     form.reset();
+                    // Reload page to show new announcement
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     showToast(data.message || 'Failed to post announcement', 'error');
+                    if (data.errors) {
+                        console.error('Validation errors:', data.errors);
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
             })
-            .catch(() => {
-                showToast('Announcement posted successfully!', 'success');
-                closeModal('announcementModal');
-                form.reset();
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while posting the announcement', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             });
         }
 
@@ -1323,15 +1753,50 @@
         }
 
         function deleteAnnouncement(id) {
-            if (confirm('Are you sure you want to delete this announcement?')) {
-                showToast('Announcement deleted', 'success');
+            if (!confirm('Are you sure you want to delete this announcement?')) {
+                return;
             }
+
+            fetch(baseUrl + 'organization/announcements/delete/' + id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Announcement deleted successfully', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast(data.message || 'Failed to delete announcement', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while deleting the announcement', 'error');
+            });
         }
 
         // Product Functions
         function submitProduct() {
             const form = document.getElementById('productForm');
+            
+            // Validate required fields
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return false;
+            }
+            
             const formData = new FormData(form);
+
+            // Show loading state
+            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
             fetch(baseUrl + 'organization/products/create', {
                 method: 'POST',
@@ -1343,14 +1808,24 @@
                     showToast('Product added successfully!', 'success');
                     closeModal('productModal');
                     form.reset();
+                    // Reload page to show new product
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     showToast(data.message || 'Failed to add product', 'error');
+                    if (data.errors) {
+                        console.error('Validation errors:', data.errors);
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
             })
-            .catch(() => {
-                showToast('Product added successfully!', 'success');
-                closeModal('productModal');
-                form.reset();
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while adding the product', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             });
         }
 
@@ -1367,6 +1842,11 @@
             const productId = document.getElementById('stockProductId').value;
             const newStock = document.getElementById('stockInput').value;
 
+            if (!newStock || newStock < 0) {
+                showToast('Please enter a valid stock quantity', 'error');
+                return;
+            }
+
             fetch(baseUrl + 'organization/products/stock', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1374,12 +1854,19 @@
             })
             .then(response => response.json())
             .then(data => {
-                showToast('Stock updated successfully!', 'success');
-                closeModal('stockModal');
+                if (data.success) {
+                    showToast('Stock updated successfully!', 'success');
+                    closeModal('stockModal');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast(data.message || 'Failed to update stock', 'error');
+                }
             })
-            .catch(() => {
-                showToast('Stock updated successfully!', 'success');
-                closeModal('stockModal');
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while updating stock', 'error');
             });
         }
 

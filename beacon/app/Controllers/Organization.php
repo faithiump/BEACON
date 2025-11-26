@@ -7,6 +7,11 @@ use App\Models\OrganizationApplicationModel;
 use App\Models\OrganizationAdvisorModel;
 use App\Models\OrganizationOfficerModel;
 use App\Models\OrganizationFileModel;
+use App\Models\EventModel;
+use App\Models\AnnouncementModel;
+use App\Models\ProductModel;
+use App\Models\StudentModel;
+use App\Models\StudentOrganizationMembershipModel;
 
 class Organization extends BaseController
 {
@@ -28,6 +33,16 @@ class Organization extends BaseController
             return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
         }
 
+        // Ensure uploads directories exist
+        $eventsPath = FCPATH . 'uploads/events/';
+        $productsPath = FCPATH . 'uploads/products/';
+        if (!is_dir($eventsPath)) {
+            mkdir($eventsPath, 0755, true);
+        }
+        if (!is_dir($productsPath)) {
+            mkdir($productsPath, 0755, true);
+        }
+
         $data = [
             'title' => 'Organization Dashboard',
             'organization' => $this->getOrganizationData(),
@@ -36,6 +51,7 @@ class Organization extends BaseController
             'recentAnnouncements' => $this->getRecentAnnouncements(),
             'pendingPayments' => $this->getPendingPayments(),
             'recentMembers' => $this->getRecentMembers(),
+            'products' => $this->getRecentProducts(),
         ];
 
         return view('organization/dashboard', $data);
@@ -48,19 +64,57 @@ class Organization extends BaseController
     {
         $orgId = $this->session->get('organization_id');
         
-        // Sample data - replace with actual database query
+        if (!$orgId) {
+            return [
+                'id' => null,
+                'name' => $this->session->get('organization_name') ?? 'Organization',
+                'acronym' => $this->session->get('organization_acronym') ?? 'ORG',
+                'type' => 'Academic',
+                'category' => 'Departmental',
+                'email' => $this->session->get('email') ?? '',
+                'phone' => '',
+                'photo' => null,
+                'mission' => '',
+                'vision' => '',
+                'founded' => '',
+                'status' => 'active',
+            ];
+        }
+        
+        // Fetch from database
+        $orgModel = new OrganizationModel();
+        $organization = $orgModel->find($orgId);
+        
+        if ($organization) {
+            return [
+                'id' => $organization['id'],
+                'name' => $organization['organization_name'],
+                'acronym' => $organization['organization_acronym'],
+                'type' => ucfirst(str_replace('_', ' ', $organization['organization_type'] ?? 'academic')),
+                'category' => ucfirst(str_replace('_', ' ', $organization['organization_category'] ?? 'departmental')),
+                'email' => $organization['contact_email'] ?? '',
+                'phone' => $organization['contact_phone'] ?? '',
+                'photo' => null,
+                'mission' => $organization['mission'] ?? '',
+                'vision' => $organization['vision'] ?? '',
+                'founded' => $organization['founding_date'] ?? '',
+                'status' => $organization['is_active'] ? 'active' : 'inactive',
+            ];
+        }
+        
+        // Fallback to session data
         return [
-            'id' => $orgId ?? 1,
-            'name' => $this->session->get('organization_name') ?? 'Computer Science Society',
-            'acronym' => $this->session->get('organization_acronym') ?? 'CSS',
+            'id' => $orgId,
+            'name' => $this->session->get('organization_name') ?? 'Organization',
+            'acronym' => $this->session->get('organization_acronym') ?? 'ORG',
             'type' => 'Academic',
             'category' => 'Departmental',
-            'email' => $this->session->get('email') ?? 'css@university.edu',
-            'phone' => '+63 912 345 6789',
-            'photo' => $this->session->get('photo') ?? null,
-            'mission' => 'To foster excellence in computer science education and innovation.',
-            'vision' => 'To be the leading student organization in technology and innovation.',
-            'founded' => '2015-06-15',
+            'email' => $this->session->get('email') ?? '',
+            'phone' => '',
+            'photo' => null,
+            'mission' => '',
+            'vision' => '',
+            'founded' => '',
             'status' => 'active',
         ];
     }
@@ -70,15 +124,67 @@ class Organization extends BaseController
      */
     private function getDashboardStats()
     {
+        $orgId = $this->session->get('organization_id');
+        
+        // Get event statistics
+        $eventModel = new EventModel();
+        $totalEvents = 0;
+        $upcomingEvents = 0;
+        
+        // Get announcement statistics
+        $announcementModel = new AnnouncementModel();
+        $totalAnnouncements = 0;
+        
+        // Get product statistics
+        $productModel = new ProductModel();
+        $totalProducts = 0;
+        
+        // Get member statistics
+        $totalMembers = 0;
+        $pendingMembers = 0;
+        
+        if ($orgId) {
+            // Get organization data to get organization name
+            $orgModel = new OrganizationModel();
+            $organization = $orgModel->find($orgId);
+            
+            if ($organization) {
+                // Count active and pending members using membership table
+                $membershipModel = new StudentOrganizationMembershipModel();
+                $activeMembers = $membershipModel->getActiveMemberships($orgId);
+                $pendingMembersList = $membershipModel->getPendingMemberships($orgId);
+                
+                $totalMembers = count($activeMembers);
+                $pendingMembers = count($pendingMembersList);
+                
+                // Update organization member count if it's different
+                if ($organization['current_members'] != $totalMembers) {
+                    $orgModel->update($orgId, ['current_members' => $totalMembers]);
+                }
+            }
+            
+            $allEvents = $eventModel->getEventsByOrg($orgId);
+            $totalEvents = count($allEvents);
+            
+            $upcoming = $eventModel->getUpcomingEvents($orgId);
+            $upcomingEvents = count($upcoming);
+            
+            $allAnnouncements = $announcementModel->getAnnouncementsByOrg($orgId);
+            $totalAnnouncements = count($allAnnouncements);
+            
+            $allProducts = $productModel->getProductsByOrg($orgId);
+            $totalProducts = count($allProducts);
+        }
+
         return [
-            'total_members' => 156,
-            'pending_members' => 12,
-            'total_events' => 24,
-            'upcoming_events' => 3,
-            'total_products' => 15,
+            'total_members' => $totalMembers,
+            'pending_members' => $pendingMembers,
+            'total_events' => $totalEvents,
+            'upcoming_events' => $upcomingEvents,
+            'total_products' => $totalProducts,
             'pending_payments' => 28,
             'total_revenue' => 45680,
-            'announcements' => 18,
+            'announcements' => $totalAnnouncements,
         ];
     }
 
@@ -87,44 +193,43 @@ class Organization extends BaseController
      */
     private function getRecentEvents()
     {
-        return [
-            [
-                'id' => 1,
-                'title' => 'Tech Innovation Summit 2025',
-                'description' => 'Annual technology summit featuring industry speakers and workshops.',
-                'date' => '2025-12-15',
-                'time' => '09:00 AM',
-                'location' => 'University Auditorium',
-                'attendees' => 89,
-                'max_attendees' => 150,
-                'status' => 'upcoming',
-                'image' => null,
-            ],
-            [
-                'id' => 2,
-                'title' => 'Coding Bootcamp: Web Development',
-                'description' => 'Intensive 3-day bootcamp on modern web development.',
-                'date' => '2025-12-20',
-                'time' => '08:00 AM',
-                'location' => 'Computer Lab A',
-                'attendees' => 35,
-                'max_attendees' => 40,
-                'status' => 'upcoming',
-                'image' => null,
-            ],
-            [
-                'id' => 3,
-                'title' => 'Hackathon 2025',
-                'description' => '24-hour coding competition with exciting prizes.',
-                'date' => '2025-12-28',
-                'time' => '06:00 PM',
-                'location' => 'Innovation Hub',
-                'attendees' => 120,
-                'max_attendees' => 200,
-                'status' => 'upcoming',
-                'image' => null,
-            ],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return [];
+        }
+
+        $eventModel = new EventModel();
+        $events = $eventModel->getEventsByOrg($orgId, 10);
+
+        // Transform database format to view format
+        $formattedEvents = [];
+        foreach ($events as $event) {
+            // Format time - handle both TIME format and string format
+            $timeFormatted = $event['time'];
+            if (strpos($timeFormatted, ':') !== false) {
+                $timeParts = explode(':', $timeFormatted);
+                $hour = (int)$timeParts[0];
+                $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                $period = $hour >= 12 ? 'PM' : 'AM';
+                $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+            }
+
+            $formattedEvents[] = [
+                'id' => $event['event_id'],
+                'title' => $event['event_name'],
+                'description' => $event['description'],
+                'date' => $event['date'],
+                'time' => $timeFormatted,
+                'location' => $event['venue'],
+                'attendees' => $event['current_attendees'] ?? 0,
+                'max_attendees' => $event['max_attendees'],
+                'status' => $event['status'] ?? 'upcoming',
+                'image' => $event['image'] ?? null,
+            ];
+        }
+
+        return $formattedEvents;
     }
 
     /**
@@ -132,32 +237,68 @@ class Organization extends BaseController
      */
     private function getRecentAnnouncements()
     {
-        return [
-            [
-                'id' => 1,
-                'title' => 'Membership Fee Deadline Extended',
-                'content' => 'The deadline for membership fee payment has been extended to December 15, 2025.',
-                'priority' => 'high',
-                'created_at' => '2025-11-24 10:30:00',
-                'views' => 234,
-            ],
-            [
-                'id' => 2,
-                'title' => 'New Merchandise Available',
-                'content' => 'Check out our new CSS hoodies and shirts now available for pre-order!',
-                'priority' => 'normal',
-                'created_at' => '2025-11-22 14:00:00',
-                'views' => 156,
-            ],
-            [
-                'id' => 3,
-                'title' => 'General Assembly Schedule',
-                'content' => 'Our general assembly will be held on December 5, 2025. Attendance is mandatory.',
-                'priority' => 'high',
-                'created_at' => '2025-11-20 09:00:00',
-                'views' => 312,
-            ],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return [];
+        }
+
+        $announcementModel = new AnnouncementModel();
+        $announcements = $announcementModel->getAnnouncementsByOrg($orgId, 10);
+
+        // Transform database format to view format
+        $formattedAnnouncements = [];
+        foreach ($announcements as $announcement) {
+            $formattedAnnouncements[] = [
+                'id' => $announcement['announcement_id'],
+                'title' => $announcement['title'],
+                'content' => $announcement['content'],
+                'priority' => $announcement['priority'] ?? 'normal',
+                'created_at' => $announcement['created_at'],
+                'views' => $announcement['views'] ?? 0,
+            ];
+        }
+
+        return $formattedAnnouncements;
+    }
+
+    /**
+     * Get recent products
+     */
+    private function getRecentProducts()
+    {
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return [];
+        }
+
+        $productModel = new ProductModel();
+        $products = $productModel->getProductsByOrg($orgId, 10);
+
+        // Transform database format to view format
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            // Determine status based on stock
+            $status = 'available';
+            if ($product['stock'] == 0) {
+                $status = 'out_of_stock';
+            } elseif ($product['stock'] <= 10) {
+                $status = 'low_stock';
+            }
+
+            $formattedProducts[] = [
+                'id' => $product['product_id'],
+                'name' => $product['product_name'],
+                'description' => $product['description'] ?? '',
+                'price' => (float)$product['price'],
+                'stock' => (int)$product['stock'],
+                'sold' => (int)($product['sold'] ?? 0),
+                'sizes' => $product['sizes'] ? explode(',', $product['sizes']) : null,
+                'image' => $product['image'] ?? null,
+                'status' => $status,
+            ];
+        }
+
+        return $formattedProducts;
     }
 
     /**
@@ -201,38 +342,42 @@ class Organization extends BaseController
      */
     private function getRecentMembers()
     {
-        return [
-            [
-                'id' => 1,
-                'name' => 'Anna Reyes',
-                'student_id' => 'STU-2024-010',
-                'email' => 'anna.reyes@student.edu',
-                'course' => 'BS Computer Science',
-                'year' => '3rd Year',
-                'status' => 'pending',
-                'applied_at' => '2025-11-24 16:00:00',
-            ],
-            [
-                'id' => 2,
-                'name' => 'Carlos Mendoza',
-                'student_id' => 'STU-2024-011',
-                'email' => 'carlos.m@student.edu',
-                'course' => 'BS Information Technology',
-                'year' => '2nd Year',
-                'status' => 'pending',
-                'applied_at' => '2025-11-24 14:30:00',
-            ],
-            [
-                'id' => 3,
-                'name' => 'Lisa Fernandez',
-                'student_id' => 'STU-2024-012',
-                'email' => 'lisa.f@student.edu',
-                'course' => 'BS Computer Science',
-                'year' => '1st Year',
-                'status' => 'active',
-                'applied_at' => '2025-11-23 10:00:00',
-            ],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return [];
+        }
+
+        $membershipModel = new StudentOrganizationMembershipModel();
+        
+        // Get recent members (both active and pending)
+        $allMemberships = array_merge(
+            $membershipModel->getActiveMemberships($orgId),
+            $membershipModel->getPendingMemberships($orgId)
+        );
+        
+        // Sort by joined_at descending and limit to 10
+        usort($allMemberships, function($a, $b) {
+            return strtotime($b['joined_at']) - strtotime($a['joined_at']);
+        });
+        
+        $recentMembers = [];
+        foreach (array_slice($allMemberships, 0, 10) as $membership) {
+            $yearLevel = $membership['year_level'] ?? 1;
+            $yearText = $yearLevel == 1 ? '1st Year' : ($yearLevel == 2 ? '2nd Year' : ($yearLevel == 3 ? '3rd Year' : ($yearLevel == 4 ? '4th Year' : $yearLevel . 'th Year')));
+            
+            $recentMembers[] = [
+                'id' => $membership['id'],
+                'name' => ($membership['firstname'] ?? '') . ' ' . ($membership['lastname'] ?? ''),
+                'student_id' => $membership['student_id'] ?? '',
+                'email' => '', // Can be added if needed
+                'course' => $membership['course'] ?? '',
+                'year' => $yearText,
+                'status' => $membership['status'],
+                'applied_at' => $membership['joined_at'] ?? $membership['created_at'] ?? '',
+            ];
+        }
+        
+        return $recentMembers;
     }
 
     // ==========================================
@@ -261,29 +406,49 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $title = $this->request->getPost('title');
-        $content = $this->request->getPost('content');
-        $priority = $this->request->getPost('priority') ?? 'normal';
-
-        // Validation
-        if (empty($title) || empty($content)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Title and content are required']);
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
         }
 
-        // TODO: Save to database
-        $announcement = [
-            'id' => rand(100, 999),
-            'title' => $title,
-            'content' => $content,
-            'priority' => $priority,
-            'created_at' => date('Y-m-d H:i:s'),
+        // Prepare announcement data
+        $announcementData = [
+            'org_id' => $orgId,
+            'title' => $this->request->getPost('title'),
+            'content' => $this->request->getPost('content'),
+            'priority' => $this->request->getPost('priority') ?? 'normal',
             'views' => 0,
+            'is_pinned' => 0,
+        ];
+
+        // Save to database
+        $announcementModel = new AnnouncementModel();
+        if (!$announcementModel->insert($announcementData)) {
+            $errors = $announcementModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to create announcement',
+                'errors' => $errors
+            ]);
+        }
+
+        $announcementId = $announcementModel->getInsertID();
+        $createdAnnouncement = $announcementModel->find($announcementId);
+
+        // Format response data
+        $responseData = [
+            'id' => $createdAnnouncement['announcement_id'],
+            'title' => $createdAnnouncement['title'],
+            'content' => $createdAnnouncement['content'],
+            'priority' => $createdAnnouncement['priority'],
+            'created_at' => $createdAnnouncement['created_at'],
+            'views' => $createdAnnouncement['views'],
         ];
 
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Announcement created successfully',
-            'data' => $announcement
+            'data' => $responseData
         ]);
     }
 
@@ -296,11 +461,44 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $title = $this->request->getPost('title');
-        $content = $this->request->getPost('content');
-        $priority = $this->request->getPost('priority');
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
 
-        // TODO: Update in database
+        $announcementModel = new AnnouncementModel();
+        $announcement = $announcementModel->find($id);
+
+        // Verify announcement belongs to organization
+        if (!$announcement || $announcement['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Announcement not found or unauthorized']);
+        }
+
+        // Prepare update data
+        $updateData = [];
+        if ($this->request->getPost('title')) {
+            $updateData['title'] = $this->request->getPost('title');
+        }
+        if ($this->request->getPost('content')) {
+            $updateData['content'] = $this->request->getPost('content');
+        }
+        if ($this->request->getPost('priority') !== null) {
+            $updateData['priority'] = $this->request->getPost('priority');
+        }
+
+        if (empty($updateData)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No data to update']);
+        }
+
+        // Update in database
+        if (!$announcementModel->update($id, $updateData)) {
+            $errors = $announcementModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to update announcement',
+                'errors' => $errors
+            ]);
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -317,7 +515,26 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // TODO: Delete from database
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $announcementModel = new AnnouncementModel();
+        $announcement = $announcementModel->find($id);
+
+        // Verify announcement belongs to organization
+        if (!$announcement || $announcement['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Announcement not found or unauthorized']);
+        }
+
+        // Delete from database
+        if (!$announcementModel->delete($id)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to delete announcement'
+            ]);
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -351,37 +568,91 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $data = [
-            'title' => $this->request->getPost('title'),
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        // Get organization data to get org_type
+        $orgModel = new OrganizationModel();
+        $organization = $orgModel->find($orgId);
+        if (!$organization) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        // Prepare event data
+        $eventData = [
+            'org_id' => $orgId,
+            'org_type' => $organization['organization_type'] ?? 'academic',
+            'event_name' => $this->request->getPost('title'),
             'description' => $this->request->getPost('description'),
             'date' => $this->request->getPost('date'),
             'time' => $this->request->getPost('time'),
-            'location' => $this->request->getPost('location'),
-            'max_attendees' => $this->request->getPost('max_attendees'),
+            'venue' => $this->request->getPost('location'),
+            'max_attendees' => $this->request->getPost('max_attendees') ? (int)$this->request->getPost('max_attendees') : null,
+            'current_attendees' => 0,
+            'status' => 'upcoming',
         ];
-
-        // Validation
-        if (empty($data['title']) || empty($data['date'])) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Title and date are required']);
-        }
 
         // Handle image upload
         $image = $this->request->getFile('image');
         if ($image && $image->isValid() && !$image->hasMoved()) {
+            // Use public directory for web-accessible files
+            $uploadPath = FCPATH . 'uploads/events/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
             $newName = $image->getRandomName();
-            $image->move(WRITEPATH . 'uploads/events/', $newName);
-            $data['image'] = $newName;
+            if ($image->move($uploadPath, $newName)) {
+                // Store filename only (path handled in view)
+                $eventData['image'] = $newName;
+            }
         }
 
-        // TODO: Save to database
-        $data['id'] = rand(100, 999);
-        $data['attendees'] = 0;
-        $data['status'] = 'upcoming';
+        // Save to database
+        $eventModel = new EventModel();
+        if (!$eventModel->insert($eventData)) {
+            $errors = $eventModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to create event',
+                'errors' => $errors
+            ]);
+        }
+
+        $eventId = $eventModel->getInsertID();
+        $createdEvent = $eventModel->find($eventId);
+
+        // Format time
+        $timeFormatted = $createdEvent['time'];
+        if (strpos($timeFormatted, ':') !== false) {
+            $timeParts = explode(':', $timeFormatted);
+            $hour = (int)$timeParts[0];
+            $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+            $period = $hour >= 12 ? 'PM' : 'AM';
+            $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+            $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+        }
+
+        // Format response data
+        $responseData = [
+            'id' => $createdEvent['event_id'],
+            'title' => $createdEvent['event_name'],
+            'description' => $createdEvent['description'],
+            'date' => $createdEvent['date'],
+            'time' => $timeFormatted,
+            'location' => $createdEvent['venue'],
+            'attendees' => $createdEvent['current_attendees'],
+            'max_attendees' => $createdEvent['max_attendees'],
+            'status' => $createdEvent['status'],
+            'image' => $createdEvent['image'] ?? null,
+        ];
 
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Event created successfully',
-            'data' => $data
+            'data' => $responseData
         ]);
     }
 
@@ -394,7 +665,72 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // TODO: Update in database
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $eventModel = new EventModel();
+        $event = $eventModel->find($id);
+
+        // Verify event belongs to organization
+        if (!$event || $event['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event not found or unauthorized']);
+        }
+
+        // Prepare update data
+        $updateData = [];
+        if ($this->request->getPost('title')) {
+            $updateData['event_name'] = $this->request->getPost('title');
+        }
+        if ($this->request->getPost('description')) {
+            $updateData['description'] = $this->request->getPost('description');
+        }
+        if ($this->request->getPost('date')) {
+            $updateData['date'] = $this->request->getPost('date');
+        }
+        if ($this->request->getPost('time')) {
+            $updateData['time'] = $this->request->getPost('time');
+        }
+        if ($this->request->getPost('location')) {
+            $updateData['venue'] = $this->request->getPost('location');
+        }
+        if ($this->request->getPost('max_attendees') !== null) {
+            $updateData['max_attendees'] = $this->request->getPost('max_attendees') ? (int)$this->request->getPost('max_attendees') : null;
+        }
+
+        // Handle image upload
+        $image = $this->request->getFile('image');
+        if ($image && $image->isValid() && !$image->hasMoved()) {
+            $uploadPath = FCPATH . 'uploads/events/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
+            // Delete old image if exists
+            if (!empty($event['image']) && file_exists($uploadPath . $event['image'])) {
+                unlink($uploadPath . $event['image']);
+            }
+
+            $newName = $image->getRandomName();
+            if ($image->move($uploadPath, $newName)) {
+                $updateData['image'] = $newName;
+            }
+        }
+
+        if (empty($updateData)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No data to update']);
+        }
+
+        // Update in database
+        if (!$eventModel->update($id, $updateData)) {
+            $errors = $eventModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to update event',
+                'errors' => $errors
+            ]);
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -411,7 +747,34 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // TODO: Delete from database
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $eventModel = new EventModel();
+        $event = $eventModel->find($id);
+
+        // Verify event belongs to organization
+        if (!$event || $event['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event not found or unauthorized']);
+        }
+
+        // Delete image if exists
+        if (!empty($event['image'])) {
+            $imagePath = FCPATH . 'uploads/events/' . $event['image'];
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+        }
+
+        // Delete from database
+        if (!$eventModel->delete($id)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to delete event'
+            ]);
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -486,12 +849,34 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // Sample data - all members
-        $members = [
-            ['id' => 1, 'name' => 'Anna Reyes', 'student_id' => 'STU-2024-010', 'course' => 'BSCS', 'year' => '3rd', 'status' => 'active', 'joined_at' => '2025-09-01'],
-            ['id' => 2, 'name' => 'Carlos Mendoza', 'student_id' => 'STU-2024-011', 'course' => 'BSIT', 'year' => '2nd', 'status' => 'active', 'joined_at' => '2025-09-15'],
-            ['id' => 3, 'name' => 'Lisa Fernandez', 'student_id' => 'STU-2024-012', 'course' => 'BSCS', 'year' => '1st', 'status' => 'pending', 'joined_at' => '2025-11-23'],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        $membershipModel = new StudentOrganizationMembershipModel();
+        
+        // Get all members (active and pending)
+        $allMemberships = array_merge(
+            $membershipModel->getActiveMemberships($orgId),
+            $membershipModel->getPendingMemberships($orgId)
+        );
+        
+        $members = [];
+        foreach ($allMemberships as $membership) {
+            $yearLevel = $membership['year_level'] ?? 1;
+            $yearText = $yearLevel == 1 ? '1st' : ($yearLevel == 2 ? '2nd' : ($yearLevel == 3 ? '3rd' : ($yearLevel == 4 ? '4th' : $yearLevel . 'th')));
+            
+            $members[] = [
+                'id' => $membership['id'],
+                'name' => ($membership['firstname'] ?? '') . ' ' . ($membership['lastname'] ?? ''),
+                'student_id' => $membership['student_id'] ?? '',
+                'course' => $membership['course'] ?? '',
+                'year' => $yearText,
+                'status' => $membership['status'],
+                'joined_at' => $membership['joined_at'] ?? $membership['created_at'] ?? '',
+            ];
+        }
 
         return $this->response->setJSON(['success' => true, 'data' => $members]);
     }
@@ -506,24 +891,89 @@ class Organization extends BaseController
         }
 
         $action = $this->request->getPost('action'); // approve, reject, remove
-        $memberId = $this->request->getPost('member_id');
+        $membershipId = $this->request->getPost('member_id');
 
-        if (empty($action) || empty($memberId)) {
+        if (empty($action) || empty($membershipId)) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
         }
 
-        // TODO: Update in database based on action
+        // Get organization ID
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
 
-        $messages = [
-            'approve' => 'Member approved successfully',
-            'reject' => 'Member application rejected',
-            'remove' => 'Member removed from organization',
-        ];
+        $membershipModel = new StudentOrganizationMembershipModel();
+        $orgModel = new OrganizationModel();
 
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => $messages[$action] ?? 'Action completed'
-        ]);
+        // Get the membership record
+        $membership = $membershipModel->find($membershipId);
+        
+        if (!$membership) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Membership record not found']);
+        }
+
+        // Verify the membership belongs to this organization
+        if ($membership['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            switch ($action) {
+                case 'approve':
+                    // Update membership status to active
+                    $membershipModel->update($membershipId, ['status' => 'active']);
+                    
+                    // Update organization member count
+                    $activeMembers = $membershipModel->getActiveMemberships($orgId);
+                    $orgModel->update($orgId, ['current_members' => count($activeMembers)]);
+                    
+                    $message = 'Member approved successfully';
+                    break;
+
+                case 'reject':
+                    // Delete the membership record
+                    $membershipModel->delete($membershipId);
+                    $message = 'Member application rejected';
+                    break;
+
+                case 'remove':
+                    // Update membership status to inactive or delete
+                    $membershipModel->update($membershipId, ['status' => 'inactive']);
+                    
+                    // Update organization member count
+                    $activeMembers = $membershipModel->getActiveMemberships($orgId);
+                    $orgModel->update($orgId, ['current_members' => count($activeMembers)]);
+                    
+                    $message = 'Member removed from organization';
+                    break;
+
+                default:
+                    $db->transRollback();
+                    return $this->response->setJSON(['success' => false, 'message' => 'Invalid action']);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Database error occurred']);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message
+            ]);
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ]);
+        }
     }
 
     // ==========================================
@@ -587,36 +1037,82 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $data = [
-            'name' => $this->request->getPost('name'),
-            'description' => $this->request->getPost('description'),
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        // Prepare product data
+        $productData = [
+            'org_id' => $orgId,
+            'product_name' => $this->request->getPost('name'),
+            'description' => $this->request->getPost('description') ?: null,
             'price' => $this->request->getPost('price'),
-            'stock' => $this->request->getPost('stock'),
-            'sizes' => $this->request->getPost('sizes'),
+            'stock' => $this->request->getPost('stock') ? (int)$this->request->getPost('stock') : 0,
+            'sold' => 0,
+            'sizes' => $this->request->getPost('sizes') ? trim($this->request->getPost('sizes')) : null,
+            'status' => 'available',
         ];
 
-        // Validation
-        if (empty($data['name']) || empty($data['price'])) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Name and price are required']);
+        // Determine status based on stock
+        if ($productData['stock'] == 0) {
+            $productData['status'] = 'out_of_stock';
+        } elseif ($productData['stock'] <= 10) {
+            $productData['status'] = 'low_stock';
         }
 
         // Handle image upload
         $image = $this->request->getFile('image');
         if ($image && $image->isValid() && !$image->hasMoved()) {
+            $uploadPath = FCPATH . 'uploads/products/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
             $newName = $image->getRandomName();
-            $image->move(WRITEPATH . 'uploads/products/', $newName);
-            $data['image'] = $newName;
+            if ($image->move($uploadPath, $newName)) {
+                $productData['image'] = $newName;
+            }
         }
 
-        // TODO: Save to database
-        $data['id'] = rand(100, 999);
-        $data['sold'] = 0;
-        $data['status'] = 'available';
+        // Save to database
+        $productModel = new ProductModel();
+        if (!$productModel->insert($productData)) {
+            $errors = $productModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to create product',
+                'errors' => $errors
+            ]);
+        }
+
+        $productId = $productModel->getInsertID();
+        $createdProduct = $productModel->find($productId);
+
+        // Format response data
+        $status = 'available';
+        if ($createdProduct['stock'] == 0) {
+            $status = 'out_of_stock';
+        } elseif ($createdProduct['stock'] <= 10) {
+            $status = 'low_stock';
+        }
+
+        $responseData = [
+            'id' => $createdProduct['product_id'],
+            'name' => $createdProduct['product_name'],
+            'description' => $createdProduct['description'] ?? '',
+            'price' => (float)$createdProduct['price'],
+            'stock' => (int)$createdProduct['stock'],
+            'sold' => (int)($createdProduct['sold'] ?? 0),
+            'sizes' => $createdProduct['sizes'] ? explode(',', $createdProduct['sizes']) : null,
+            'image' => $createdProduct['image'] ?? null,
+            'status' => $status,
+        ];
 
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Product created successfully',
-            'data' => $data
+            'data' => $responseData
         ]);
     }
 
@@ -665,19 +1161,46 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
+        $orgId = $this->session->get('organization_id');
         $productId = $this->request->getPost('product_id');
         $newStock = $this->request->getPost('stock');
 
-        if (empty($productId) || !is_numeric($newStock)) {
+        if (!$orgId || !$productId || $newStock === null) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
         }
 
-        // TODO: Update in database
+        $productModel = new ProductModel();
+        $product = $productModel->find($productId);
+
+        // Verify product belongs to organization
+        if (!$product || $product['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Product not found or unauthorized']);
+        }
+
+        // Determine status based on new stock
+        $status = 'available';
+        if ($newStock == 0) {
+            $status = 'out_of_stock';
+        } elseif ($newStock <= 10) {
+            $status = 'low_stock';
+        }
+
+        // Update stock and status
+        if (!$productModel->update($productId, [
+            'stock' => (int)$newStock,
+            'status' => $status
+        ])) {
+            $errors = $productModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to update stock',
+                'errors' => $errors
+            ]);
+        }
 
         return $this->response->setJSON([
             'success' => true,
-            'message' => 'Stock updated successfully',
-            'new_stock' => $newStock
+            'message' => 'Stock updated successfully'
         ]);
     }
 

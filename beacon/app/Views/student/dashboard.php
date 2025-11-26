@@ -46,6 +46,10 @@
                         <i class="fas fa-store"></i>
                         <span>Shop</span>
                     </a>
+                    <a href="#forum" class="nav-link" data-section="forum">
+                        <i class="fas fa-comments"></i>
+                        <span>Forum</span>
+                    </a>
                 </nav>
 
                 <!-- Right Side Actions -->
@@ -225,6 +229,9 @@
                 <a href="#shop" class="mobile-nav-link" data-section="shop">
                     <i class="fas fa-store"></i> Shop
                 </a>
+                <a href="#forum" class="mobile-nav-link" data-section="forum">
+                    <i class="fas fa-comments"></i> Forum
+                </a>
                 <div class="mobile-nav-divider"></div>
                 <a href="#profile" class="mobile-nav-link" data-section="profile">
                     <i class="fas fa-user-edit"></i> Edit Profile
@@ -238,215 +245,427 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="content-area">
-                <!-- Overview Section -->
+                <!-- Overview Section - Facebook Style Feed -->
                 <section class="content-section active" id="overview">
-                    <div class="section-header">
-                        <div>
-                            <h1 class="section-title">Welcome back, <?= esc($profile['firstname'] ?? 'Student') ?>!</h1>
-                            <p class="section-subtitle">Here's what's happening in your campus community</p>
-                        </div>
-                        <div class="date-display">
-                            <i class="fas fa-calendar-day"></i>
-                            <span><?= date('l, F j, Y') ?></span>
-                        </div>
-                    </div>
-
-                    <!-- Stats Cards -->
-                    <div class="stats-grid">
-                        <div class="stat-card gradient-blue">
-                            <div class="stat-icon">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">5</span>
-                                <span class="stat-label">Events Joined</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                        <div class="stat-card gradient-purple">
-                            <div class="stat-icon">
-                                <i class="fas fa-building"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">3</span>
-                                <span class="stat-label">Organizations</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                        <div class="stat-card gradient-emerald">
-                            <div class="stat-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">₱650</span>
-                                <span class="stat-label">Total Paid</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                        <div class="stat-card gradient-amber">
-                            <div class="stat-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="stat-content">
-                                <span class="stat-value">₱850</span>
-                                <span class="stat-label">Pending</span>
-                            </div>
-                            <div class="stat-decoration"></div>
-                        </div>
-                    </div>
-
-                    <!-- Main Grid -->
-                    <div class="dashboard-grid">
-                        <!-- Upcoming Events -->
-                        <div class="card events-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
-                                <a href="#events" class="view-all-link" onclick="switchSection('events')">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <div class="event-list">
-                                    <div class="event-item">
-                                        <div class="event-date">
-                                            <span class="day">05</span>
-                                            <span class="month">DEC</span>
-                                        </div>
-                                        <div class="event-details">
-                                            <h4>Tech Innovation Summit 2025</h4>
-                                            <p><i class="fas fa-building"></i> Computer Science Society</p>
-                                            <p><i class="fas fa-map-marker-alt"></i> Main Auditorium</p>
-                                        </div>
-                                        <button class="btn-join" onclick="joinEvent(1)">Join</button>
+                    <div class="student-feed-layout">
+                        <!-- Left Sidebar -->
+                        <aside class="student-sidebar-left">
+                            <!-- Profile Card -->
+                            <div class="student-profile-card">
+                                <div class="student-cover">
+                                    <div class="student-cover-gradient"></div>
+                                </div>
+                                <div class="student-profile-info">
+                                    <div class="student-avatar-large">
+                                        <?php if(!empty($profile['photo'])): ?>
+                                            <img src="<?= $profile['photo'] ?>" alt="Profile">
+                                        <?php else: ?>
+                                            <div class="avatar-placeholder-lg">
+                                                <?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1) . substr($profile['lastname'] ?? 'T', 0, 1)) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                    <div class="event-item">
-                                        <div class="event-date">
-                                            <span class="day">10</span>
-                                            <span class="month">DEC</span>
-                                        </div>
-                                        <div class="event-details">
-                                            <h4>Business Plan Competition</h4>
-                                            <p><i class="fas fa-building"></i> Business Administration Club</p>
-                                            <p><i class="fas fa-map-marker-alt"></i> Conference Hall B</p>
-                                        </div>
-                                        <button class="btn-join" onclick="joinEvent(2)">Join</button>
+                                    <h2 class="student-name"><?= esc(($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? '')) ?></h2>
+                                    <span class="student-id"><?= session()->get('student_number') ?? 'Student' ?></span>
+                                    <p class="student-course">
+                                        <i class="fas fa-graduation-cap"></i>
+                                        <?= $profile['course'] ?? 'Bachelor of Science' ?>
+                                    </p>
+                                </div>
+                                <div class="student-stats-row">
+                                    <div class="student-stat">
+                                        <span class="sstat-num"><?= $eventCount ?? 0 ?></span>
+                                        <span class="sstat-text">EVENTS</span>
                                     </div>
-                                    <div class="event-item">
-                                        <div class="event-date">
-                                            <span class="day">15</span>
-                                            <span class="month">DEC</span>
-                                        </div>
-                                        <div class="event-details">
-                                            <h4>Environmental Awareness Week</h4>
-                                            <p><i class="fas fa-building"></i> Green Energy Initiative</p>
-                                            <p><i class="fas fa-map-marker-alt"></i> Campus Grounds</p>
-                                        </div>
-                                        <button class="btn-join free" onclick="joinEvent(3)">Free</button>
+                                    <div class="student-stat">
+                                        <span class="sstat-num"><?= $orgCount ?? 0 ?></span>
+                                        <span class="sstat-text">ORGS</span>
+                                    </div>
+                                    <div class="student-stat">
+                                        <span class="sstat-num">₱0</span>
+                                        <span class="sstat-text">PAID</span>
                                     </div>
                                 </div>
+                                <div class="student-profile-actions">
+                                    <a href="#profile" class="btn btn-outline-primary btn-sm" onclick="switchSection('profile')">
+                                        <i class="fas fa-user-edit"></i> Edit Profile
+                                    </a>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Recent Announcements -->
-                        <div class="card announcements-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-bullhorn"></i> Announcements</h3>
-                                <a href="#announcements" class="view-all-link" onclick="switchSection('announcements')">View All</a>
+                            <!-- My Organizations -->
+                            <div class="student-sidebar-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-users"></i> My Organizations</h4>
+                                <div class="my-org-list">
+                                    <?php if(!empty($allJoinedOrganizations)): ?>
+                                        <?php foreach($allJoinedOrganizations as $joinedOrg): ?>
+                                        <div class="my-org-item">
+                                            <div class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>"><?= esc(strtoupper(substr($joinedOrg['acronym'], 0, 2))) ?></div>
+                                            <div class="my-org-info">
+                                                <span class="my-org-name"><?= esc($joinedOrg['name']) ?></span>
+                                                <?php if($joinedOrg['status'] === 'pending'): ?>
+                                                <span class="my-org-status pending">Pending Approval</span>
+                                                <?php else: ?>
+                                                <span class="my-org-status active">Active Member</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="my-org-item">
+                                            <div class="my-org-info" style="width: 100%; text-align: center; padding: 1rem;">
+                                                <span style="color: var(--gray-500); font-size: 0.875rem;">No organizations joined yet</span>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <a href="#organizations" class="sidebar-view-all" onclick="switchSection('organizations')">
+                                    Explore Organizations <i class="fas fa-arrow-right"></i>
+                                </a>
                             </div>
-                            <div class="card-body">
-                                <div class="announcement-list">
-                                    <div class="announcement-item priority-high">
-                                        <div class="announcement-badge">Important</div>
-                                        <h4>Enrollment Period Extended</h4>
-                                        <p>The enrollment period for the 2nd semester has been extended until December 15, 2025.</p>
-                                        <div class="announcement-meta">
-                                            <span><i class="fas fa-user"></i> Registrar Office</span>
-                                            <span><i class="fas fa-clock"></i> 2 days ago</span>
+
+                            <!-- Upcoming Events -->
+                            <div class="student-sidebar-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h4>
+                                <div class="sidebar-events-list">
+                                    <?php if(!empty($upcomingEvents)): ?>
+                                        <?php foreach($upcomingEvents as $event): ?>
+                                        <div class="sidebar-event-item">
+                                            <div class="se-date-box">
+                                                <span class="se-day"><?= date('d', strtotime($event['date'])) ?></span>
+                                                <span class="se-month"><?= strtoupper(date('M', strtotime($event['date']))) ?></span>
+                                            </div>
+                                            <div class="se-details">
+                                                <span class="se-title"><?= esc($event['title']) ?></span>
+                                                <span class="se-org"><?= esc($event['org_name']) ?></span>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="sidebar-empty-state" style="padding: 1rem; text-align: center; color: var(--gray-500); font-size: 0.875rem;">
+                                            <?php if($hasJoinedOrg): ?>
+                                                No upcoming events from your organizations
+                                            <?php else: ?>
+                                                Join an organization to see upcoming events
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <a href="#events" class="sidebar-view-all" onclick="switchSection('events')">
+                                    View all events <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </aside>
+
+                        <!-- Main Feed -->
+                        <div class="student-feed-main">
+                            <!-- Welcome Banner -->
+                            <div class="welcome-banner">
+                                <div class="welcome-content">
+                                    <h1>Welcome back, <?= esc($profile['firstname'] ?? 'Student') ?>! 👋</h1>
+                                    <p>Here's what's happening in your campus community</p>
+                                </div>
+                                <div class="welcome-date">
+                                    <i class="fas fa-calendar-day"></i>
+                                    <?= date('l, F j, Y') ?>
+                                </div>
+                            </div>
+
+                            <?php if(!$hasJoinedOrg): ?>
+                            <!-- Join Organization Card (shown if student hasn't joined) -->
+                            <div class="feed-post join-org-card" id="joinOrgCard">
+                                <div class="join-org-content">
+                                    <div class="join-org-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="join-org-text">
+                                        <h3>Join an Organization</h3>
+                                        <p>Connect with like-minded students and be part of campus activities. Explore available organizations and find your community!</p>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="showAvailableOrganizations()">
+                                        <i class="fas fa-plus"></i> Browse Organizations
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Available Organizations in Feed (hidden by default) -->
+                            <div class="feed-organizations-container" id="availableOrgsContainer" style="display: none;">
+                                <div class="feed-post org-list-header">
+                                    <div class="org-list-header-content">
+                                        <h3><i class="fas fa-users"></i> Available Organizations</h3>
+                                        <p>Select an organization to join and start connecting with your campus community</p>
+                                        <button class="btn btn-outline btn-sm" onclick="hideAvailableOrganizations()">
+                                            <i class="fas fa-arrow-left"></i> Back
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <?php if(!empty($availableOrganizations)): ?>
+                                <div class="org-cards-grid">
+                                    <?php foreach($availableOrganizations as $org): ?>
+                                    <div class="feed-post org-card-feed">
+                                        <div class="org-card-feed-header">
+                                            <div class="org-card-feed-avatar">
+                                                <?= esc(strtoupper(substr($org['acronym'], 0, 2))) ?>
+                                            </div>
+                                            <div class="org-card-feed-info">
+                                                <h4><?= esc($org['name']) ?></h4>
+                                                <span class="org-card-feed-type"><?= esc($org['type']) ?></span>
+                                            </div>
+                                        </div>
+                                        <?php if(!empty($org['description'])): ?>
+                                        <p class="org-card-feed-description"><?= esc($org['description']) ?></p>
+                                        <?php endif; ?>
+                                        <div class="org-card-feed-footer">
+                                            <span class="org-card-feed-members">
+                                                <i class="fas fa-users"></i> <?= number_format($org['members']) ?> members
+                                            </span>
+                                            <button class="btn btn-primary btn-sm" onclick="joinOrg(<?= $org['id'] ?>)">
+                                                <i class="fas fa-plus"></i> Join
+                                            </button>
                                         </div>
                                     </div>
-                                    <div class="announcement-item">
-                                        <h4>New Library Hours</h4>
-                                        <p>Starting December 1, the library will be open 24/7 during examination week.</p>
-                                        <div class="announcement-meta">
-                                            <span><i class="fas fa-user"></i> Library Services</span>
-                                            <span><i class="fas fa-clock"></i> 5 days ago</span>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php else: ?>
+                                    <div class="feed-post empty-state">
+                                        <div class="empty-state-content">
+                                            <i class="fas fa-inbox"></i>
+                                            <h3>No Organizations Available</h3>
+                                            <p>There are no organizations available at the moment. Please check back later.</p>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php else: ?>
+                            <!-- Organization Posts (Announcements and Events) -->
+                            <?php 
+                            // Combine and sort posts by date
+                            $allPosts = [];
+                            
+                            // Add announcements
+                            foreach($organizationPosts['announcements'] as $announcement) {
+                                $allPosts[] = [
+                                    'type' => 'announcement',
+                                    'data' => $announcement,
+                                    'date' => strtotime($announcement['created_at'])
+                                ];
+                            }
+                            
+                            // Add events
+                            foreach($organizationPosts['events'] as $event) {
+                                $allPosts[] = [
+                                    'type' => 'event',
+                                    'data' => $event,
+                                    'date' => strtotime($event['created_at'] ?? $event['date'])
+                                ];
+                            }
+                            
+                            // Sort by date (newest first)
+                            usort($allPosts, function($a, $b) {
+                                return $b['date'] - $a['date'];
+                            });
+                            
+                            if(!empty($allPosts)):
+                                foreach($allPosts as $post):
+                                    if($post['type'] === 'announcement'):
+                                        $announcement = $post['data'];
+                            ?>
+                            <!-- Announcement Post -->
+                            <div class="feed-post announcement-post <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>">
+                                <div class="post-header">
+                                    <div class="post-author-avatar org">
+                                        <?= strtoupper(substr($announcement['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name"><?= esc($announcement['org_name'] ?? 'Organization') ?></span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($announcement['created_at'])) ?>
+                                            <?php if($announcement['priority'] === 'high'): ?>
+                                            <span class="post-badge important">Important</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <h3 class="post-title"><?= esc($announcement['title']) ?></h3>
+                                    <p class="post-text"><?= nl2br(esc($announcement['content'])) ?></p>
+                                </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                </div>
+                            </div>
+                            
+                            <?php 
+                                    elseif($post['type'] === 'event'):
+                                        $event = $post['data'];
+                            ?>
+                            <!-- Event Post -->
+                            <div class="feed-post event-post-card">
+                                <div class="post-header">
+                                    <div class="post-author-avatar org">
+                                        <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                    </div>
+                                    <div class="post-author-info">
+                                        <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?></span>
+                                        <span class="post-time">
+                                            <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($event['created_at'] ?? $event['date'])) ?>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="post-content">
+                                    <p class="post-text">🎉 New event from <?= esc($event['org_acronym'] ?? 'Organization') ?>!</p>
+                                </div>
+                                <div class="event-preview-card">
+                                    <div class="event-preview-banner">
+                                        <?php if(!empty($event['image'])): ?>
+                                            <img src="<?= base_url('uploads/events/' . $event['image']) ?>" alt="<?= esc($event['title']) ?>">
+                                        <?php endif; ?>
+                                        <div class="event-preview-overlay">
+                                            <div class="event-date-badge">
+                                                <span class="edb-day"><?= date('d', strtotime($event['date'])) ?></span>
+                                                <span class="edb-month"><?= strtoupper(date('M', strtotime($event['date']))) ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="event-preview-info">
+                                        <h3><?= esc($event['title']) ?></h3>
+                                        <p><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
+                                        <p><i class="fas fa-users"></i> <?= $event['attendees'] ?> going</p>
+                                        <div class="event-preview-actions">
+                                            <button class="btn btn-primary btn-sm" onclick="joinEvent(<?= $event['id'] ?>)">
+                                                <i class="fas fa-check"></i> Join Event
+                                            </button>
+                                            <button class="btn btn-outline btn-sm">
+                                                <i class="fas fa-star"></i> Interested
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- My Organizations -->
-                        <div class="card orgs-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-users"></i> My Organizations</h3>
-                                <a href="#organizations" class="view-all-link" onclick="switchSection('organizations')">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <div class="org-list">
-                                    <div class="org-item">
-                                        <div class="org-avatar">CSS</div>
-                                        <div class="org-details">
-                                            <h4>Computer Science Society</h4>
-                                            <p>Member since Sept 2024</p>
-                                        </div>
-                                        <span class="org-badge active">Active</span>
-                                    </div>
-                                    <div class="org-item">
-                                        <div class="org-avatar">TIH</div>
-                                        <div class="org-details">
-                                            <h4>Tech Innovation Hub</h4>
-                                            <p>Member since Oct 2024</p>
-                                        </div>
-                                        <span class="org-badge active">Active</span>
-                                    </div>
-                                    <div class="org-item pending">
-                                        <div class="org-avatar">GEI</div>
-                                        <div class="org-details">
-                                            <h4>Green Energy Initiative</h4>
-                                            <p>Application submitted</p>
-                                        </div>
-                                        <span class="org-badge pending">Pending</span>
-                                    </div>
+                                <div class="post-actions">
+                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
+                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
                                 </div>
                             </div>
+                            
+                            <?php 
+                                    endif;
+                                endforeach;
+                            else:
+                            ?>
+                            <!-- Empty State -->
+                            <div class="feed-post empty-feed">
+                                <div class="empty-feed-content">
+                                    <i class="fas fa-inbox"></i>
+                                    <h3>No Posts Yet</h3>
+                                    <p>Your organization hasn't posted anything yet. Check back later!</p>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php endif; ?>
                         </div>
 
-                        <!-- Pending Payments -->
-                        <div class="card payments-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-credit-card"></i> Pending Payments</h3>
-                                <a href="#payments" class="view-all-link" onclick="switchSection('payments')">View All</a>
-                            </div>
-                            <div class="card-body">
-                                <div class="payment-list">
-                                    <div class="payment-item">
-                                        <div class="payment-icon">
+                        <!-- Right Sidebar -->
+                        <aside class="student-sidebar-right">
+                            <!-- Pending Payments -->
+                            <div class="student-sidebar-card payments-sidebar">
+                                <div class="sidebar-header-flex">
+                                    <h4 class="sidebar-card-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
+                                    <span class="pending-count">2</span>
+                                </div>
+                                <div class="pending-payments-list">
+                                    <div class="pending-payment-item">
+                                        <div class="pp-icon">
                                             <i class="fas fa-tshirt"></i>
                                         </div>
-                                        <div class="payment-details">
-                                            <h4>CSS Official T-Shirt x2</h4>
-                                            <p>Due: Dec 1, 2025</p>
+                                        <div class="pp-info">
+                                            <span class="pp-name">CSS Official T-Shirt x2</span>
+                                            <span class="pp-due">Due: Dec 1, 2025</span>
                                         </div>
-                                        <div class="payment-amount">₱700.00</div>
-                                        <button class="btn-pay" onclick="initiatePayment(1)">Pay Now</button>
+                                        <span class="pp-amount">₱700</span>
                                     </div>
-                                    <div class="payment-item">
-                                        <div class="payment-icon">
+                                    <div class="pending-payment-item">
+                                        <div class="pp-icon">
                                             <i class="fas fa-ticket-alt"></i>
                                         </div>
-                                        <div class="payment-details">
-                                            <h4>Tech Summit Registration</h4>
-                                            <p>Due: Dec 3, 2025</p>
+                                        <div class="pp-info">
+                                            <span class="pp-name">Tech Summit Registration</span>
+                                            <span class="pp-due">Due: Dec 3, 2025</span>
                                         </div>
-                                        <div class="payment-amount">₱150.00</div>
-                                        <button class="btn-pay" onclick="initiatePayment(2)">Pay Now</button>
+                                        <span class="pp-amount">₱150</span>
                                     </div>
                                 </div>
-                                <div class="payment-total">
+                                <div class="pending-total">
                                     <span>Total Pending</span>
-                                    <span class="total-amount">₱850.00</span>
+                                    <span class="total-value">₱850</span>
+                                </div>
+                                <a href="#payments" class="btn btn-primary btn-block" onclick="switchSection('payments')">
+                                    <i class="fas fa-credit-card"></i> Pay Now
+                                </a>
+                            </div>
+
+                            <!-- Suggested Organizations -->
+                            <div class="student-sidebar-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-compass"></i> Suggested for You</h4>
+                                <div class="suggested-orgs-list">
+                                    <?php if(!empty($suggestedOrganizations)): ?>
+                                        <?php foreach($suggestedOrganizations as $sugOrg): ?>
+                                        <div class="suggested-org-item">
+                                            <div class="sug-org-avatar"><?= esc(strtoupper(substr($sugOrg['acronym'], 0, 2))) ?></div>
+                                            <div class="sug-org-info">
+                                                <span class="sug-org-name"><?= esc($sugOrg['name']) ?></span>
+                                                <span class="sug-org-members"><?= esc($sugOrg['members'] ?? 0) ?> members</span>
+                                            </div>
+                                            <?php if($sugOrg['is_member'] ?? false): ?>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="fas fa-check"></i> Member
+                                                </button>
+                                            <?php elseif($sugOrg['is_pending'] ?? false): ?>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="fas fa-clock"></i> Pending
+                                                </button>
+                                            <?php else: ?>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="joinOrg(<?= $sugOrg['id'] ?>)">
+                                                    Join
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="sidebar-empty-state" style="padding: 1rem; text-align: center; color: var(--gray-500); font-size: 0.875rem;">
+                                            No organizations available to join
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <a href="#organizations" class="sidebar-view-all" onclick="switchSection('organizations')">
+                                    See all organizations <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+
+                            <!-- Quick Links -->
+                            <div class="student-sidebar-card quick-links-card">
+                                <h4 class="sidebar-card-title"><i class="fas fa-link"></i> Quick Links</h4>
+                                <div class="quick-links-list">
+                                    <a href="#events" class="quick-link-item" onclick="switchSection('events')">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>Browse Events</span>
+                                    </a>
+                                    <a href="#shop" class="quick-link-item" onclick="switchSection('shop')">
+                                        <i class="fas fa-shopping-bag"></i>
+                                        <span>Shop Products</span>
+                                    </a>
+                                    <a href="#announcements" class="quick-link-item" onclick="switchSection('announcements')">
+                                        <i class="fas fa-bullhorn"></i>
+                                        <span>Announcements</span>
+                                    </a>
+                                    <a href="#payments" class="quick-link-item" onclick="switchSection('payments')">
+                                        <i class="fas fa-history"></i>
+                                        <span>Payment History</span>
+                                    </a>
                                 </div>
                             </div>
-                        </div>
+                        </aside>
                     </div>
                 </section>
 
@@ -467,116 +686,58 @@
                         </div>
                     </div>
                     <div class="events-grid" id="eventsGrid">
-                        <div class="event-card">
-                            <div class="event-card-header">
-                                <span class="event-tag">Technology</span>
-                                <span class="event-fee">₱150</span>
-                            </div>
-                            <div class="event-card-body">
-                                <h3>Tech Innovation Summit 2025</h3>
-                                <p>Join us for the annual tech summit featuring industry leaders and workshops.</p>
-                                <div class="event-info">
-                                    <div class="info-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>December 5, 2025</span>
+                        <?php if(!empty($allEvents)): ?>
+                            <?php foreach($allEvents as $event): ?>
+                            <div class="event-card">
+                                <div class="event-card-header">
+                                    <span class="event-tag"><?= esc($event['org_type']) ?></span>
+                                    <span class="event-fee free">Free</span>
+                                </div>
+                                <div class="event-card-body">
+                                    <h3><?= esc($event['title']) ?></h3>
+                                    <p><?= esc($event['description']) ?></p>
+                                    <div class="event-info">
+                                        <div class="info-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span><?= esc($event['date_formatted']) ?></span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="fas fa-clock"></i>
+                                            <span><?= esc($event['time']) ?></span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span><?= esc($event['location']) ?></span>
+                                        </div>
                                     </div>
-                                    <div class="info-item">
-                                        <i class="fas fa-clock"></i>
-                                        <span>9:00 AM</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Main Auditorium</span>
+                                    <div class="event-org">
+                                        <div class="org-avatar small"><?= esc(strtoupper(substr($event['org_acronym'], 0, 2))) ?></div>
+                                        <span><?= esc($event['org_name']) ?></span>
                                     </div>
                                 </div>
-                                <div class="event-org">
-                                    <div class="org-avatar small">CSS</div>
-                                    <span>Computer Science Society</span>
+                                <div class="event-card-footer">
+                                    <button class="btn-primary" onclick="joinEvent(<?= $event['id'] ?>)">
+                                        <i class="fas fa-plus"></i> Join Event
+                                    </button>
+                                    <button class="btn-secondary" onclick="viewEventDetails(<?= $event['id'] ?>)">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="event-card-footer">
-                                <button class="btn-primary" onclick="joinEvent(1)">
-                                    <i class="fas fa-plus"></i> Join Event
-                                </button>
-                                <button class="btn-secondary" onclick="viewEventDetails(1)">
-                                    <i class="fas fa-info-circle"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="event-card">
-                            <div class="event-card-header">
-                                <span class="event-tag">Business</span>
-                                <span class="event-fee free">Free</span>
-                            </div>
-                            <div class="event-card-body">
-                                <h3>Business Plan Competition</h3>
-                                <p>Showcase your entrepreneurial skills and win exciting prizes.</p>
-                                <div class="event-info">
-                                    <div class="info-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>December 10, 2025</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <i class="fas fa-clock"></i>
-                                        <span>1:00 PM</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Conference Hall B</span>
-                                    </div>
-                                </div>
-                                <div class="event-org">
-                                    <div class="org-avatar small">BAC</div>
-                                    <span>Business Administration Club</span>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-events-state" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                                <div style="color: var(--gray-500);">
+                                    <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                                    <h3 style="margin-bottom: 0.5rem;">No Events Available</h3>
+                                    <?php if($hasJoinedOrg): ?>
+                                        <p>Your organizations haven't posted any events yet. Check back later!</p>
+                                    <?php else: ?>
+                                        <p>Join an organization to see events from your campus community.</p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <div class="event-card-footer">
-                                <button class="btn-primary" onclick="joinEvent(2)">
-                                    <i class="fas fa-plus"></i> Join Event
-                                </button>
-                                <button class="btn-secondary" onclick="viewEventDetails(2)">
-                                    <i class="fas fa-info-circle"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="event-card">
-                            <div class="event-card-header">
-                                <span class="event-tag">Environmental</span>
-                                <span class="event-fee free">Free</span>
-                            </div>
-                            <div class="event-card-body">
-                                <h3>Environmental Awareness Week</h3>
-                                <p>A week-long celebration promoting environmental consciousness.</p>
-                                <div class="event-info">
-                                    <div class="info-item">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>December 15, 2025</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <i class="fas fa-clock"></i>
-                                        <span>8:00 AM</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Campus Grounds</span>
-                                    </div>
-                                </div>
-                                <div class="event-org">
-                                    <div class="org-avatar small">GEI</div>
-                                    <span>Green Energy Initiative</span>
-                                </div>
-                            </div>
-                            <div class="event-card-footer">
-                                <button class="btn-primary" onclick="joinEvent(3)">
-                                    <i class="fas fa-plus"></i> Join Event
-                                </button>
-                                <button class="btn-secondary" onclick="viewEventDetails(3)">
-                                    <i class="fas fa-info-circle"></i>
-                                </button>
-                            </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </section>
 
@@ -589,68 +750,46 @@
                         </div>
                     </div>
                     <div class="announcements-list-full">
-                        <div class="announcement-card priority-high">
-                            <div class="announcement-card-header">
-                                <span class="priority-badge high"><i class="fas fa-exclamation-circle"></i> Important</span>
-                                <span class="announcement-date">November 20, 2025</span>
-                            </div>
-                            <h3>Enrollment Period Extended</h3>
-                            <p>The enrollment period for the 2nd semester has been extended until December 15, 2025. Please ensure all requirements are submitted before the deadline.</p>
-                            <div class="announcement-footer">
-                                <span class="announcement-author"><i class="fas fa-user-tie"></i> Registrar Office</span>
-                                <button class="btn-comment" onclick="toggleComments(1)">
-                                    <i class="fas fa-comment"></i> 5 Comments
-                                </button>
-                            </div>
-                            <div class="comments-section" id="comments-1">
-                                <div class="comment-input-wrapper">
-                                    <input type="text" class="comment-input" placeholder="Write a comment...">
-                                    <button class="btn-send" onclick="postComment(1, 'announcement')"><i class="fas fa-paper-plane"></i></button>
+                        <?php if(!empty($allAnnouncements)): ?>
+                            <?php foreach($allAnnouncements as $announcement): ?>
+                            <div class="announcement-card <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>">
+                                <div class="announcement-card-header">
+                                    <?php if($announcement['priority'] === 'high'): ?>
+                                    <span class="priority-badge high"><i class="fas fa-exclamation-circle"></i> Important</span>
+                                    <?php else: ?>
+                                    <span class="priority-badge medium"><i class="fas fa-info-circle"></i> Info</span>
+                                    <?php endif; ?>
+                                    <span class="announcement-date"><?= date('F j, Y', strtotime($announcement['created_at'])) ?></span>
+                                </div>
+                                <h3><?= esc($announcement['title']) ?></h3>
+                                <p><?= nl2br(esc($announcement['content'])) ?></p>
+                                <div class="announcement-footer">
+                                    <span class="announcement-author"><i class="fas fa-building"></i> <?= esc($announcement['org_name']) ?></span>
+                                    <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>)">
+                                        <i class="fas fa-comment"></i> Comment
+                                    </button>
+                                </div>
+                                <div class="comments-section" id="comments-<?= $announcement['id'] ?>">
+                                    <div class="comment-input-wrapper">
+                                        <input type="text" class="comment-input" placeholder="Write a comment...">
+                                        <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="announcement-card">
-                            <div class="announcement-card-header">
-                                <span class="priority-badge medium"><i class="fas fa-info-circle"></i> Info</span>
-                                <span class="announcement-date">November 18, 2025</span>
-                            </div>
-                            <h3>New Library Hours</h3>
-                            <p>Starting December 1, the library will be open 24/7 during examination week. Take advantage of extended hours for your study sessions.</p>
-                            <div class="announcement-footer">
-                                <span class="announcement-author"><i class="fas fa-user-tie"></i> Library Services</span>
-                                <button class="btn-comment" onclick="toggleComments(2)">
-                                    <i class="fas fa-comment"></i> 3 Comments
-                                </button>
-                            </div>
-                            <div class="comments-section" id="comments-2">
-                                <div class="comment-input-wrapper">
-                                    <input type="text" class="comment-input" placeholder="Write a comment...">
-                                    <button class="btn-send" onclick="postComment(2, 'announcement')"><i class="fas fa-paper-plane"></i></button>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-announcements-state" style="text-align: center; padding: 3rem;">
+                                <div style="color: var(--gray-500);">
+                                    <i class="fas fa-bullhorn" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                                    <h3 style="margin-bottom: 0.5rem;">No Announcements Available</h3>
+                                    <?php if($hasJoinedOrg): ?>
+                                        <p>Your organizations haven't posted any announcements yet. Check back later!</p>
+                                    <?php else: ?>
+                                        <p>Join an organization to see announcements from your campus community.</p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="announcement-card">
-                            <div class="announcement-card-header">
-                                <span class="priority-badge medium"><i class="fas fa-info-circle"></i> Info</span>
-                                <span class="announcement-date">November 15, 2025</span>
-                            </div>
-                            <h3>Holiday Schedule Announcement</h3>
-                            <p>Classes will be suspended from December 23, 2025 to January 2, 2026 for the holiday break. Wishing everyone a safe and happy holiday season!</p>
-                            <div class="announcement-footer">
-                                <span class="announcement-author"><i class="fas fa-user-tie"></i> Academic Affairs</span>
-                                <button class="btn-comment" onclick="toggleComments(3)">
-                                    <i class="fas fa-comment"></i> 8 Comments
-                                </button>
-                            </div>
-                            <div class="comments-section" id="comments-3">
-                                <div class="comment-input-wrapper">
-                                    <input type="text" class="comment-input" placeholder="Write a comment...">
-                                    <button class="btn-send" onclick="postComment(3, 'announcement')"><i class="fas fa-paper-plane"></i></button>
-                                </div>
-                            </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </section>
 
@@ -672,117 +811,65 @@
                         </div>
                     </div>
                     <div class="orgs-grid">
-                        <div class="org-card">
-                            <div class="org-card-header">
-                                <div class="org-avatar large">CSS</div>
-                                <div class="org-card-info">
-                                    <h3>Computer Science Society</h3>
-                                    <span class="org-type">Academic</span>
+                        <?php if(!empty($availableOrganizations)): ?>
+                            <?php foreach($availableOrganizations as $org): ?>
+                            <div class="org-card">
+                                <div class="org-card-header">
+                                    <div class="org-avatar large"><?= esc(strtoupper(substr($org['acronym'], 0, 2))) ?></div>
+                                    <div class="org-card-info">
+                                        <h3><?= esc($org['name']) ?></h3>
+                                        <span class="org-type"><?= esc($org['type']) ?></span>
+                                    </div>
+                                    <?php if($org['is_member'] ?? false): ?>
+                                    <span class="member-badge"><i class="fas fa-check"></i> Member</span>
+                                    <?php elseif($org['is_pending'] ?? false): ?>
+                                    <span class="pending-badge"><i class="fas fa-clock"></i> Pending</span>
+                                    <?php endif; ?>
                                 </div>
-                                <span class="member-badge"><i class="fas fa-check"></i> Member</span>
-                            </div>
-                            <p class="org-description">A community of tech enthusiasts and future IT professionals dedicated to advancing technology skills.</p>
-                            <div class="org-stats">
-                                <div class="stat">
-                                    <i class="fas fa-users"></i>
-                                    <span>156 Members</span>
+                                <?php if(!empty($org['description'])): ?>
+                                <p class="org-description"><?= esc($org['description']) ?></p>
+                                <?php else: ?>
+                                <p class="org-description">Join this organization to connect with like-minded students and participate in campus activities.</p>
+                                <?php endif; ?>
+                                <div class="org-stats">
+                                    <div class="stat">
+                                        <i class="fas fa-users"></i>
+                                        <span><?= number_format($org['members']) ?> Members</span>
+                                    </div>
+                                    <div class="stat">
+                                        <i class="fas fa-calendar"></i>
+                                        <span><?= $org['event_count'] ?? 0 ?> Events</span>
+                                    </div>
                                 </div>
-                                <div class="stat">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>12 Events</span>
-                                </div>
-                            </div>
-                            <div class="org-card-footer">
-                                <button class="btn-secondary" onclick="viewOrgDetails(1)">
-                                    <i class="fas fa-eye"></i> View Details
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="org-card">
-                            <div class="org-card-header">
-                                <div class="org-avatar large">BAC</div>
-                                <div class="org-card-info">
-                                    <h3>Business Administration Club</h3>
-                                    <span class="org-type">Academic</span>
-                                </div>
-                            </div>
-                            <p class="org-description">Developing future business leaders and entrepreneurs through workshops and networking events.</p>
-                            <div class="org-stats">
-                                <div class="stat">
-                                    <i class="fas fa-users"></i>
-                                    <span>203 Members</span>
-                                </div>
-                                <div class="stat">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>8 Events</span>
-                                </div>
-                            </div>
-                            <div class="org-card-footer">
-                                <button class="btn-primary" onclick="joinOrg(2)">
-                                    <i class="fas fa-plus"></i> Join Organization
-                                </button>
-                                <button class="btn-secondary" onclick="viewOrgDetails(2)">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="org-card">
-                            <div class="org-card-header">
-                                <div class="org-avatar large">GEI</div>
-                                <div class="org-card-info">
-                                    <h3>Green Energy Initiative</h3>
-                                    <span class="org-type">Environmental</span>
-                                </div>
-                                <span class="pending-badge"><i class="fas fa-clock"></i> Pending</span>
-                            </div>
-                            <p class="org-description">Promoting environmental awareness and sustainability through campus-wide initiatives.</p>
-                            <div class="org-stats">
-                                <div class="stat">
-                                    <i class="fas fa-users"></i>
-                                    <span>89 Members</span>
-                                </div>
-                                <div class="stat">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>6 Events</span>
+                                <div class="org-card-footer">
+                                    <?php if($org['is_member'] ?? false): ?>
+                                        <button class="btn-secondary" onclick="viewOrgDetails(<?= $org['id'] ?>)">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </button>
+                                    <?php elseif($org['is_pending'] ?? false): ?>
+                                        <button class="btn-secondary" onclick="viewOrgDetails(<?= $org['id'] ?>)">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="btn-primary" onclick="joinOrg(<?= $org['id'] ?>)">
+                                            <i class="fas fa-plus"></i> Join Organization
+                                        </button>
+                                        <button class="btn-secondary" onclick="viewOrgDetails(<?= $org['id'] ?>)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <div class="org-card-footer">
-                                <button class="btn-secondary" onclick="viewOrgDetails(3)">
-                                    <i class="fas fa-eye"></i> View Details
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="org-card">
-                            <div class="org-card-header">
-                                <div class="org-avatar large">SC</div>
-                                <div class="org-card-info">
-                                    <h3>Student Council</h3>
-                                    <span class="org-type">Student Government</span>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="org-card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                                <div style="color: var(--gray-500);">
+                                    <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                                    <h3 style="margin-bottom: 0.5rem;">No Organizations Available</h3>
+                                    <p>There are no active organizations at the moment. Please check back later.</p>
                                 </div>
                             </div>
-                            <p class="org-description">The official student government representing the voice of all students in campus affairs.</p>
-                            <div class="org-stats">
-                                <div class="stat">
-                                    <i class="fas fa-users"></i>
-                                    <span>45 Members</span>
-                                </div>
-                                <div class="stat">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>20 Events</span>
-                                </div>
-                            </div>
-                            <div class="org-card-footer">
-                                <button class="btn-primary" onclick="joinOrg(4)">
-                                    <i class="fas fa-plus"></i> Join Organization
-                                </button>
-                                <button class="btn-secondary" onclick="viewOrgDetails(4)">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </section>
 
@@ -803,75 +890,63 @@
                         </div>
                     </div>
                     <div class="products-grid">
-                        <div class="product-card">
-                            <div class="product-image">
-                                <i class="fas fa-tshirt"></i>
-                                <span class="product-badge">Popular</span>
-                            </div>
-                            <div class="product-body">
-                                <h3>CSS Official T-Shirt</h3>
-                                <p class="product-org">Computer Science Society</p>
-                                <p class="product-desc">Official CSS t-shirt with embroidered logo.</p>
-                                <div class="product-footer">
-                                    <span class="product-price">₱350.00</span>
-                                    <button class="btn-add-cart" onclick="addToCart(1)">
-                                        <i class="fas fa-cart-plus"></i>
-                                    </button>
+                        <?php if(!empty($allProducts)): ?>
+                            <?php foreach($allProducts as $product): ?>
+                            <div class="product-card">
+                                <div class="product-image <?= $product['image'] ? '' : 'default' ?>">
+                                    <?php if($product['image']): ?>
+                                        <img src="<?= base_url('uploads/products/' . esc($product['image'])) ?>" alt="<?= esc($product['name']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                                    <?php else: ?>
+                                        <i class="fas fa-box"></i>
+                                    <?php endif; ?>
+                                    <?php if($product['status'] === 'low_stock'): ?>
+                                        <span class="product-badge">Low Stock</span>
+                                    <?php elseif($product['sold'] > 10): ?>
+                                        <span class="product-badge">Popular</span>
+                                    <?php endif; ?>
+                                    <?php if($product['status'] === 'out_of_stock'): ?>
+                                        <span class="product-badge out-of-stock">Out of Stock</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="product-body">
+                                    <h3><?= esc($product['name']) ?></h3>
+                                    <p class="product-org"><?= esc($product['org_name']) ?></p>
+                                    <p class="product-desc"><?= esc($product['description'] ?: 'No description available.') ?></p>
+                                    <?php if($product['sizes']): ?>
+                                        <p class="product-sizes" style="font-size: 0.75rem; color: var(--gray-500); margin: 0.25rem 0;">
+                                            <i class="fas fa-ruler"></i> Sizes: <?= esc($product['sizes']) ?>
+                                        </p>
+                                    <?php endif; ?>
+                                    <div class="product-footer">
+                                        <span class="product-price">₱<?= esc($product['price']) ?></span>
+                                        <button class="btn-add-cart" 
+                                                onclick="addToCart(<?= $product['id'] ?>)" 
+                                                <?= $product['status'] === 'out_of_stock' || $product['stock'] <= 0 ? 'disabled' : '' ?>
+                                                title="<?= $product['status'] === 'out_of_stock' || $product['stock'] <= 0 ? 'Out of Stock' : 'Add to Cart' ?>">
+                                            <i class="fas fa-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                    <?php if($product['stock'] > 0 && $product['stock'] <= 10): ?>
+                                        <p style="font-size: 0.75rem; color: var(--warning); margin-top: 0.5rem;">
+                                            <i class="fas fa-exclamation-triangle"></i> Only <?= $product['stock'] ?> left in stock
+                                        </p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="product-card">
-                            <div class="product-image hoodie">
-                                <i class="fas fa-tshirt"></i>
-                            </div>
-                            <div class="product-body">
-                                <h3>BAC Hoodie</h3>
-                                <p class="product-org">Business Administration Club</p>
-                                <p class="product-desc">Premium quality hoodie with BAC branding.</p>
-                                <div class="product-footer">
-                                    <span class="product-price">₱650.00</span>
-                                    <button class="btn-add-cart" onclick="addToCart(2)">
-                                        <i class="fas fa-cart-plus"></i>
-                                    </button>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-products-state" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                                <div style="color: var(--gray-500);">
+                                    <i class="fas fa-shopping-bag" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                                    <h3 style="margin-bottom: 0.5rem;">No Products Available</h3>
+                                    <?php if($hasJoinedOrg): ?>
+                                        <p>Your organizations haven't added any products yet. Check back later!</p>
+                                    <?php else: ?>
+                                        <p>Join an organization to see products from your campus community.</p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="product-card">
-                            <div class="product-image eco">
-                                <i class="fas fa-shopping-bag"></i>
-                                <span class="product-badge eco">Eco-Friendly</span>
-                            </div>
-                            <div class="product-body">
-                                <h3>GEI Eco-Bag</h3>
-                                <p class="product-org">Green Energy Initiative</p>
-                                <p class="product-desc">Reusable eco-bag made from recycled materials.</p>
-                                <div class="product-footer">
-                                    <span class="product-price">₱150.00</span>
-                                    <button class="btn-add-cart" onclick="addToCart(3)">
-                                        <i class="fas fa-cart-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="product-card">
-                            <div class="product-image lanyard">
-                                <i class="fas fa-id-badge"></i>
-                            </div>
-                            <div class="product-body">
-                                <h3>CSPC Lanyard</h3>
-                                <p class="product-org">Student Council</p>
-                                <p class="product-desc">Official CSPC lanyard for ID holders.</p>
-                                <div class="product-footer">
-                                    <span class="product-price">₱75.00</span>
-                                    <button class="btn-add-cart" onclick="addToCart(4)">
-                                        <i class="fas fa-cart-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </section>
 
@@ -983,6 +1058,327 @@
                     </div>
                 </section>
 
+                <!-- Forum Section -->
+                <section class="content-section" id="forum">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Community Forum</h1>
+                            <p class="section-subtitle">Discuss with fellow students and organizations</p>
+                        </div>
+                        <button class="btn-primary" onclick="openCreatePostModal()">
+                            <i class="fas fa-plus"></i> New Post
+                        </button>
+                    </div>
+
+                    <div class="forum-layout">
+                        <!-- Forum Sidebar -->
+                        <aside class="forum-sidebar">
+                            <div class="forum-categories-card">
+                                <h4 class="forum-sidebar-title"><i class="fas fa-folder"></i> Categories</h4>
+                                <ul class="forum-category-list">
+                                    <li class="forum-category-item active" data-category="all">
+                                        <i class="fas fa-globe"></i>
+                                        <span>All Posts</span>
+                                        <span class="category-count">24</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="general">
+                                        <i class="fas fa-comment-dots"></i>
+                                        <span>General Discussion</span>
+                                        <span class="category-count">8</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="events">
+                                        <i class="fas fa-calendar-star"></i>
+                                        <span>Events & Activities</span>
+                                        <span class="category-count">5</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="academics">
+                                        <i class="fas fa-graduation-cap"></i>
+                                        <span>Academics</span>
+                                        <span class="category-count">6</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="marketplace">
+                                        <i class="fas fa-store"></i>
+                                        <span>Buy & Sell</span>
+                                        <span class="category-count">3</span>
+                                    </li>
+                                    <li class="forum-category-item" data-category="help">
+                                        <i class="fas fa-question-circle"></i>
+                                        <span>Help & Support</span>
+                                        <span class="category-count">2</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="forum-trending-card">
+                                <h4 class="forum-sidebar-title"><i class="fas fa-fire"></i> Trending Topics</h4>
+                                <ul class="trending-list">
+                                    <li class="trending-item">
+                                        <span class="trending-rank">#1</span>
+                                        <span class="trending-topic">University Week 2025</span>
+                                    </li>
+                                    <li class="trending-item">
+                                        <span class="trending-rank">#2</span>
+                                        <span class="trending-topic">Enrollment Tips</span>
+                                    </li>
+                                    <li class="trending-item">
+                                        <span class="trending-rank">#3</span>
+                                        <span class="trending-topic">Org Recruitment</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </aside>
+
+                        <!-- Forum Main Content -->
+                        <div class="forum-main">
+                            <!-- Create Post Box -->
+                            <div class="forum-create-box">
+                                <div class="create-box-avatar">
+                                    <?php if(session()->get('photo')): ?>
+                                        <img src="<?= esc(session()->get('photo')) ?>" alt="Profile">
+                                    <?php else: ?>
+                                        <div class="avatar-placeholder-sm"><?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1)) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <input type="text" class="create-box-input" placeholder="What's on your mind, <?= esc($profile['firstname'] ?? 'Student') ?>?" onclick="openCreatePostModal()">
+                                <button class="create-box-btn" onclick="openCreatePostModal()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+
+                            <!-- Forum Filter Bar -->
+                            <div class="forum-filter-bar">
+                                <div class="forum-tabs">
+                                    <button class="forum-tab active" data-filter="latest">
+                                        <i class="fas fa-clock"></i> Latest
+                                    </button>
+                                    <button class="forum-tab" data-filter="popular">
+                                        <i class="fas fa-fire-alt"></i> Popular
+                                    </button>
+                                    <button class="forum-tab" data-filter="following">
+                                        <i class="fas fa-user-friends"></i> Following
+                                    </button>
+                                </div>
+                                <div class="forum-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" placeholder="Search posts...">
+                                </div>
+                            </div>
+
+                            <!-- Forum Posts -->
+                            <div class="forum-posts-list">
+                                <!-- Post 1 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote" onclick="votePost(1, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">42</span>
+                                        <button class="vote-btn downvote" onclick="votePost(1, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Tech+Society&background=6366f1&color=fff" alt="Tech Society" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Tech Society</span>
+                                                    <span class="author-badge org">Organization</span>
+                                                </div>
+                                                <span class="post-time">2 hours ago • <span class="post-category">Events & Activities</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">🚀 Hackathon 2025 Registration Now Open!</h3>
+                                        <p class="post-body">
+                                            Join us for the biggest coding event of the year! This 48-hour hackathon will challenge you to build innovative solutions. 
+                                            Great prizes await including ₱50,000 for the winning team! Registration ends Nov 30.
+                                        </p>
+                                        <div class="post-tags">
+                                            <span class="post-tag">hackathon</span>
+                                            <span class="post-tag">coding</span>
+                                            <span class="post-tag">competition</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>15 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Save</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <!-- Post 2 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote active" onclick="votePost(2, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">28</span>
+                                        <button class="vote-btn downvote" onclick="votePost(2, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Juan+Cruz&background=10b981&color=fff" alt="Juan Cruz" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Juan Cruz</span>
+                                                    <span class="author-badge student">Student</span>
+                                                </div>
+                                                <span class="post-time">5 hours ago • <span class="post-category">General Discussion</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">Best study spots on campus?</h3>
+                                        <p class="post-body">
+                                            Hey everyone! I'm looking for quiet places to study on campus. The library is always full during exam season. 
+                                            Any recommendations? I prefer places with good WiFi and outlets for charging.
+                                        </p>
+                                        <div class="post-tags">
+                                            <span class="post-tag">study</span>
+                                            <span class="post-tag">campus</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>23 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Save</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <!-- Post 3 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote" onclick="votePost(3, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">19</span>
+                                        <button class="vote-btn downvote" onclick="votePost(3, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Arts+Club&background=f59e0b&color=fff" alt="Arts Club" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Arts & Culture Club</span>
+                                                    <span class="author-badge org">Organization</span>
+                                                </div>
+                                                <span class="post-time">Yesterday • <span class="post-category">Events & Activities</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">🎨 Art Exhibition: "Expressions" - Free Entry!</h3>
+                                        <p class="post-body">
+                                            We're excited to announce our annual art exhibition featuring works from talented student artists! 
+                                            The exhibition runs from Dec 1-5 at the University Gallery. Free admission for all students.
+                                        </p>
+                                        <div class="post-image">
+                                            <img src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600" alt="Art Exhibition">
+                                        </div>
+                                        <div class="post-tags">
+                                            <span class="post-tag">art</span>
+                                            <span class="post-tag">exhibition</span>
+                                            <span class="post-tag">free</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>8 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn saved">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Saved</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <!-- Post 4 -->
+                                <article class="forum-post">
+                                    <div class="post-vote">
+                                        <button class="vote-btn upvote" onclick="votePost(4, 'up')">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-count">12</span>
+                                        <button class="vote-btn downvote" onclick="votePost(4, 'down')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-header">
+                                            <img src="https://ui-avatars.com/api/?name=Maria+Santos&background=ec4899&color=fff" alt="Maria Santos" class="post-author-img">
+                                            <div class="post-meta">
+                                                <div class="post-author">
+                                                    <span class="author-name">Maria Santos</span>
+                                                    <span class="author-badge student">Student</span>
+                                                </div>
+                                                <span class="post-time">Yesterday • <span class="post-category">Buy & Sell</span></span>
+                                            </div>
+                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
+                                        <h3 class="post-title">Selling: Calculus Textbook (10th Edition) - ₱500</h3>
+                                        <p class="post-body">
+                                            Selling my calculus textbook, barely used! Still in great condition with no highlights or markings. 
+                                            Perfect for Math 101 students. Meet up at the library. DM me if interested!
+                                        </p>
+                                        <div class="post-tags">
+                                            <span class="post-tag">selling</span>
+                                            <span class="post-tag">textbook</span>
+                                            <span class="post-tag">math</span>
+                                        </div>
+                                        <div class="post-footer">
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-comment"></i>
+                                                <span>5 Comments</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-share"></i>
+                                                <span>Share</span>
+                                            </button>
+                                            <button class="post-action-btn">
+                                                <i class="fas fa-bookmark"></i>
+                                                <span>Save</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+                            </div>
+
+                            <!-- Load More -->
+                            <div class="forum-load-more">
+                                <button class="btn-load-more">
+                                    <i class="fas fa-sync-alt"></i> Load More Posts
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Profile Section -->
                 <section class="content-section" id="profile">
                     <div class="section-header">
@@ -1084,6 +1480,47 @@
 
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Join Organization Modal -->
+    <div class="modal-overlay" id="joinOrgModal" style="display: none;">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3><i class="fas fa-users"></i> Available Organizations</h3>
+                <button class="modal-close" onclick="closeJoinOrgModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="organizations-list" id="organizationsList">
+                    <?php if(!empty($availableOrganizations)): ?>
+                        <?php foreach($availableOrganizations as $org): ?>
+                        <div class="org-card-modal">
+                            <div class="org-card-header">
+                                <div class="org-card-avatar"><?= esc(strtoupper($org['acronym'])) ?></div>
+                                <div class="org-card-info">
+                                    <h4><?= esc($org['name']) ?></h4>
+                                    <span class="org-card-type"><?= esc($org['type']) ?></span>
+                                </div>
+                            </div>
+                            <p class="org-card-description"><?= esc($org['description']) ?></p>
+                            <div class="org-card-footer">
+                                <span class="org-members"><i class="fas fa-users"></i> <?= number_format($org['members']) ?> members</span>
+                                <button class="btn btn-primary" onclick="joinOrg(<?= $org['id'] ?>)">
+                                    <i class="fas fa-plus"></i> Join Organization
+                                </button>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No organizations available at the moment.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const baseUrl = '<?= base_url() ?>';
@@ -1419,6 +1856,58 @@
         }
 
         // Organization Functions
+        function showAvailableOrganizations() {
+            const joinCard = document.getElementById('joinOrgCard');
+            const orgsContainer = document.getElementById('availableOrgsContainer');
+            
+            if (joinCard && orgsContainer) {
+                joinCard.style.display = 'none';
+                orgsContainer.style.display = 'block';
+                // Smooth scroll to organizations
+                setTimeout(() => {
+                    orgsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        }
+
+        function hideAvailableOrganizations() {
+            const joinCard = document.getElementById('joinOrgCard');
+            const orgsContainer = document.getElementById('availableOrgsContainer');
+            
+            if (joinCard && orgsContainer) {
+                orgsContainer.style.display = 'none';
+                joinCard.style.display = 'block';
+                // Smooth scroll back to join card
+                setTimeout(() => {
+                    joinCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        }
+
+        function openJoinOrgModal() {
+            const modal = document.getElementById('joinOrgModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+            }
+        }
+
+        function closeJoinOrgModal() {
+            const modal = document.getElementById('joinOrgModal');
+            if (modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        }
+
+        // Close modal when clicking overlay
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('joinOrgModal');
+            if (e.target === modal) {
+                closeJoinOrgModal();
+            }
+        });
+
         function joinOrg(orgId) {
             fetch(baseUrl + 'student/organizations/join', {
                 method: 'POST',
@@ -1430,7 +1919,21 @@
             })
             .then(response => response.json())
             .then(data => {
-                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeJoinOrgModal();
+                    hideAvailableOrganizations();
+                    // Reload page to update dashboard
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showToast(data.message || 'Failed to join organization', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
             });
         }
 
