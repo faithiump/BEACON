@@ -101,6 +101,8 @@ $routes->post('student/profile/edit', 'Student::editUserInfo');
 $routes->post('student/updateProfile', 'Student::updateProfile');
 $routes->post('student/uploadPhoto', 'Student::uploadPhoto');
 $routes->post('student/comment', 'Student::comment');
+$routes->post('student/likePost', 'Student::likePost');
+$routes->get('student/getComments', 'Student::getComments');
 $routes->get('student/search', 'Student::search');
 $routes->get('student/notifications', 'Student::getNotifications');
 $routes->post('student/notifications/read', 'Student::markNotificationRead');

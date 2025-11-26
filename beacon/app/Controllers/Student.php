@@ -162,8 +162,22 @@ class Student extends BaseController
                     }
                     
                     foreach ($announcements as $announcement) {
+                        $announcementId = $announcement['announcement_id'] ?? $announcement['id'];
+                        
+                        // Get reaction counts and user's reaction
+                        $likeModel = new \App\Models\PostLikeModel();
+                        $reactionCounts = $likeModel->getReactionCounts('announcement', $announcementId);
+                        $userReaction = null;
+                        if ($student) {
+                            $userReaction = $likeModel->getUserReaction($student['id'], 'announcement', $announcementId);
+                        }
+                        
+                        // Get comment count
+                        $commentModel = new \App\Models\PostCommentModel();
+                        $commentCount = $commentModel->getCommentCount('announcement', $announcementId);
+                        
                         $announcementData = [
-                            'id' => $announcement['announcement_id'] ?? $announcement['id'],
+                            'id' => $announcementId,
                             'title' => $announcement['title'],
                             'content' => $announcement['content'],
                             'priority' => $announcement['priority'] ?? 'normal',
@@ -172,7 +186,12 @@ class Student extends BaseController
                             'org_id' => $orgId,
                             'org_name' => $org['organization_name'] ?? '',
                             'org_acronym' => $org['organization_acronym'] ?? '',
-                            'org_photo' => $orgPhotoForAnnouncement
+                            'org_photo' => $orgPhotoForAnnouncement,
+                            'reaction_counts' => $reactionCounts,
+                            'user_reaction' => $userReaction,
+                            'like_count' => $reactionCounts['total'], // For backward compatibility
+                            'is_liked' => $userReaction !== null, // For backward compatibility
+                            'comment_count' => $commentCount
                         ];
                         
                         $organizationPosts['announcements'][] = $announcementData;
@@ -206,6 +225,8 @@ class Student extends BaseController
                     }
                     
                     foreach ($events as $event) {
+                        $eventId = $event['event_id'] ?? $event['id'];
+                        
                         // Format time
                         $timeFormatted = $event['time'];
                         if (strpos($timeFormatted, ':') !== false) {
@@ -220,8 +241,20 @@ class Student extends BaseController
                         // Format date for display
                         $eventDate = date('F j, Y', strtotime($event['date']));
                         
+                        // Get reaction counts and user's reaction
+                        $likeModel = new \App\Models\PostLikeModel();
+                        $reactionCounts = $likeModel->getReactionCounts('event', $eventId);
+                        $userReaction = null;
+                        if ($student) {
+                            $userReaction = $likeModel->getUserReaction($student['id'], 'event', $eventId);
+                        }
+                        
+                        // Get comment count
+                        $commentModel = new \App\Models\PostCommentModel();
+                        $commentCount = $commentModel->getCommentCount('event', $eventId);
+                        
                         $eventData = [
-                            'id' => $event['event_id'] ?? $event['id'],
+                            'id' => $eventId,
                             'title' => $event['event_name'] ?? $event['title'],
                             'description' => $event['description'],
                             'date' => $event['date'],
@@ -237,7 +270,12 @@ class Student extends BaseController
                             'org_name' => $org['organization_name'] ?? '',
                             'org_acronym' => $org['organization_acronym'] ?? '',
                             'org_type' => ucfirst(str_replace('_', ' ', $event['org_type'] ?? 'academic')),
-                            'org_photo' => $orgPhotoForEvent
+                            'org_photo' => $orgPhotoForEvent,
+                            'reaction_counts' => $reactionCounts,
+                            'user_reaction' => $userReaction,
+                            'like_count' => $reactionCounts['total'], // For backward compatibility
+                            'is_liked' => $userReaction !== null, // For backward compatibility
+                            'comment_count' => $commentCount
                         ];
                         
                         $organizationPosts['events'][] = $eventData;
@@ -806,37 +844,167 @@ class Student extends BaseController
     {
         $authCheck = $this->checkAuth();
         if ($authCheck !== true) {
-            return $authCheck;
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
         }
 
-        if ($this->request->getMethod() !== 'post') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
-        }
-
-        $content = $this->request->getPost('content');
-        $type = $this->request->getPost('type'); // event, announcement, organization
-        $targetId = $this->request->getPost('target_id');
+        $content = trim($this->request->getPost('content'));
+        $postType = $this->request->getPost('type'); // 'announcement' or 'event'
+        $postId = $this->request->getPost('target_id');
 
         if (empty($content)) {
             return $this->response->setJSON(['success' => false, 'message' => 'Comment cannot be empty']);
         }
 
-        // Mock comment creation - implement actual database logic
-        $comment = [
-            'id' => rand(1000, 9999),
-            'content' => $content,
-            'user_id' => session()->get('user_id'),
-            'user_name' => session()->get('name'),
-            'type' => $type,
-            'target_id' => $targetId,
-            'created_at' => date('Y-m-d H:i:s')
-        ];
+        if (!in_array($postType, ['announcement', 'event'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid post type']);
+        }
 
-        return $this->response->setJSON([
-            'success' => true, 
-            'message' => 'Comment posted successfully!',
-            'comment' => $comment
-        ]);
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        try {
+            $commentModel = new \App\Models\PostCommentModel();
+            
+            $commentId = $commentModel->insert([
+                'student_id' => $student['id'],
+                'post_type' => $postType,
+                'post_id' => $postId,
+                'content' => $content
+            ]);
+
+            if ($commentId) {
+                // Get the created comment with user info
+                $comment = $commentModel->select('post_comments.*, user_profiles.firstname, user_profiles.lastname, students.student_id')
+                                        ->join('students', 'students.id = post_comments.student_id')
+                                        ->join('user_profiles', 'user_profiles.user_id = students.user_id')
+                                        ->find($commentId);
+
+                $profile = $this->userProfileModel->where('user_id', $userId)->first();
+                $userName = ($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? '');
+
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'message' => 'Comment posted successfully!',
+                    'comment' => [
+                        'id' => $commentId,
+                        'content' => $content,
+                        'user_name' => trim($userName),
+                        'student_id' => $comment['student_id'] ?? '',
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]
+                ]);
+            }
+
+            return $this->response->setJSON(['success' => false, 'message' => 'Failed to post comment']);
+        } catch (\Exception $e) {
+            log_message('error', 'Comment error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'An error occurred while posting comment']);
+        }
+    }
+
+    public function likePost()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $postType = $this->request->getPost('type'); // 'announcement' or 'event'
+        $postId = $this->request->getPost('post_id');
+        $reactionType = $this->request->getPost('reaction_type') ?? 'like'; // Default to 'like'
+
+        if (empty($postType) || !in_array($postType, ['announcement', 'event'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid post type']);
+        }
+
+        if (empty($postId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Post ID is required']);
+        }
+
+        // Ensure post_id is an integer
+        $postId = (int)$postId;
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        try {
+            $likeModel = new \App\Models\PostLikeModel();
+            
+            // Validate student ID
+            if (empty($student['id'])) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student ID not found']);
+            }
+            
+            // Use setReaction for Facebook-style reactions
+            $result = $likeModel->setReaction($student['id'], $postType, $postId, $reactionType);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'reacted' => $result['reacted'],
+                'reaction_type' => $result['reaction_type'],
+                'counts' => $result['counts'],
+                'message' => $result['reacted'] ? 'Reaction added!' : 'Reaction removed!'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Like error: ' . $e->getMessage());
+            log_message('error', 'Like error trace: ' . $e->getTraceAsString());
+            $errorMessage = 'An error occurred while reacting to post: ' . $e->getMessage();
+            // Check if it's a table doesn't exist error
+            if (strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'Table') !== false) {
+                $errorMessage = 'Database table not found. Please run the SQL script to create post_likes table.';
+            }
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => $errorMessage
+            ]);
+        }
+    }
+
+    public function getComments()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $postType = $this->request->getGet('type');
+        $postId = $this->request->getGet('post_id');
+
+        if (!in_array($postType, ['announcement', 'event'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid post type']);
+        }
+
+        try {
+            $commentModel = new \App\Models\PostCommentModel();
+            $comments = $commentModel->getComments($postType, $postId);
+
+            $formattedComments = [];
+            foreach ($comments as $comment) {
+                $formattedComments[] = [
+                    'id' => $comment['id'],
+                    'content' => $comment['content'],
+                    'user_name' => trim(($comment['firstname'] ?? '') . ' ' . ($comment['lastname'] ?? '')),
+                    'student_id' => $comment['student_id'] ?? '',
+                    'created_at' => $comment['created_at']
+                ];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'comments' => $formattedComments
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Get comments error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'An error occurred while fetching comments']);
+        }
     }
 
     /**

@@ -499,8 +499,76 @@
                                     <p class="post-text"><?= nl2br(esc($announcement['content'])) ?></p>
                                 </div>
                                 <div class="post-actions">
-                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
-                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <div class="reaction-wrapper" data-post-type="announcement" data-post-id="<?= $announcement['id'] ?>">
+                                        <button class="post-action reaction-btn <?= ($announcement['user_reaction'] ?? null) ? 'reacted reaction-' . ($announcement['user_reaction'] ?? '') : '' ?>" 
+                                                onmouseenter="showReactionPicker(this)" 
+                                                onmouseleave="hideReactionPicker(this)"
+                                                onclick="quickReact('announcement', <?= $announcement['id'] ?>, this, '<?= $announcement['user_reaction'] ?? '' ?>')">
+                                            <span class="reaction-icon">
+                                                <?php 
+                                                $userReaction = $announcement['user_reaction'] ?? null;
+                                                $reactionCounts = $announcement['reaction_counts'] ?? ['total' => 0];
+                                                if ($userReaction):
+                                                    $icons = [
+                                                        'like' => '👍',
+                                                        'love' => '❤️',
+                                                        'care' => '🥰',
+                                                        'haha' => '😂',
+                                                        'wow' => '😮',
+                                                        'sad' => '😢',
+                                                        'angry' => '😠'
+                                                    ];
+                                                    echo $icons[$userReaction] ?? '👍';
+                                                else:
+                                                    echo '👍';
+                                                endif;
+                                                ?>
+                                            </span>
+                                            <span class="reaction-text">
+                                                <?php
+                                                if ($userReaction):
+                                                    $labels = [
+                                                        'like' => 'Like',
+                                                        'love' => 'Love',
+                                                        'care' => 'Care',
+                                                        'haha' => 'Haha',
+                                                        'wow' => 'Wow',
+                                                        'sad' => 'Sad',
+                                                        'angry' => 'Angry'
+                                                    ];
+                                                    echo $labels[$userReaction] ?? 'Like';
+                                                else:
+                                                    echo 'Like';
+                                                endif;
+                                                ?>
+                                            </span>
+                                            <?php if($reactionCounts['total'] > 0): ?>
+                                            <span class="reaction-count"><?= $reactionCounts['total'] ?></span>
+                                            <?php endif; ?>
+                                        </button>
+                                        <div class="reaction-picker" style="display: none;">
+                                            <div class="reaction-option" data-reaction="like" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'like', this)">👍 Like</div>
+                                            <div class="reaction-option" data-reaction="love" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'love', this)">❤️ Love</div>
+                                            <div class="reaction-option" data-reaction="care" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'care', this)">🥰 Care</div>
+                                            <div class="reaction-option" data-reaction="haha" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'haha', this)">😂 Haha</div>
+                                            <div class="reaction-option" data-reaction="wow" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'wow', this)">😮 Wow</div>
+                                            <div class="reaction-option" data-reaction="sad" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'sad', this)">😢 Sad</div>
+                                            <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠 Angry</div>
+                                        </div>
+                                    </div>
+                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')">
+                                        <i class="far fa-comment"></i> Comment
+                                        <?php if(($announcement['comment_count'] ?? 0) > 0): ?>
+                                        <span class="comment-count"><?= $announcement['comment_count'] ?></span>
+                                        <?php endif; ?>
+                                    </button>
+                                </div>
+                                <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
+                                    <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
+                                    <div class="comment-input-wrapper">
+                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
+                                        <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -557,8 +625,97 @@
                                     </div>
                                 </div>
                                 <div class="post-actions">
-                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
-                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <div class="reaction-wrapper" data-post-type="event" data-post-id="<?= $event['id'] ?>">
+                                        <button class="post-action reaction-btn <?= ($event['user_reaction'] ?? null) ? 'reacted reaction-' . ($event['user_reaction'] ?? '') : '' ?>" 
+                                                onmouseenter="showReactionPicker(this)" 
+                                                onmouseleave="hideReactionPicker(this)"
+                                                onclick="quickReact('event', <?= $event['id'] ?>, this, '<?= $event['user_reaction'] ?? '' ?>')">
+                                            <span class="reaction-icon">
+                                                <?php 
+                                                $userReaction = $event['user_reaction'] ?? null;
+                                                $reactionCounts = $event['reaction_counts'] ?? ['total' => 0];
+                                                if ($userReaction):
+                                                    $icons = [
+                                                        'like' => '👍',
+                                                        'love' => '❤️',
+                                                        'care' => '🥰',
+                                                        'haha' => '😂',
+                                                        'wow' => '😮',
+                                                        'sad' => '😢',
+                                                        'angry' => '😠'
+                                                    ];
+                                                    echo $icons[$userReaction] ?? '👍';
+                                                else:
+                                                    echo '👍';
+                                                endif;
+                                                ?>
+                                            </span>
+                                            <span class="reaction-text">
+                                                <?php
+                                                if ($userReaction):
+                                                    $labels = [
+                                                        'like' => 'Like',
+                                                        'love' => 'Love',
+                                                        'care' => 'Care',
+                                                        'haha' => 'Haha',
+                                                        'wow' => 'Wow',
+                                                        'sad' => 'Sad',
+                                                        'angry' => 'Angry'
+                                                    ];
+                                                    echo $labels[$userReaction] ?? 'Like';
+                                                else:
+                                                    echo 'Like';
+                                                endif;
+                                                ?>
+                                            </span>
+                                            <?php if($reactionCounts['total'] > 0): ?>
+                                            <span class="reaction-count"><?= $reactionCounts['total'] ?></span>
+                                            <?php endif; ?>
+                                        </button>
+                                        <div class="reaction-picker" style="display: none;">
+                                            <div class="reaction-option" data-reaction="like" onclick="setReaction('event', <?= $event['id'] ?>, 'like', this)">
+                                                <span>👍</span>
+                                                <span class="reaction-label">Like</span>
+                                            </div>
+                                            <div class="reaction-option" data-reaction="love" onclick="setReaction('event', <?= $event['id'] ?>, 'love', this)">
+                                                <span>❤️</span>
+                                                <span class="reaction-label">Love</span>
+                                            </div>
+                                            <div class="reaction-option" data-reaction="care" onclick="setReaction('event', <?= $event['id'] ?>, 'care', this)">
+                                                <span>🥰</span>
+                                                <span class="reaction-label">Care</span>
+                                            </div>
+                                            <div class="reaction-option" data-reaction="haha" onclick="setReaction('event', <?= $event['id'] ?>, 'haha', this)">
+                                                <span>😂</span>
+                                                <span class="reaction-label">Haha</span>
+                                            </div>
+                                            <div class="reaction-option" data-reaction="wow" onclick="setReaction('event', <?= $event['id'] ?>, 'wow', this)">
+                                                <span>😮</span>
+                                                <span class="reaction-label">Wow</span>
+                                            </div>
+                                            <div class="reaction-option" data-reaction="sad" onclick="setReaction('event', <?= $event['id'] ?>, 'sad', this)">
+                                                <span>😢</span>
+                                                <span class="reaction-label">Sad</span>
+                                            </div>
+                                            <div class="reaction-option" data-reaction="angry" onclick="setReaction('event', <?= $event['id'] ?>, 'angry', this)">
+                                                <span>😠</span>
+                                                <span class="reaction-label">Angry</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $event['id'] ?>, 'event')">
+                                        <i class="far fa-comment"></i> Comment
+                                        <?php if(($event['comment_count'] ?? 0) > 0): ?>
+                                        <span class="comment-count"><?= $event['comment_count'] ?></span>
+                                        <?php endif; ?>
+                                    </button>
+                                </div>
+                                <div class="comments-section" id="comments-event-<?= $event['id'] ?>" style="display: none;">
+                                    <div class="comments-list" id="comments-list-event-<?= $event['id'] ?>"></div>
+                                    <div class="comment-input-wrapper">
+                                        <input type="text" class="comment-input" id="comment-input-event-<?= $event['id'] ?>" placeholder="Write a comment...">
+                                        <button class="btn-send" onclick="postComment(<?= $event['id'] ?>, 'event')"><i class="fas fa-paper-plane"></i></button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -786,13 +943,61 @@
                                 <p><?= nl2br(esc($announcement['content'])) ?></p>
                                 <div class="announcement-footer">
                                     <a href="<?= base_url('student/organization/' . $announcement['org_id']) ?>" class="announcement-author" style="text-decoration: none; color: inherit; cursor: pointer;"><i class="fas fa-building"></i> <?= esc($announcement['org_name']) ?></a>
-                                    <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>)">
-                                        <i class="fas fa-comment"></i> Comment
-                                    </button>
+                                    <div style="display: flex; gap: 1rem; align-items: center;">
+                                        <div class="reaction-wrapper" data-post-type="announcement" data-post-id="<?= $announcement['id'] ?>" style="position: relative;">
+                                            <button class="btn-comment reaction-btn <?= ($announcement['user_reaction'] ?? null) ? 'reacted reaction-' . ($announcement['user_reaction'] ?? '') : '' ?>" 
+                                                    onmouseenter="showReactionPicker(this)" 
+                                                    onmouseleave="hideReactionPicker(this)"
+                                                    onclick="quickReact('announcement', <?= $announcement['id'] ?>, this, '<?= $announcement['user_reaction'] ?? '' ?>')"
+                                                    style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                                                <span class="reaction-icon">
+                                                    <?php 
+                                                    $userReaction = $announcement['user_reaction'] ?? null;
+                                                    $reactionCounts = $announcement['reaction_counts'] ?? ['total' => 0];
+                                                    if ($userReaction):
+                                                        $icons = ['like' => '👍', 'love' => '❤️', 'care' => '🥰', 'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😠'];
+                                                        echo $icons[$userReaction] ?? '👍';
+                                                    else:
+                                                        echo '👍';
+                                                    endif;
+                                                    ?>
+                                                </span>
+                                                <span class="reaction-text">
+                                                    <?php
+                                                    if ($userReaction):
+                                                        $labels = ['like' => 'Like', 'love' => 'Love', 'care' => 'Care', 'haha' => 'Haha', 'wow' => 'Wow', 'sad' => 'Sad', 'angry' => 'Angry'];
+                                                        echo $labels[$userReaction] ?? 'Like';
+                                                    else:
+                                                        echo 'Like';
+                                                    endif;
+                                                    ?>
+                                                </span>
+                                                <?php if($reactionCounts['total'] > 0): ?>
+                                                <span class="reaction-count"><?= $reactionCounts['total'] ?></span>
+                                                <?php endif; ?>
+                                            </button>
+                                            <div class="reaction-picker" style="display: none;">
+                                                <div class="reaction-option" data-reaction="like" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'like', this)">👍 Like</div>
+                                                <div class="reaction-option" data-reaction="love" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'love', this)">❤️ Love</div>
+                                                <div class="reaction-option" data-reaction="care" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'care', this)">🥰 Care</div>
+                                                <div class="reaction-option" data-reaction="haha" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'haha', this)">😂 Haha</div>
+                                                <div class="reaction-option" data-reaction="wow" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'wow', this)">😮 Wow</div>
+                                                <div class="reaction-option" data-reaction="sad" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'sad', this)">😢 Sad</div>
+                                                <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠 Angry</div>
+                                            </div>
+                                        </div>
+                                        <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                                            <i class="fas fa-comment"></i> Comment
+                                            <?php if(($announcement['comment_count'] ?? 0) > 0): ?>
+                                            <span class="comment-count"><?= $announcement['comment_count'] ?></span>
+                                            <?php endif; ?>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="comments-section" id="comments-<?= $announcement['id'] ?>">
+                                <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
+                                    <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" placeholder="Write a comment...">
+                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
                                         <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
@@ -2129,13 +2334,80 @@
         }
 
         // Comment Functions
-        function toggleComments(id) {
-            const commentsSection = document.getElementById(`comments-${id}`);
-            commentsSection.classList.toggle('open');
+        function toggleComments(postId, postType) {
+            const commentsSection = document.getElementById(`comments-${postType}-${postId}`);
+            const commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+            
+            if (commentsSection.style.display === 'none' || !commentsSection.style.display) {
+                commentsSection.style.display = 'block';
+                loadComments(postId, postType);
+            } else {
+                commentsSection.style.display = 'none';
+            }
         }
 
-        function postComment(targetId, type) {
-            const input = document.querySelector(`#comments-${targetId} .comment-input`);
+        function loadComments(postId, postType) {
+            const commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+            if (!commentsList) return;
+            
+            fetch(baseUrl + `student/getComments?type=${postType}&post_id=${postId}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    commentsList.innerHTML = '';
+                    if (data.comments.length === 0) {
+                        commentsList.innerHTML = '<p style="padding: 1rem; color: #64748b; text-align: center; font-size: 0.875rem;">No comments yet. Be the first to comment!</p>';
+                    } else {
+                        data.comments.forEach(comment => {
+                            const commentDiv = document.createElement('div');
+                            commentDiv.className = 'comment-item';
+                            commentDiv.style.cssText = 'padding: 0.75rem; border-bottom: 1px solid #e2e8f0;';
+                            commentDiv.innerHTML = `
+                                <div style="display: flex; gap: 0.75rem;">
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.875rem; flex-shrink: 0;">
+                                        ${(comment.user_name || 'User').charAt(0).toUpperCase()}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 0.25rem;">${comment.user_name || 'User'}</div>
+                                        <div style="color: #475569; font-size: 0.875rem; margin-bottom: 0.25rem;">${comment.content}</div>
+                                        <div style="color: #94a3b8; font-size: 0.75rem;">${formatTime(comment.created_at)}</div>
+                                    </div>
+                                </div>
+                            `;
+                            commentsList.appendChild(commentDiv);
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading comments:', error);
+            });
+        }
+
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        function postComment(postId, postType) {
+            const input = document.getElementById(`comment-input-${postType}-${postId}`);
+            if (!input) return;
+            
             const content = input.value.trim();
             
             if (!content) {
@@ -2149,14 +2421,164 @@
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: `content=${encodeURIComponent(content)}&type=${type}&target_id=${targetId}`
+                body: `content=${encodeURIComponent(content)}&type=${postType}&target_id=${postId}`
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     showToast(data.message, 'success');
                     input.value = '';
+                    loadComments(postId, postType);
+                    // Update comment count
+                    const commentBtn = document.querySelector(`.comment-btn[onclick*="${postId}"]`);
+                    if (commentBtn) {
+                        const countSpan = commentBtn.querySelector('.comment-count');
+                        const currentCount = countSpan ? parseInt(countSpan.textContent) || 0 : 0;
+                        if (countSpan) {
+                            countSpan.textContent = currentCount + 1;
+                        } else {
+                            const newCount = document.createElement('span');
+                            newCount.className = 'comment-count';
+                            newCount.textContent = currentCount + 1;
+                            commentBtn.appendChild(newCount);
+                        }
+                    }
+                } else {
+                    showToast(data.message || 'Failed to post comment', 'error');
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while posting comment', 'error');
+            });
+        }
+
+        // Reaction functions
+        const reactionIcons = {
+            'like': '👍',
+            'love': '❤️',
+            'care': '🥰',
+            'haha': '😂',
+            'wow': '😮',
+            'sad': '😢',
+            'angry': '😠'
+        };
+        
+        const reactionLabels = {
+            'like': 'Like',
+            'love': 'Love',
+            'care': 'Care',
+            'haha': 'Haha',
+            'wow': 'Wow',
+            'sad': 'Sad',
+            'angry': 'Angry'
+        };
+
+        function showReactionPicker(button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            if (wrapper) {
+                const picker = wrapper.querySelector('.reaction-picker');
+                if (picker) {
+                    picker.style.display = 'flex';
+                }
+            }
+        }
+
+        function hideReactionPicker(button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            if (wrapper) {
+                const picker = wrapper.querySelector('.reaction-picker');
+                if (picker) {
+                    // Delay hiding to allow clicking on reactions
+                    setTimeout(() => {
+                        if (!picker.matches(':hover') && !button.matches(':hover')) {
+                            picker.style.display = 'none';
+                        }
+                    }, 200);
+                }
+            }
+        }
+
+        function quickReact(postType, postId, button, currentReaction) {
+            // If already reacted, remove reaction. Otherwise, add like reaction
+            if (currentReaction) {
+                setReaction(postType, postId, 'like', button); // Toggle off
+            } else {
+                setReaction(postType, postId, 'like', button);
+            }
+        }
+
+        function setReaction(postType, postId, reactionType, button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            const reactionIcon = wrapper ? wrapper.querySelector('.reaction-icon') : null;
+            const reactionText = wrapper ? wrapper.querySelector('.reaction-text') : null;
+            const reactionCount = wrapper ? wrapper.querySelector('.reaction-count') : null;
+            
+            fetch(baseUrl + 'student/likePost', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `type=${postType}&post_id=${postId}&reaction_type=${reactionType}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update button appearance
+                    if (data.reacted && data.reaction_type) {
+                        // User reacted
+                        button.classList.add('reacted', 'reaction-' + data.reaction_type);
+                        button.classList.remove('reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
+                        button.classList.add('reaction-' + data.reaction_type);
+                        
+                        if (reactionIcon) {
+                            reactionIcon.textContent = reactionIcons[data.reaction_type] || '👍';
+                        }
+                        if (reactionText) {
+                            reactionText.textContent = reactionLabels[data.reaction_type] || 'Like';
+                        }
+                    } else {
+                        // User removed reaction
+                        button.classList.remove('reacted', 'reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
+                        
+                        if (reactionIcon) {
+                            reactionIcon.textContent = '👍';
+                        }
+                        if (reactionText) {
+                            reactionText.textContent = 'Like';
+                        }
+                    }
+                    
+                    // Update count
+                    const totalCount = data.counts ? data.counts.total : 0;
+                    if (totalCount > 0) {
+                        if (reactionCount) {
+                            reactionCount.textContent = totalCount;
+                        } else {
+                            const newCount = document.createElement('span');
+                            newCount.className = 'reaction-count';
+                            newCount.textContent = totalCount;
+                            button.appendChild(newCount);
+                        }
+                    } else {
+                        if (reactionCount) {
+                            reactionCount.remove();
+                        }
+                    }
+                    
+                    // Hide picker
+                    const picker = wrapper ? wrapper.querySelector('.reaction-picker') : null;
+                    if (picker) {
+                        picker.style.display = 'none';
+                    }
+                } else {
+                    showToast(data.message || 'Failed to react to post', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while reacting to post', 'error');
             });
         }
 
@@ -2317,5 +2739,216 @@
             updateCombinedBadge();
         });
     </script>
+
+    <style>
+        /* Reaction Picker Styles */
+        .reaction-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .reaction-btn {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .reaction-btn:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .reaction-btn.reacted {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .reaction-btn.reaction-love {
+            color: #ef4444;
+        }
+
+        .reaction-btn.reaction-care {
+            color: #f59e0b;
+        }
+
+        .reaction-btn.reaction-haha {
+            color: #f59e0b;
+        }
+
+        .reaction-btn.reaction-wow {
+            color: #f59e0b;
+        }
+
+        .reaction-btn.reaction-sad {
+            color: #3b82f6;
+        }
+
+        .reaction-btn.reaction-angry {
+            color: #ef4444;
+        }
+
+        .reaction-icon {
+            font-size: 1.1em;
+            margin-right: 0.25rem;
+        }
+
+        .reaction-text {
+            font-size: 0.875rem;
+        }
+
+        .reaction-count {
+            margin-left: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .reaction-picker {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 30px;
+            padding: 0.5rem 0.35rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            gap: 0.15rem;
+            z-index: 1000;
+            margin-bottom: 0.75rem;
+            animation: slideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .reaction-option {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.9rem;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            padding: 0.3rem;
+        }
+
+        .reaction-option:hover {
+            transform: scale(1.25) translateY(-3px);
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .reaction-option::before {
+            content: attr(data-reaction);
+            position: absolute;
+            bottom: calc(100% + 0.6rem);
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-transform: capitalize;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .reaction-option:hover::before {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .reaction-option::after {
+            content: '';
+            position: absolute;
+            bottom: calc(100% - 0.2rem);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #1e293b;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .reaction-option:hover::after {
+            opacity: 1;
+        }
+
+        .reaction-option[data-reaction="like"]:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .reaction-option[data-reaction="love"]:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .reaction-option[data-reaction="care"]:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .reaction-option[data-reaction="haha"]:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .reaction-option[data-reaction="wow"]:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .reaction-option[data-reaction="sad"]:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .reaction-option[data-reaction="angry"]:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .reaction-label {
+            font-size: 0.65rem;
+            color: #475569;
+            margin-top: 0.15rem;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1;
+            letter-spacing: 0.2px;
+            transition: color 0.2s ease;
+        }
+
+        .reaction-option:hover .reaction-label {
+            color: #1e293b;
+        }
+
+        .reaction-option span:first-child {
+            font-size: 1.9rem;
+            line-height: 1;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            transition: filter 0.3s ease;
+        }
+
+        .reaction-option:hover span:first-child {
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+        }
+    </style>
 </body>
 </html>
