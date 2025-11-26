@@ -59,6 +59,16 @@ class Student extends BaseController
         $profile = $this->userProfileModel->where('user_id', $userId)->first();
         $user = $this->userModel->find($userId);
         
+        // Get photo from user_photos table
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        $userPhoto = $userPhotoModel->where('user_id', $userId)->first();
+        $photoUrl = null;
+        if ($userPhoto && !empty($userPhoto['photo_path'])) {
+            $photoUrl = base_url($userPhoto['photo_path']);
+            // Update session with photo from database
+            session()->set('photo', $photoUrl);
+        }
+        
         // Get address data if exists
         $address = null;
         if ($profile && !empty($profile['address_id'])) {
@@ -96,12 +106,24 @@ class Student extends BaseController
                 $orgIds = [];
                 
                 // Build joined organizations list and collect org IDs
+                $userPhotoModel = new \App\Models\UserPhotoModel();
                 foreach ($memberships as $membership) {
+                    // Get organization photo from user_photos table
+                    $org = $orgModel->find($membership['org_id']);
+                    $orgPhoto = null;
+                    if ($org && !empty($org['user_id'])) {
+                        $orgUserPhoto = $userPhotoModel->where('user_id', $org['user_id'])->first();
+                        if ($orgUserPhoto && !empty($orgUserPhoto['photo_path'])) {
+                            $orgPhoto = base_url($orgUserPhoto['photo_path']);
+                        }
+                    }
+                    
                     $joinedOrganizations[] = [
                         'id' => $membership['org_id'],
                         'name' => $membership['organization_name'],
                         'acronym' => $membership['organization_acronym'],
-                        'status' => $membership['status']
+                        'status' => $membership['status'],
+                        'photo' => $orgPhoto
                     ];
                     $orgIds[] = $membership['org_id'];
                 }
@@ -114,6 +136,15 @@ class Student extends BaseController
                     // Get organization info for each announcement
                     $org = $orgModel->find($orgId);
                     
+                    // Get organization photo
+                    $orgPhotoForAnnouncement = null;
+                    if ($org && !empty($org['user_id'])) {
+                        $orgUserPhotoForAnnouncement = $userPhotoModel->where('user_id', $org['user_id'])->first();
+                        if ($orgUserPhotoForAnnouncement && !empty($orgUserPhotoForAnnouncement['photo_path'])) {
+                            $orgPhotoForAnnouncement = base_url($orgUserPhotoForAnnouncement['photo_path']);
+                        }
+                    }
+                    
                     foreach ($announcements as $announcement) {
                         $announcementData = [
                             'id' => $announcement['announcement_id'] ?? $announcement['id'],
@@ -125,6 +156,7 @@ class Student extends BaseController
                             'org_id' => $orgId,
                             'org_name' => $org['organization_name'] ?? '',
                             'org_acronym' => $org['organization_acronym'] ?? '',
+                            'org_photo' => $orgPhotoForAnnouncement
                         ];
                         
                         $organizationPosts['announcements'][] = $announcementData;
@@ -146,6 +178,15 @@ class Student extends BaseController
                     
                     // Get organization info for each event
                     $org = $orgModel->find($orgId);
+                    
+                    // Get organization photo for events
+                    $orgPhotoForEvent = null;
+                    if ($org && !empty($org['user_id'])) {
+                        $orgUserPhotoForEvent = $userPhotoModel->where('user_id', $org['user_id'])->first();
+                        if ($orgUserPhotoForEvent && !empty($orgUserPhotoForEvent['photo_path'])) {
+                            $orgPhotoForEvent = base_url($orgUserPhotoForEvent['photo_path']);
+                        }
+                    }
                     
                     foreach ($events as $event) {
                         // Format time
@@ -179,6 +220,7 @@ class Student extends BaseController
                             'org_name' => $org['organization_name'] ?? '',
                             'org_acronym' => $org['organization_acronym'] ?? '',
                             'org_type' => ucfirst(str_replace('_', ' ', $event['org_type'] ?? 'academic')),
+                            'org_photo' => $orgPhotoForEvent
                         ];
                         
                         $organizationPosts['events'][] = $eventData;
@@ -259,6 +301,9 @@ class Student extends BaseController
             }
         }
         
+        // Get organization photos from user_photos table
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        
         foreach ($organizations as $org) {
             // Get event count for this organization
             $orgEvents = $eventModel->getEventsByOrg($org['id']);
@@ -268,6 +313,15 @@ class Student extends BaseController
             $membershipStatus = $studentMemberships[$org['id']] ?? null;
             $isMember = ($membershipStatus === 'active');
             $isPending = ($membershipStatus === 'pending');
+            
+            // Get organization photo from user_photos table
+            $orgPhoto = null;
+            if (!empty($org['user_id'])) {
+                $orgUserPhoto = $userPhotoModel->where('user_id', $org['user_id'])->first();
+                if ($orgUserPhoto && !empty($orgUserPhoto['photo_path'])) {
+                    $orgPhoto = base_url($orgUserPhoto['photo_path']);
+                }
+            }
             
             $formattedOrgs[] = [
                 'id' => $org['id'],
@@ -279,6 +333,7 @@ class Student extends BaseController
                 'event_count' => $orgEventCount,
                 'is_member' => $isMember,
                 'is_pending' => $isPending,
+                'photo' => $orgPhoto
             ];
         }
 
@@ -308,12 +363,24 @@ class Student extends BaseController
         // Format all memberships (including pending) for sidebar
         $allJoinedOrgs = [];
         if ($student && isset($allMemberships)) {
+            $userPhotoModelForSidebar = new \App\Models\UserPhotoModel();
             foreach ($allMemberships as $membership) {
+                // Get organization photo from user_photos table
+                $orgForSidebar = $orgModel->find($membership['org_id']);
+                $orgPhotoForSidebar = null;
+                if ($orgForSidebar && !empty($orgForSidebar['user_id'])) {
+                    $orgUserPhotoForSidebar = $userPhotoModelForSidebar->where('user_id', $orgForSidebar['user_id'])->first();
+                    if ($orgUserPhotoForSidebar && !empty($orgUserPhotoForSidebar['photo_path'])) {
+                        $orgPhotoForSidebar = base_url($orgUserPhotoForSidebar['photo_path']);
+                    }
+                }
+                
                 $allJoinedOrgs[] = [
                     'id' => $membership['org_id'],
                     'name' => $membership['organization_name'],
                     'acronym' => $membership['organization_acronym'],
-                    'status' => $membership['status']
+                    'status' => $membership['status'],
+                    'photo' => $orgPhotoForSidebar
                 ];
             }
         }
@@ -362,7 +429,7 @@ class Student extends BaseController
         try {
             // Update or create address
             $addressData = [
-                'province' => $this->request->getPost('region') ?? '',
+                'province' => $this->request->getPost('province') ?? '',
                 'city_municipality' => $this->request->getPost('city_municipality') ?? '',
                 'barangay' => $this->request->getPost('barangay') ?? ''
             ];

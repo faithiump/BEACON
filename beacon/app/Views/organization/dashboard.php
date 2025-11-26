@@ -387,7 +387,11 @@
                         <div class="create-post-card">
                             <div class="create-post-header">
                                 <div class="post-avatar">
-                                    <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                    <?php if(!empty($organization['photo'])): ?>
+                                        <img src="<?= esc($organization['photo']) ?>" alt="<?= esc($organization['name']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                    <?php else: ?>
+                                        <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                    <?php endif; ?>
                                 </div>
                                 <button class="create-post-input" onclick="openModal('announcementModal')">
                                     What's on your mind, <?= $organization['acronym'] ?? 'Organization' ?>?
@@ -415,7 +419,11 @@
                             <div class="feed-post">
                                 <div class="post-header">
                                     <div class="post-author-avatar">
-                                        <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                        <?php if(!empty($organization['photo'])): ?>
+                                            <img src="<?= esc($organization['photo']) ?>" alt="<?= esc($organization['name']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        <?php else: ?>
+                                            <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="post-author-info">
                                         <span class="post-author-name"><?= $organization['name'] ?? 'Organization' ?></span>
@@ -743,7 +751,11 @@
                                 <tr data-status="<?= $member['status'] ?>">
                                     <td>
                                         <div class="member-cell">
-                                            <div class="member-avatar small"><?= strtoupper(substr($member['name'], 0, 1)) ?></div>
+                                            <?php if(!empty($member['photo'])): ?>
+                                                <img src="<?= esc($member['photo']) ?>" alt="<?= esc($member['name']) ?>" class="member-avatar small" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                                            <?php else: ?>
+                                                <div class="member-avatar small"><?= strtoupper(substr($member['name'], 0, 1)) ?></div>
+                                            <?php endif; ?>
                                             <div>
                                                 <strong><?= esc($member['name']) ?></strong>
                                                 <span><?= esc($member['email']) ?></span>
@@ -2030,6 +2042,7 @@
                 if (data.success) {
                     // Update dashboard photos if photo was uploaded
                     if (data.photo) {
+                        // Update all organization photos in the dashboard
                         const userAvatar = document.querySelector('.user-avatar-img');
                         if (userAvatar) {
                             userAvatar.src = data.photo;
@@ -2055,6 +2068,28 @@
                         if (forumAvatar) {
                             forumAvatar.src = data.photo;
                         }
+                        
+                        // Update create post box avatar
+                        const createPostAvatar = document.querySelector('.post-avatar');
+                        if (createPostAvatar) {
+                            const existingImg = createPostAvatar.querySelector('img');
+                            if (existingImg) {
+                                existingImg.src = data.photo;
+                            } else {
+                                createPostAvatar.innerHTML = '<img src="' + data.photo + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                            }
+                        }
+                        
+                        // Update all announcement post avatars
+                        const announcementAvatars = document.querySelectorAll('.post-author-avatar:not(.event-avatar)');
+                        announcementAvatars.forEach(avatar => {
+                            const existingImg = avatar.querySelector('img');
+                            if (existingImg) {
+                                existingImg.src = data.photo;
+                            } else {
+                                avatar.innerHTML = '<img src="' + data.photo + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                            }
+                        });
                         
                         const preview = document.getElementById('orgLogoPreview');
                         const placeholder = document.getElementById('orgLogoPlaceholder');
@@ -2143,6 +2178,28 @@
                     if (forumAvatar) {
                         forumAvatar.src = event.target.result;
                     }
+                    
+                    // Update create post box avatar
+                    const createPostAvatar = document.querySelector('.post-avatar');
+                    if (createPostAvatar) {
+                        const existingImg = createPostAvatar.querySelector('img');
+                        if (existingImg) {
+                            existingImg.src = event.target.result;
+                        } else {
+                            createPostAvatar.innerHTML = '<img src="' + event.target.result + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                        }
+                    }
+                    
+                    // Update all announcement post avatars
+                    const announcementAvatars = document.querySelectorAll('.post-author-avatar:not(.event-avatar)');
+                    announcementAvatars.forEach(avatar => {
+                        const existingImg = avatar.querySelector('img');
+                        if (existingImg) {
+                            existingImg.src = event.target.result;
+                        } else {
+                            avatar.innerHTML = '<img src="' + event.target.result + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                        }
+                    });
                 };
                 reader.readAsDataURL(file);
             }

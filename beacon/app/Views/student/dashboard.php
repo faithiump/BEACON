@@ -297,7 +297,11 @@
                                     <?php if(!empty($allJoinedOrganizations)): ?>
                                         <?php foreach($allJoinedOrganizations as $joinedOrg): ?>
                                         <div class="my-org-item">
-                                            <div class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>"><?= esc(strtoupper(substr($joinedOrg['acronym'], 0, 2))) ?></div>
+                                            <?php if(!empty($joinedOrg['photo'])): ?>
+                                                <img src="<?= esc($joinedOrg['photo']) ?>" alt="<?= esc($joinedOrg['name']) ?>" class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                                            <?php else: ?>
+                                                <div class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>"><?= esc(strtoupper(substr($joinedOrg['acronym'], 0, 2))) ?></div>
+                                            <?php endif; ?>
                                             <div class="my-org-info">
                                                 <span class="my-org-name"><?= esc($joinedOrg['name']) ?></span>
                                                 <?php if($joinedOrg['status'] === 'pending'): ?>
@@ -472,7 +476,11 @@
                             <div class="feed-post announcement-post <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>">
                                 <div class="post-header">
                                     <div class="post-author-avatar org">
-                                        <?= strtoupper(substr($announcement['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                        <?php if(!empty($announcement['org_photo'])): ?>
+                                            <img src="<?= esc($announcement['org_photo']) ?>" alt="<?= esc($announcement['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        <?php else: ?>
+                                            <?= strtoupper(substr($announcement['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="post-author-info">
                                         <span class="post-author-name"><?= esc($announcement['org_name'] ?? 'Organization') ?></span>
@@ -502,7 +510,11 @@
                             <div class="feed-post event-post-card">
                                 <div class="post-header">
                                     <div class="post-author-avatar org">
-                                        <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                        <?php if(!empty($event['org_photo'])): ?>
+                                            <img src="<?= esc($event['org_photo']) ?>" alt="<?= esc($event['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        <?php else: ?>
+                                            <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="post-author-info">
                                         <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?></span>
@@ -609,7 +621,11 @@
                                     <?php if(!empty($suggestedOrganizations)): ?>
                                         <?php foreach($suggestedOrganizations as $sugOrg): ?>
                                         <div class="suggested-org-item">
-                                            <div class="sug-org-avatar"><?= esc(strtoupper(substr($sugOrg['acronym'], 0, 2))) ?></div>
+                                            <?php if(!empty($sugOrg['photo'])): ?>
+                                                <img src="<?= esc($sugOrg['photo']) ?>" alt="<?= esc($sugOrg['name']) ?>" class="sug-org-avatar" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                                            <?php else: ?>
+                                                <div class="sug-org-avatar"><?= esc(strtoupper(substr($sugOrg['acronym'], 0, 2))) ?></div>
+                                            <?php endif; ?>
                                             <div class="sug-org-info">
                                                 <span class="sug-org-name"><?= esc($sugOrg['name']) ?></span>
                                                 <span class="sug-org-members"><?= esc($sugOrg['members'] ?? 0) ?> members</span>
@@ -708,7 +724,11 @@
                                         </div>
                                     </div>
                                     <div class="event-org">
-                                        <div class="org-avatar small"><?= esc(strtoupper(substr($event['org_acronym'], 0, 2))) ?></div>
+                                        <?php if(!empty($event['org_photo'])): ?>
+                                            <img src="<?= esc($event['org_photo']) ?>" alt="<?= esc($event['org_name']) ?>" class="org-avatar small" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover;">
+                                        <?php else: ?>
+                                            <div class="org-avatar small"><?= esc(strtoupper(substr($event['org_acronym'], 0, 2))) ?></div>
+                                        <?php endif; ?>
                                         <span><?= esc($event['org_name']) ?></span>
                                     </div>
                                 </div>
@@ -812,7 +832,11 @@
                             <?php foreach($availableOrganizations as $org): ?>
                             <div class="org-card">
                                 <div class="org-card-header">
-                                    <div class="org-avatar large"><?= esc(strtoupper(substr($org['acronym'], 0, 2))) ?></div>
+                                    <?php if(!empty($org['photo'])): ?>
+                                        <img src="<?= esc($org['photo']) ?>" alt="<?= esc($org['name']) ?>" class="org-avatar large" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover;">
+                                    <?php else: ?>
+                                        <div class="org-avatar large"><?= esc(strtoupper(substr($org['acronym'], 0, 2))) ?></div>
+                                    <?php endif; ?>
                                     <div class="org-card-info">
                                         <h3><?= esc($org['name']) ?></h3>
                                         <span class="org-type"><?= esc($org['type']) ?></span>
@@ -1445,7 +1469,7 @@
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Province</label>
-                                        <input type="text" name="region" value="<?= esc($address['province'] ?? '') ?>" class="form-control">
+                                        <input type="text" name="province" value="<?= esc($address['province'] ?? '') ?>" class="form-control">
                                     </div>
                                     <div class="form-group">
                                         <label>City/Municipality</label>

@@ -96,29 +96,29 @@
                         
                         <div class="form-row">
                             <div class="form-group form-group-half">
-                                <label for="firstname">First Name</label>
+                                <label for="firstname">First Name <span style="color: red;">*</span></label>
                                 <input type="text" name="firstname" id="firstname" class="form-control" placeholder="Enter your first name" required>
                             </div>
                             <div class="form-group form-group-half">
-                                <label for="middlename">Middle Name</label>
-                                <input type="text" name="middlename" id="middlename" class="form-control" placeholder="Enter your middle name">
+                                <label for="middlename">Middle Name <span style="color: red;">*</span></label>
+                                <input type="text" name="middlename" id="middlename" class="form-control" placeholder="Enter your middle name" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="lastname">Last Name</label>
+                                <label for="lastname">Last Name <span style="color: red;">*</span></label>
                                 <input type="text" name="lastname" id="lastname" class="form-control" placeholder="Enter your last name" required>
                             </div>
                             <div class="form-group">
-                                <label for="birthday">Date of Birth</label>
+                                <label for="birthday">Date of Birth <span style="color: red;">*</span></label>
                                 <input type="date" name="birthday" id="birthday" class="form-control" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="gender">Gender</label>
+                                <label for="gender">Gender <span style="color: red;">*</span></label>
                                 <div class="select-wrapper">
                                     <select name="gender" id="gender" class="form-control" required>
                                         <option value="">Select gender</option>
@@ -133,24 +133,24 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="phone">Phone Number</label>
+                                <label for="phone">Phone Number <span style="color: red;">*</span></label>
                                 <input type="tel" name="phone" id="phone" class="form-control" placeholder="Enter your phone number" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="region">Province</label>
-                                <input type="text" name="region" id="region" class="form-control" placeholder="Enter your province" required>
+                                <label for="province">Province <span style="color: red;">*</span></label>
+                                <input type="text" name="province" id="province" class="form-control" placeholder="Enter your province" required>
                             </div>
                             <div class="form-group">
-                                <label for="city_municipality">City/Municipality</label>
+                                <label for="city_municipality">City/Municipality <span style="color: red;">*</span></label>
                                 <input type="text" name="city_municipality" id="city_municipality" class="form-control" placeholder="Enter your city or municipality" required>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="barangay">Barangay</label>
+                            <label for="barangay">Barangay <span style="color: red;">*</span></label>
                             <input type="text" name="barangay" id="barangay" class="form-control" placeholder="Enter your barangay" required>
                         </div>
                     </div>
@@ -160,12 +160,12 @@
                         <h3 class="section-title">Student Information</h3>
                         
                         <div class="form-group">
-                            <label for="student_id">Student ID</label>
+                            <label for="student_id">Student ID <span style="color: red;">*</span></label>
                             <input type="text" name="student_id" id="student_id" class="form-control" placeholder="Enter your student ID" required>
                         </div>
 
                         <div class="form-group full-width">
-                            <label for="department">Department</label>
+                            <label for="department">Department <span style="color: red;">*</span></label>
                             <div class="select-wrapper">
                                 <select id="department" name="department" class="form-control" required onchange="updateCourses()">
                                     <option value="">Select your department</option>
@@ -184,7 +184,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="course">Course/Program</label>
+                            <label for="course">Course/Program <span style="color: red;">*</span></label>
                             <div class="select-wrapper">
                                 <select name="course" id="course" class="form-control" required disabled>
                                     <option value="">Select your department first</option>
@@ -196,7 +196,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="year_level">Year Level</label>
+                            <label for="year_level">Year Level <span style="color: red;">*</span></label>
                             <div class="select-wrapper">
                                 <select name="year_level" id="year_level" class="form-control" required disabled>
                                     <option value="">Select your department first</option>
@@ -213,7 +213,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="in_organization">Are you part of an organization?</label>
+                            <label for="in_organization">Are you part of an organization? <span style="color: red;">*</span></label>
                             <div class="select-wrapper">
                                 <select name="in_organization" id="in_organization" class="form-control" required>
                                     <option value="">Select an option</option>
@@ -227,8 +227,20 @@
                         </div>
 
                         <div class="form-group" id="organization_name_group" style="display: none;">
-                            <label for="organization_name">Organization Name</label>
-                            <input type="text" name="organization_name" id="organization_name" class="form-control" placeholder="Enter your organization name">
+                            <label for="organization_name">Organization Name <span style="color: red;">*</span></label>
+                            <div class="select-wrapper">
+                                <select name="organization_name" id="organization_name" class="form-control">
+                                    <option value="">Select your organization</option>
+                                    <?php if(!empty($organizations)): ?>
+                                        <?php foreach($organizations as $org): ?>
+                                            <option value="<?= esc($org['organization_name']) ?>"><?= esc($org['organization_name']) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
                         </div>
                     </div>
 
@@ -237,18 +249,24 @@
                         <h3 class="section-title">Account Credentials</h3>
                         
                         <div class="form-group">
-                            <label for="email">Email</label>
+                            <label for="email">Email <span style="color: red;">*</span></label>
                             <input type="email" name="email" id="email" class="form-control" placeholder="Student email" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="password">Password</label>
+                            <label for="password">Password <span style="color: red;">*</span></label>
                             <input type="password" name="password" id="password" class="form-control" placeholder="Enter a strong password (min. 8 characters)" required minlength="8">
                         </div>
 
                         <div class="form-group">
-                            <label for="confirm_password">Confirm Password</label>
-                            <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Confirm your password" required>
+                            <label for="confirm_password">Confirm Password <span style="color: red;">*</span></label>
+                            <div style="position: relative;">
+                                <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Confirm your password" required>
+                                <label style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.875rem; color: #666;">
+                                    <input type="checkbox" id="show_confirm_password" style="cursor: pointer;">
+                                    <span>Show</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -366,6 +384,21 @@
                         organizationNameGroup.style.display = 'none';
                         document.getElementById('organization_name').required = false;
                         document.getElementById('organization_name').value = '';
+                    }
+                });
+            }
+
+            // Handle show/hide confirm password
+            const showConfirmPassword = document.getElementById('show_confirm_password');
+            const confirmPasswordInput = document.getElementById('confirm_password');
+            if (showConfirmPassword && confirmPasswordInput) {
+                showConfirmPassword.addEventListener('change', function() {
+                    if (this.checked) {
+                        confirmPasswordInput.type = 'text';
+                        this.parentElement.querySelector('span').textContent = 'Hide';
+                    } else {
+                        confirmPasswordInput.type = 'password';
+                        this.parentElement.querySelector('span').textContent = 'Show';
                     }
                 });
             }

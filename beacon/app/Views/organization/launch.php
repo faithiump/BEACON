@@ -176,7 +176,13 @@
 
                             <div class="form-group form-group-half">
                                 <label for="password_confirm">Confirm Password <span class="required">*</span></label>
-                                <input type="password" name="password_confirm" id="password_confirm" class="form-control" placeholder="Confirm your password" required minlength="8">
+                                <div style="position: relative;">
+                                    <input type="password" name="password_confirm" id="password_confirm" class="form-control" placeholder="Confirm your password" required minlength="8">
+                                    <label style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.875rem; color: #666;">
+                                        <input type="checkbox" id="show_password_confirm" style="cursor: pointer;">
+                                        <span>Show</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -292,6 +298,24 @@
         </div>
     </div>
     <script src="<?= base_url('assets/js/nav.js') ?>"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle show/hide confirm password
+            const showPasswordConfirm = document.getElementById('show_password_confirm');
+            const passwordConfirmInput = document.getElementById('password_confirm');
+            if (showPasswordConfirm && passwordConfirmInput) {
+                showPasswordConfirm.addEventListener('change', function() {
+                    if (this.checked) {
+                        passwordConfirmInput.type = 'text';
+                        this.parentElement.querySelector('span').textContent = 'Hide';
+                    } else {
+                        passwordConfirmInput.type = 'password';
+                        this.parentElement.querySelector('span').textContent = 'Show';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
 

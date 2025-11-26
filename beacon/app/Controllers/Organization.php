@@ -441,10 +441,24 @@ class Organization extends BaseController
             return strtotime($b['joined_at']) - strtotime($a['joined_at']);
         });
         
+        // Get student photos from user_photos table
+        $userPhotoModel = new UserPhotoModel();
+        $studentModel = new StudentModel();
+        
         $recentMembers = [];
         foreach (array_slice($allMemberships, 0, 10) as $membership) {
             $yearLevel = $membership['year_level'] ?? 1;
             $yearText = $yearLevel == 1 ? '1st Year' : ($yearLevel == 2 ? '2nd Year' : ($yearLevel == 3 ? '3rd Year' : ($yearLevel == 4 ? '4th Year' : $yearLevel . 'th Year')));
+            
+            // Get student photo from user_photos table
+            // Use user_id directly from the membership data
+            $studentPhoto = null;
+            if (!empty($membership['user_id'])) {
+                $userPhoto = $userPhotoModel->where('user_id', $membership['user_id'])->first();
+                if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                    $studentPhoto = base_url($userPhoto['photo_path']);
+                }
+            }
             
             $recentMembers[] = [
                 'id' => $membership['id'],
@@ -455,6 +469,7 @@ class Organization extends BaseController
                 'year' => $yearText,
                 'status' => $membership['status'],
                 'applied_at' => $membership['joined_at'] ?? $membership['created_at'] ?? '',
+                'photo' => $studentPhoto
             ];
         }
         
@@ -1155,10 +1170,24 @@ class Organization extends BaseController
             $membershipModel->getPendingMemberships($orgId)
         );
         
+        // Get student photos from user_photos table
+        $userPhotoModel = new UserPhotoModel();
+        $studentModel = new StudentModel();
+        
         $members = [];
         foreach ($allMemberships as $membership) {
             $yearLevel = $membership['year_level'] ?? 1;
             $yearText = $yearLevel == 1 ? '1st' : ($yearLevel == 2 ? '2nd' : ($yearLevel == 3 ? '3rd' : ($yearLevel == 4 ? '4th' : $yearLevel . 'th')));
+            
+            // Get student photo from user_photos table
+            // Use user_id directly from the membership data
+            $studentPhoto = null;
+            if (!empty($membership['user_id'])) {
+                $userPhoto = $userPhotoModel->where('user_id', $membership['user_id'])->first();
+                if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                    $studentPhoto = base_url($userPhoto['photo_path']);
+                }
+            }
             
             $members[] = [
                 'id' => $membership['id'],
@@ -1168,9 +1197,10 @@ class Organization extends BaseController
                 'year' => $yearText,
                 'status' => $membership['status'],
                 'joined_at' => $membership['joined_at'] ?? $membership['created_at'] ?? '',
+                'photo' => $studentPhoto
             ];
         }
-
+        
         return $this->response->setJSON(['success' => true, 'data' => $members]);
     }
 

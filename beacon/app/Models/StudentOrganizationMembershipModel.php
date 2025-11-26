@@ -93,7 +93,7 @@ class StudentOrganizationMembershipModel extends Model
      */
     public function getPendingMemberships($orgId)
     {
-        return $this->select('student_organization_memberships.*, students.student_id, students.course, students.year_level, user_profiles.firstname, user_profiles.lastname')
+        return $this->select('student_organization_memberships.*, students.student_id, students.user_id, students.course, students.year_level, user_profiles.firstname, user_profiles.lastname')
             ->join('students', 'students.id = student_organization_memberships.student_id')
             ->join('user_profiles', 'user_profiles.user_id = students.user_id')
             ->where('student_organization_memberships.org_id', $orgId)
@@ -106,7 +106,7 @@ class StudentOrganizationMembershipModel extends Model
      */
     public function getActiveMemberships($orgId)
     {
-        return $this->select('student_organization_memberships.*, students.student_id, students.course, students.year_level, user_profiles.firstname, user_profiles.lastname')
+        return $this->select('student_organization_memberships.*, students.student_id, students.user_id, students.course, students.year_level, user_profiles.firstname, user_profiles.lastname')
             ->join('students', 'students.id = student_organization_memberships.student_id')
             ->join('user_profiles', 'user_profiles.user_id = students.user_id')
             ->where('student_organization_memberships.org_id', $orgId)

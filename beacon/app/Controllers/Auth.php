@@ -41,7 +41,17 @@ class Auth extends BaseController
 
     public function register(): string
     {
-        return view('auth/register');
+        // Get all active organizations for the dropdown
+        $organizationModel = new \App\Models\OrganizationModel();
+        $organizations = $organizationModel->where('is_active', 1)
+            ->orderBy('organization_name', 'ASC')
+            ->findAll();
+        
+        $data = [
+            'organizations' => $organizations
+        ];
+        
+        return view('auth/register', $data);
     }
 
     public function processLogin()
@@ -165,11 +175,12 @@ class Auth extends BaseController
         
         $rules = [
             'firstname' => 'required|min_length[2]',
+            'middlename' => 'required|min_length[2]',
             'lastname' => 'required|min_length[2]',
             'birthday' => 'required|valid_date',
             'gender' => 'required',
             'phone' => 'required',
-            'region' => 'required|min_length[3]',
+            'province' => 'required|min_length[3]',
             'city_municipality' => 'required|min_length[3]',
             'barangay' => 'required|min_length[3]',
             'role' => 'required|in_list[student]',
@@ -201,7 +212,7 @@ class Auth extends BaseController
         try {
             // 1. Create address record
             $addressData = [
-                'province' => $this->request->getPost('region'),
+                'province' => $this->request->getPost('province'),
                 'city_municipality' => $this->request->getPost('city_municipality'),
                 'barangay' => $this->request->getPost('barangay')
             ];
