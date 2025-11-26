@@ -1423,7 +1423,7 @@ body {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 4px 12px rgba(98, 125, 152, 0.3);
 }
 
 .btn-outline {
@@ -1458,7 +1458,7 @@ body {
     background: var(--primary-500);
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 4px 12px rgba(98, 125, 152, 0.3);
 }
 
 .btn-outline-primary.btn-sm {
@@ -2587,7 +2587,7 @@ textarea.form-input {
 /* Profile Card */
 .profile-card {
     background: white;
-    border-radius: var(--border-radius-lg);
+    border-radius: 12px;
     overflow: hidden;
     box-shadow: var(--shadow);
 }
@@ -2706,8 +2706,9 @@ textarea.form-input {
 /* Sidebar Cards */
 .sidebar-card {
     background: white;
-    border-radius: var(--border-radius);
+    border-radius: 12px;
     padding: 1rem;
+    margin-bottom: 1rem;
     box-shadow: var(--shadow);
 }
 
@@ -2724,11 +2725,14 @@ textarea.form-input {
     font-weight: 600;
     color: var(--gray-900);
     margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .sidebar-title i {
-    margin-right: 0.5rem;
     color: var(--primary-500);
+    font-size: 1rem;
 }
 
 .sidebar-header .sidebar-title {
@@ -2793,13 +2797,19 @@ textarea.form-input {
 /* Sidebar Events */
 .sidebar-event {
     display: flex;
-    gap: 0.75rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--gray-50);
+    gap: 0.625rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-event:hover {
+    background: var(--gray-50);
 }
 
 .sidebar-event:last-of-type {
-    border-bottom: none;
+    margin-bottom: 0;
 }
 
 .se-date {
@@ -2811,6 +2821,7 @@ textarea.form-input {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .se-day {
@@ -2822,9 +2833,10 @@ textarea.form-input {
 }
 
 .se-month {
-    font-size: 0.625rem;
+    font-size: 0.5625rem;
     color: var(--primary-500);
     text-transform: uppercase;
+    font-weight: 600;
 }
 
 .se-info {
@@ -2841,6 +2853,8 @@ textarea.form-input {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
+    margin-bottom: 0.125rem;
 }
 
 .se-location {
@@ -2850,6 +2864,77 @@ textarea.form-input {
 
 .se-location i {
     margin-right: 0.25rem;
+}
+
+/* Sidebar Announcements - Similar to Sidebar Events */
+.sidebar-announcement {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-announcement:hover {
+    background: var(--gray-50);
+}
+
+.sidebar-announcement:last-of-type {
+    margin-bottom: 0;
+}
+
+.sa-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-50);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+    color: var(--primary-600);
+}
+
+.sa-icon.high {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+}
+
+.sa-icon.normal {
+    background: var(--primary-50);
+    color: var(--primary-600);
+}
+
+.sa-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sa-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    margin-bottom: 0.125rem;
+    line-height: 1.4;
+}
+
+.sa-date {
+    font-size: 0.6875rem;
+    color: var(--gray-500);
+    line-height: 1.4;
+}
+
+.sa-date i {
+    margin-right: 0.25rem;
+    font-size: 0.625rem;
 }
 
 .sidebar-link {

@@ -347,6 +347,27 @@
                             <?php endif; ?>
                             <a href="#events" class="sidebar-link" onclick="switchSection('events')">View all events <i class="fas fa-arrow-right"></i></a>
                         </div>
+
+                        <!-- Recent Announcements -->
+                        <div class="sidebar-card">
+                            <h4 class="sidebar-title"><i class="fas fa-bullhorn"></i> Recent Announcements</h4>
+                            <?php if(!empty($recentAnnouncements)): ?>
+                                <?php foreach(array_slice($recentAnnouncements, 0, 2) as $announcement): ?>
+                                <div class="sidebar-announcement">
+                                    <div class="sa-icon <?= $announcement['priority'] === 'high' ? 'high' : 'normal' ?>">
+                                        <i class="fas fa-<?= $announcement['priority'] === 'high' ? 'exclamation-circle' : 'info-circle' ?>"></i>
+                                    </div>
+                                    <div class="sa-info">
+                                        <span class="sa-title"><?= esc($announcement['title']) ?></span>
+                                        <span class="sa-date"><i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($announcement['created_at'])) ?></span>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="sidebar-empty">No announcements yet</p>
+                            <?php endif; ?>
+                            <a href="#announcements" class="sidebar-link" onclick="switchSection('announcements')">View all announcements <i class="fas fa-arrow-right"></i></a>
+                        </div>
                     </aside>
 
                     <!-- Center Feed -->
@@ -414,7 +435,6 @@
                                 <div class="post-actions">
                                     <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
                                     <button class="post-action"><i class="far fa-comment"></i> Comment</button>
-                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -462,7 +482,6 @@
                                 <div class="post-actions">
                                     <button class="post-action"><i class="fas fa-star"></i> Interested</button>
                                     <button class="post-action"><i class="fas fa-check"></i> Going</button>
-                                    <button class="post-action"><i class="fas fa-share"></i> Share</button>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -485,7 +504,7 @@
                                     <div class="product-mini-card">
                                         <div class="product-mini-img">
                                             <?php if(!empty($product['image'])): ?>
-                                                <img src="<?= $product['image'] ?>" alt="<?= $product['name'] ?>">
+                                                <img src="<?= base_url('uploads/products/' . $product['image']) ?>" alt="<?= esc($product['name']) ?>">
                                             <?php else: ?>
                                                 <div class="product-placeholder"><i class="fas fa-box"></i></div>
                                             <?php endif; ?>
@@ -599,12 +618,18 @@
                                     <span><i class="fas fa-clock"></i> <?= $event['time'] ?></span>
                                     <span><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></span>
                                 </div>
+                                <?php if(!empty($event['max_attendees'])): ?>
                                 <div class="event-progress">
                                     <div class="progress-bar">
-                                        <div class="progress-fill" style="width: <?= ($event['attendees'] / $event['max_attendees']) * 100 ?>%"></div>
+                                        <div class="progress-fill" style="width: <?= min(100, ($event['attendees'] / $event['max_attendees']) * 100) ?>%"></div>
                                     </div>
                                     <span class="progress-text"><?= $event['attendees'] ?>/<?= $event['max_attendees'] ?> registered</span>
                                 </div>
+                                <?php else: ?>
+                                <div class="event-progress">
+                                    <span class="progress-text"><?= $event['attendees'] ?> registered (Unlimited capacity)</span>
+                                </div>
+                                <?php endif; ?>
                             </div>
                             <div class="event-card-footer">
                                 <button class="btn btn-outline" onclick="viewEventAttendees(<?= $event['id'] ?>)">
@@ -757,90 +782,50 @@
                 </div>
 
                 <div class="products-grid" id="productsGrid">
-                    <!-- Products will be loaded dynamically -->
-                    <div class="product-card">
-                        <div class="product-image">
-                            <div class="product-placeholder">
-                                <i class="fas fa-tshirt"></i>
+                    <?php if(!empty($products)): ?>
+                        <?php foreach($products as $product): ?>
+                        <div class="product-card <?= $product['status'] === 'out_of_stock' ? 'out-of-stock' : '' ?>">
+                            <div class="product-image">
+                                <?php if(!empty($product['image'])): ?>
+                                    <img src="<?= base_url('uploads/products/' . $product['image']) ?>" alt="<?= esc($product['name']) ?>">
+                                <?php else: ?>
+                                    <div class="product-placeholder">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                <?php endif; ?>
+                                <span class="stock-badge <?= $product['status'] === 'out_of_stock' ? 'out' : ($product['status'] === 'low_stock' ? 'low' : 'available') ?>">
+                                    <?= $product['status'] === 'out_of_stock' ? 'Out of Stock' : ($product['status'] === 'low_stock' ? 'Low Stock' : 'In Stock') ?>
+                                </span>
                             </div>
-                            <span class="stock-badge available">In Stock</span>
-                        </div>
-                        <div class="product-body">
-                            <h3>CSS T-Shirt</h3>
-                            <p class="product-desc">Official CSS organization t-shirt</p>
-                            <div class="product-meta">
-                                <span class="price">₱450</span>
-                                <span class="stock">Stock: 25</span>
+                            <div class="product-body">
+                                <h3><?= esc($product['name']) ?></h3>
+                                <p class="product-desc"><?= esc($product['description'] ?: 'No description') ?></p>
+                                <div class="product-meta">
+                                    <span class="price">₱<?= number_format($product['price'], 2) ?></span>
+                                    <span class="stock <?= $product['stock'] == 0 ? 'danger' : ($product['stock'] <= 10 ? 'warning' : '') ?>">Stock: <?= $product['stock'] ?></span>
+                                </div>
+                                <div class="product-stats">
+                                    <span><i class="fas fa-shopping-cart"></i> <?= $product['sold'] ?> sold</span>
+                                </div>
                             </div>
-                            <div class="product-stats">
-                                <span><i class="fas fa-shopping-cart"></i> 75 sold</span>
-                            </div>
-                        </div>
-                        <div class="product-footer">
-                            <button class="btn btn-outline" onclick="updateStock(1)">
-                                <i class="fas fa-boxes"></i> Update Stock
-                            </button>
-                            <button class="btn btn-primary" onclick="editProduct(1)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="product-card">
-                        <div class="product-image">
-                            <div class="product-placeholder">
-                                <i class="fas fa-hoodie"></i>
-                            </div>
-                            <span class="stock-badge low">Low Stock</span>
-                        </div>
-                        <div class="product-body">
-                            <h3>CSS Hoodie</h3>
-                            <p class="product-desc">Premium quality hoodie with CSS logo</p>
-                            <div class="product-meta">
-                                <span class="price">₱850</span>
-                                <span class="stock warning">Stock: 10</span>
-                            </div>
-                            <div class="product-stats">
-                                <span><i class="fas fa-shopping-cart"></i> 40 sold</span>
+                            <div class="product-footer">
+                                <button class="btn btn-outline" onclick="updateStock(<?= $product['id'] ?>)">
+                                    <i class="fas fa-boxes"></i> <?= $product['stock'] == 0 ? 'Restock' : 'Update Stock' ?>
+                                </button>
+                                <button class="btn btn-primary" onclick="editProduct(<?= $product['id'] ?>)">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
                             </div>
                         </div>
-                        <div class="product-footer">
-                            <button class="btn btn-outline" onclick="updateStock(2)">
-                                <i class="fas fa-boxes"></i> Update Stock
-                            </button>
-                            <button class="btn btn-primary" onclick="editProduct(2)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="empty-state-large">
+                            <i class="fas fa-box-open"></i>
+                            <h3>No Products Yet</h3>
+                            <p>Create your first product to start selling merchandise</p>
+                            <button class="btn btn-primary" onclick="openModal('productModal')">Add Product</button>
                         </div>
-                    </div>
-
-                    <div class="product-card out-of-stock">
-                        <div class="product-image">
-                            <div class="product-placeholder">
-                                <i class="fas fa-id-badge"></i>
-                            </div>
-                            <span class="stock-badge out">Out of Stock</span>
-                        </div>
-                        <div class="product-body">
-                            <h3>CSS Lanyard</h3>
-                            <p class="product-desc">Organization lanyard with ID holder</p>
-                            <div class="product-meta">
-                                <span class="price">₱150</span>
-                                <span class="stock danger">Stock: 0</span>
-                            </div>
-                            <div class="product-stats">
-                                <span><i class="fas fa-shopping-cart"></i> 100 sold</span>
-                            </div>
-                        </div>
-                        <div class="product-footer">
-                            <button class="btn btn-outline" onclick="updateStock(3)">
-                                <i class="fas fa-boxes"></i> Restock
-                            </button>
-                            <button class="btn btn-primary" onclick="editProduct(3)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </section>
 
@@ -1079,7 +1064,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="eventForm" class="modal-body">
+            <form id="eventForm" class="modal-body" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Event Title *</label>
                     <input type="text" name="title" class="form-input" required placeholder="Enter event title">
@@ -1115,7 +1100,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitEvent()">Create Event</button>
+                <button type="button" class="btn btn-primary" onclick="submitEvent()">Create Event</button>
             </div>
         </div>
     </div>
@@ -1129,7 +1114,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="announcementForm" class="modal-body">
+            <form id="announcementForm" class="modal-body" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Title *</label>
                     <input type="text" name="title" class="form-input" required placeholder="Announcement title">
@@ -1148,7 +1133,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('announcementModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
+                <button type="button" class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
             </div>
         </div>
     </div>
@@ -1162,7 +1147,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="productForm" class="modal-body">
+            <form id="productForm" class="modal-body" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Product Name *</label>
                     <input type="text" name="name" class="form-input" required placeholder="Product name">
@@ -1192,7 +1177,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitProduct()">Add Product</button>
+                <button type="button" class="btn btn-primary" onclick="submitProduct()">Add Product</button>
             </div>
         </div>
     </div>
@@ -1377,7 +1362,20 @@
         // Event Functions
         function submitEvent() {
             const form = document.getElementById('eventForm');
+            
+            // Validate required fields
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return false;
+            }
+            
             const formData = new FormData(form);
+
+            // Show loading state
+            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
 
             fetch(baseUrl + 'organization/events/create', {
                 method: 'POST',
@@ -1389,15 +1387,24 @@
                     showToast('Event created successfully!', 'success');
                     closeModal('eventModal');
                     form.reset();
-                    // Reload events
+                    // Reload page to show new event
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     showToast(data.message || 'Failed to create event', 'error');
+                    if (data.errors) {
+                        console.error('Validation errors:', data.errors);
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
             })
-            .catch(() => {
-                showToast('Event created successfully!', 'success');
-                closeModal('eventModal');
-                form.reset();
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while creating the event', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             });
         }
 
@@ -1412,7 +1419,20 @@
         // Announcement Functions
         function submitAnnouncement() {
             const form = document.getElementById('announcementForm');
+            
+            // Validate required fields
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return false;
+            }
+            
             const formData = new FormData(form);
+
+            // Show loading state
+            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
 
             fetch(baseUrl + 'organization/announcements/create', {
                 method: 'POST',
@@ -1424,14 +1444,24 @@
                     showToast('Announcement posted successfully!', 'success');
                     closeModal('announcementModal');
                     form.reset();
+                    // Reload page to show new announcement
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     showToast(data.message || 'Failed to post announcement', 'error');
+                    if (data.errors) {
+                        console.error('Validation errors:', data.errors);
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
             })
-            .catch(() => {
-                showToast('Announcement posted successfully!', 'success');
-                closeModal('announcementModal');
-                form.reset();
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while posting the announcement', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             });
         }
 
@@ -1440,15 +1470,50 @@
         }
 
         function deleteAnnouncement(id) {
-            if (confirm('Are you sure you want to delete this announcement?')) {
-                showToast('Announcement deleted', 'success');
+            if (!confirm('Are you sure you want to delete this announcement?')) {
+                return;
             }
+
+            fetch(baseUrl + 'organization/announcements/delete/' + id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Announcement deleted successfully', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast(data.message || 'Failed to delete announcement', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while deleting the announcement', 'error');
+            });
         }
 
         // Product Functions
         function submitProduct() {
             const form = document.getElementById('productForm');
+            
+            // Validate required fields
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return false;
+            }
+            
             const formData = new FormData(form);
+
+            // Show loading state
+            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
             fetch(baseUrl + 'organization/products/create', {
                 method: 'POST',
@@ -1460,14 +1525,24 @@
                     showToast('Product added successfully!', 'success');
                     closeModal('productModal');
                     form.reset();
+                    // Reload page to show new product
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     showToast(data.message || 'Failed to add product', 'error');
+                    if (data.errors) {
+                        console.error('Validation errors:', data.errors);
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
             })
-            .catch(() => {
-                showToast('Product added successfully!', 'success');
-                closeModal('productModal');
-                form.reset();
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while adding the product', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             });
         }
 
@@ -1484,6 +1559,11 @@
             const productId = document.getElementById('stockProductId').value;
             const newStock = document.getElementById('stockInput').value;
 
+            if (!newStock || newStock < 0) {
+                showToast('Please enter a valid stock quantity', 'error');
+                return;
+            }
+
             fetch(baseUrl + 'organization/products/stock', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1491,12 +1571,19 @@
             })
             .then(response => response.json())
             .then(data => {
-                showToast('Stock updated successfully!', 'success');
-                closeModal('stockModal');
+                if (data.success) {
+                    showToast('Stock updated successfully!', 'success');
+                    closeModal('stockModal');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast(data.message || 'Failed to update stock', 'error');
+                }
             })
-            .catch(() => {
-                showToast('Stock updated successfully!', 'success');
-                closeModal('stockModal');
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while updating stock', 'error');
             });
         }
 
