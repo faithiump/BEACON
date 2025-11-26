@@ -13,6 +13,7 @@ if (defined('COMPOSER_PATH')) {
 
 use App\Models\UserModel;
 use App\Models\UserProfileModel;
+use App\Models\UserPhotoModel;
 use App\Models\AddressModel;
 use App\Models\StudentModel;
 
@@ -89,6 +90,14 @@ class Auth extends BaseController
                 return redirect()->back()->withInput()->with('error', 'Organization record not found.');
             }
 
+            // Get photo from user_photos table
+            $userPhotoModel = new UserPhotoModel();
+            $userPhoto = $userPhotoModel->where('user_id', $user['id'])->first();
+            $photoUrl = null;
+            if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                $photoUrl = base_url($userPhoto['photo_path']);
+            }
+
             session()->set([
                 'isLoggedIn'           => true,
                 'role'                 => 'organization',
@@ -96,7 +105,8 @@ class Auth extends BaseController
                 'organization_id'      => $organization['id'],
                 'organization_name'    => $organization['organization_name'],
                 'organization_acronym' => $organization['organization_acronym'],
-                'email'                => $user['email']
+                'email'                => $user['email'],
+                'photo'                => $photoUrl
             ]);
 
             return redirect()->to(base_url('organization/dashboard'))->with('success', 'Welcome back!');
@@ -119,6 +129,14 @@ class Auth extends BaseController
             $fullName = trim(($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? ''));
         }
 
+        // Get photo from user_photos table
+        $userPhotoModel = new UserPhotoModel();
+        $userPhoto = $userPhotoModel->where('user_id', $user['id'])->first();
+        $photoUrl = null;
+        if ($userPhoto && !empty($userPhoto['photo_path'])) {
+            $photoUrl = base_url($userPhoto['photo_path']);
+        }
+
         session()->set([
             'isLoggedIn'     => true,
             'role'           => 'student',
@@ -127,7 +145,7 @@ class Auth extends BaseController
             'student_number' => $student['student_id'],
             'email'          => $user['email'],
             'name'           => $fullName ?: null,
-            'photo'          => $profile['photo'] ?? null
+            'photo'          => $photoUrl
         ]);
 
         return redirect()->to(base_url('student/dashboard'))->with('success', 'Welcome back!');
@@ -341,6 +359,17 @@ class Auth extends BaseController
         /* ----------------------------------------------------------
          * 3. SET SESSION FOR STUDENT LOGIN
          * ---------------------------------------------------------- */
+        // Get photo from user_photos table first, fallback to Google picture if not found
+        $userPhotoModel = new UserPhotoModel();
+        $userPhoto = $userPhotoModel->where('user_id', $user['id'])->first();
+        $photoUrl = null;
+        if ($userPhoto && !empty($userPhoto['photo_path'])) {
+            $photoUrl = base_url($userPhoto['photo_path']);
+        } else {
+            // Use Google picture only if no photo in database
+            $photoUrl = $googleUser->picture ?? null;
+        }
+        
         session()->set([
             'isLoggedIn'    => true,
             'role'          => 'student',
@@ -352,7 +381,7 @@ class Auth extends BaseController
             // Optional: For UX use only
             'email'         => $googleUser->email,
             'name'          => $googleUser->name,
-            'photo'         => $googleUser->picture
+            'photo'         => $photoUrl
         ]);
     
         return redirect()->to('/student/dashboard');

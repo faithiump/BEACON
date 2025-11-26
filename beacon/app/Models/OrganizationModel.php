@@ -21,6 +21,7 @@ class OrganizationModel extends Model
         'mission',
         'vision',
         'objectives',
+        'email',
         'contact_email',
         'contact_phone',
         'current_members',

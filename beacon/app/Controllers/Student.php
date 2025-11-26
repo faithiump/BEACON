@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\UserProfileModel;
+use App\Models\UserPhotoModel;
 use App\Models\AddressModel;
 use App\Models\StudentModel;
 use App\Models\OrganizationModel;
@@ -461,6 +462,24 @@ class Student extends BaseController
             
             // Get the URL for the photo
             $photoUrl = base_url('uploads/profiles/' . $newName);
+            $photoPath = 'uploads/profiles/' . $newName;
+            
+            // Save to user_photos table
+            $userPhotoModel = new UserPhotoModel();
+            $existingPhoto = $userPhotoModel->where('user_id', $userId)->first();
+            
+            if ($existingPhoto) {
+                // Update existing photo record
+                $userPhotoModel->update($existingPhoto['id'], [
+                    'photo_path' => $photoPath
+                ]);
+            } else {
+                // Insert new photo record
+                $userPhotoModel->insert([
+                    'user_id' => $userId,
+                    'photo_path' => $photoPath
+                ]);
+            }
             
             // Update session with new photo
             session()->set('photo', $photoUrl);
@@ -468,6 +487,7 @@ class Student extends BaseController
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Profile photo updated successfully!',
+                'photo' => $photoUrl,
                 'photo_url' => $photoUrl
             ]);
 

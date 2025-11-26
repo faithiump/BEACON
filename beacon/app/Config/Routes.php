@@ -39,6 +39,7 @@ $routes->post('organization/announcements/delete/(:num)', 'Organization::deleteA
 
 // Organization Settings
 $routes->post('organization/settings/update', 'Organization::editOrgInfo');
+$routes->post('organization/uploadPhoto', 'Organization::uploadPhoto');
 
 // Organization Members
 $routes->get('organization/members', 'Organization::viewMembers');

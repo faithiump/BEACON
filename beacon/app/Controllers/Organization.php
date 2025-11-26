@@ -12,6 +12,7 @@ use App\Models\AnnouncementModel;
 use App\Models\ProductModel;
 use App\Models\StudentModel;
 use App\Models\StudentOrganizationMembershipModel;
+use App\Models\UserPhotoModel;
 
 class Organization extends BaseController
 {
@@ -76,8 +77,19 @@ class Organization extends BaseController
                 'photo' => null,
                 'mission' => '',
                 'vision' => '',
-                'founded' => '',
+                'founding_date' => '',
+                'objectives' => '',
+                'current_members' => 0,
                 'status' => 'active',
+                'advisor_name' => '',
+                'advisor_email' => '',
+                'advisor_phone' => '',
+                'advisor_department' => '',
+                'officer_position' => '',
+                'officer_name' => '',
+                'officer_email' => '',
+                'officer_phone' => '',
+                'officer_student_id' => '',
             ];
         }
         
@@ -86,19 +98,77 @@ class Organization extends BaseController
         $organization = $orgModel->find($orgId);
         
         if ($organization) {
+            // Fetch advisor information
+            $advisorModel = new OrganizationAdvisorModel();
+            $db = \Config\Database::connect();
+            
+            // Get email from users table
+            $user = $db->table('users')
+                ->where('id', $organization['user_id'])
+                ->get()
+                ->getRowArray();
+            
+            // Get photo from user_photos table
+            $userPhotoModel = new UserPhotoModel();
+            $userPhoto = $userPhotoModel->where('user_id', $organization['user_id'])->first();
+            $photoUrl = null;
+            if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                $photoUrl = base_url($userPhoto['photo_path']);
+            }
+            
+            // Get advisor through organization application
+            $advisor = $db->table('organization_advisors')
+                ->join('organization_applications', 'organization_applications.id = organization_advisors.application_id')
+                ->where('organization_applications.organization_name', $organization['organization_name'])
+                ->where('organization_applications.status', 'approved')
+                ->get()
+                ->getRowArray();
+            
+            // Get primary officer through organization application
+            $officer = $db->table('organization_officers')
+                ->join('organization_applications', 'organization_applications.id = organization_officers.application_id')
+                ->where('organization_applications.organization_name', $organization['organization_name'])
+                ->where('organization_applications.status', 'approved')
+                ->where('organization_officers.position', 'President')
+                ->get()
+                ->getRowArray();
+            
+            // If no President found, get the first officer
+            if (!$officer) {
+                $officer = $db->table('organization_officers')
+                    ->join('organization_applications', 'organization_applications.id = organization_officers.application_id')
+                    ->where('organization_applications.organization_name', $organization['organization_name'])
+                    ->where('organization_applications.status', 'approved')
+                    ->limit(1)
+                    ->get()
+                    ->getRowArray();
+            }
+            
             return [
                 'id' => $organization['id'],
                 'name' => $organization['organization_name'],
                 'acronym' => $organization['organization_acronym'],
                 'type' => ucfirst(str_replace('_', ' ', $organization['organization_type'] ?? 'academic')),
                 'category' => ucfirst(str_replace('_', ' ', $organization['organization_category'] ?? 'departmental')),
-                'email' => $organization['contact_email'] ?? '',
+                'email' => $user['email'] ?? '',
+                'contact_email' => $user['email'] ?? '',
                 'phone' => $organization['contact_phone'] ?? '',
-                'photo' => null,
+                'photo' => $photoUrl,
                 'mission' => $organization['mission'] ?? '',
                 'vision' => $organization['vision'] ?? '',
-                'founded' => $organization['founding_date'] ?? '',
+                'founding_date' => $organization['founding_date'] ?? '',
+                'objectives' => $organization['objectives'] ?? '',
+                'current_members' => $organization['current_members'] ?? 0,
                 'status' => $organization['is_active'] ? 'active' : 'inactive',
+                'advisor_name' => $advisor['name'] ?? '',
+                'advisor_email' => $advisor['email'] ?? '',
+                'advisor_phone' => $advisor['phone'] ?? '',
+                'advisor_department' => $advisor['department'] ?? '',
+                'officer_position' => $officer['position'] ?? '',
+                'officer_name' => $officer['name'] ?? '',
+                'officer_email' => $officer['email'] ?? '',
+                'officer_phone' => $officer['phone'] ?? '',
+                'officer_student_id' => $officer['student_id'] ?? '',
             ];
         }
         
@@ -114,8 +184,19 @@ class Organization extends BaseController
             'photo' => null,
             'mission' => '',
             'vision' => '',
-            'founded' => '',
+            'founding_date' => '',
+            'objectives' => '',
+            'current_members' => 0,
             'status' => 'active',
+            'advisor_name' => '',
+            'advisor_email' => '',
+            'advisor_phone' => '',
+            'advisor_department' => '',
+            'officer_position' => '',
+            'officer_name' => '',
+            'officer_email' => '',
+            'officer_phone' => '',
+            'officer_student_id' => '',
         ];
     }
 
@@ -813,27 +894,239 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
         $data = [
             'mission' => $this->request->getPost('mission'),
             'vision' => $this->request->getPost('vision'),
-            'contact_email' => $this->request->getPost('contact_email'),
             'contact_phone' => $this->request->getPost('contact_phone'),
+            'organization_category' => strtolower(str_replace(' ', '_', $this->request->getPost('category') ?? '')),
+            'founding_date' => $this->request->getPost('founding_date'),
+            'objectives' => $this->request->getPost('objectives'),
+            'current_members' => (int)$this->request->getPost('current_members'),
         ];
 
-        // Handle logo upload
-        $logo = $this->request->getFile('logo');
-        if ($logo && $logo->isValid() && !$logo->hasMoved()) {
-            $newName = $logo->getRandomName();
-            $logo->move(WRITEPATH . 'uploads/organizations/logos/', $newName);
-            $data['logo'] = $newName;
+        // Handle photo upload (profile picture)
+        $photoUrl = null;
+        $photo = $this->request->getFile('photo');
+        if ($photo && $photo->isValid() && !$photo->hasMoved()) {
+            // Validate file type
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (in_array($photo->getMimeType(), $allowedTypes)) {
+                // Validate file size (max 5MB)
+                if ($photo->getSize() <= 5 * 1024 * 1024) {
+                    $userId = session()->get('user_id');
+                    $newName = 'profile_' . $userId . '_' . time() . '.' . $photo->getExtension();
+                    
+                    // Create upload directory if not exists
+                    $uploadPath = FCPATH . 'uploads/profiles/';
+                    if (!is_dir($uploadPath)) {
+                        mkdir($uploadPath, 0777, true);
+                    }
+                    
+                    // Move uploaded file
+                    $photo->move($uploadPath, $newName);
+                    
+                    // Get the URL for the photo
+                    $photoUrl = base_url('uploads/profiles/' . $newName);
+                    $photoPath = 'uploads/profiles/' . $newName;
+                    
+                    // Save to user_photos table
+                    $userPhotoModel = new UserPhotoModel();
+                    $existingPhoto = $userPhotoModel->where('user_id', $userId)->first();
+                    
+                    if ($existingPhoto) {
+                        // Update existing photo record
+                        $userPhotoModel->update($existingPhoto['id'], [
+                            'photo_path' => $photoPath
+                        ]);
+                    } else {
+                        // Insert new photo record
+                        $userPhotoModel->insert([
+                            'user_id' => $userId,
+                            'photo_path' => $photoPath
+                        ]);
+                    }
+                    
+                    // Update session with new photo
+                    session()->set('photo', $photoUrl);
+                }
+            }
         }
 
-        // TODO: Update in database
+        // Update in database
+        $orgModel = new OrganizationModel();
+        $orgModel->update($orgId, $data);
 
-        return $this->response->setJSON([
+        // Update advisor information
+        $organization = $orgModel->find($orgId);
+        
+        if ($organization) {
+            $db = \Config\Database::connect();
+            
+            // Get the application ID for this organization
+            $application = $db->table('organization_applications')
+                ->where('organization_name', $organization['organization_name'])
+                ->where('status', 'approved')
+                ->get()
+                ->getRowArray();
+            
+            if ($application) {
+                $advisorData = [
+                    'name' => $this->request->getPost('advisor_name'),
+                    'email' => $this->request->getPost('advisor_email'),
+                    'phone' => $this->request->getPost('advisor_phone'),
+                    'department' => $this->request->getPost('advisor_department')
+                ];
+                
+                // Update or insert advisor
+                $advisorModel = new OrganizationAdvisorModel();
+                $existingAdvisor = $advisorModel->where('application_id', $application['id'])->first();
+                
+                if ($existingAdvisor) {
+                    $advisorModel->update($existingAdvisor['id'], $advisorData);
+                } else {
+                    $advisorData['application_id'] = $application['id'];
+                    $advisorModel->insert($advisorData);
+                }
+                
+                // Update or insert primary officer
+                $officerData = [
+                    'position' => $this->request->getPost('officer_position'),
+                    'name' => $this->request->getPost('officer_name'),
+                    'email' => $this->request->getPost('officer_email'),
+                    'phone' => $this->request->getPost('officer_phone'),
+                    'student_id' => $this->request->getPost('officer_student_id')
+                ];
+                
+                $officerModel = new OrganizationOfficerModel();
+                // Try to find primary officer (President) first, or first officer
+                $existingOfficer = $officerModel->where('application_id', $application['id'])
+                    ->where('position', 'President')
+                    ->first();
+                
+                if (!$existingOfficer) {
+                    $existingOfficer = $officerModel->where('application_id', $application['id'])
+                        ->first();
+                }
+                
+                if ($existingOfficer) {
+                    $officerModel->update($existingOfficer['id'], $officerData);
+                } else {
+                    $officerData['application_id'] = $application['id'];
+                    $officerModel->insert($officerData);
+                }
+            }
+        }
+
+        $response = [
             'success' => true,
             'message' => 'Organization information updated successfully'
-        ]);
+        ];
+        
+        // Include photo URL in response if photo was uploaded
+        if ($photoUrl) {
+            $response['photo'] = $photoUrl;
+        }
+        
+        return $this->response->setJSON($response);
+    }
+
+    /**
+     * Upload Organization Logo/Photo
+     */
+    public function uploadPhoto()
+    {
+        // Check authentication
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+        }
+
+        $photo = $this->request->getFile('photo');
+        
+        if (!$photo || !$photo->isValid()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No photo uploaded or invalid file'
+            ]);
+        }
+
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!in_array($photo->getMimeType(), $allowedTypes)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid file type. Please upload a JPEG, PNG, or GIF image.'
+            ]);
+        }
+
+        // Validate file size (max 5MB)
+        if ($photo->getSize() > 5 * 1024 * 1024) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'File size exceeds 5MB limit'
+            ]);
+        }
+
+        try {
+            $userId = session()->get('user_id');
+            
+            // Generate unique filename
+            $newName = 'profile_' . $userId . '_' . time() . '.' . $photo->getExtension();
+            
+            // Create upload directory if not exists
+            $uploadPath = FCPATH . 'uploads/profiles/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            
+            // Move uploaded file
+            $photo->move($uploadPath, $newName);
+            
+            // Get the URL for the photo
+            $photoUrl = base_url('uploads/profiles/' . $newName);
+            $photoPath = 'uploads/profiles/' . $newName;
+            
+            // Save to user_photos table
+            $userPhotoModel = new UserPhotoModel();
+            $existingPhoto = $userPhotoModel->where('user_id', $userId)->first();
+            
+            if ($existingPhoto) {
+                // Update existing photo record
+                $userPhotoModel->update($existingPhoto['id'], [
+                    'photo_path' => $photoPath
+                ]);
+            } else {
+                // Insert new photo record
+                $userPhotoModel->insert([
+                    'user_id' => $userId,
+                    'photo_path' => $photoPath
+                ]);
+            }
+            
+            // Update session with new photo
+            session()->set('photo', $photoUrl);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Profile photo updated successfully!',
+                'photo' => $photoUrl,
+                'photo_url' => $photoUrl
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Photo upload error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while uploading photo.'
+            ]);
+        }
     }
 
     // ==========================================

@@ -171,7 +171,11 @@
                     <div class="dropdown-menu" id="dropdownMenu">
                         <div class="dropdown-header">
                             <div class="dropdown-avatar">
-                                <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                <?php if(!empty($organization['photo'])): ?>
+                                    <img src="<?= $organization['photo'] ?>" alt="Organization" id="dropdownAvatarImg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                                <?php else: ?>
+                                    <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                <?php endif; ?>
                             </div>
                             <div class="dropdown-info">
                                 <span class="dropdown-name"><?= $organization['name'] ?? 'Organization' ?></span>
@@ -1207,42 +1211,118 @@
                                 <label>Vision</label>
                                 <textarea name="vision" class="form-input" rows="3"><?= esc($organization['vision'] ?? '') ?></textarea>
                             </div>
+                            <div class="form-group">
+                                <label>Organization Category</label>
+                                <input type="text" name="category" value="<?= esc($organization['category'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Founding Date</label>
+                                <input type="date" name="founding_date" value="<?= esc($organization['founding_date'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Objectives</label>
+                                <textarea name="objectives" class="form-input" rows="3"><?= esc($organization['objectives'] ?? '') ?></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Current Number of Members</label>
+                                <input type="number" name="current_members" value="<?= esc($organization['current_members'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Contact Email</label>
+                                <input type="email" name="contact_email" id="contact_email" value="<?= esc($organization['contact_email'] ?? $organization['email'] ?? '') ?>" class="form-input" disabled>
+                                <small class="form-hint">Email cannot be changed</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Contact Phone</label>
+                                <input type="tel" name="contact_phone" value="<?= esc($organization['phone'] ?? '') ?>" class="form-input">
+                            </div>
+                            
+                            <!-- Faculty Advisor Information -->
+                            <div class="form-section-header">
+                                <i class="fas fa-user-tie"></i>
+                                <span>Faculty Advisor Information</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Advisor Full Name</label>
+                                <input type="text" name="advisor_name" value="<?= esc($organization['advisor_name'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Advisor Email</label>
+                                <input type="email" name="advisor_email" value="<?= esc($organization['advisor_email'] ?? '') ?>" class="form-input" disabled>
+                                <small class="form-hint">Email cannot be changed</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Advisor Phone</label>
+                                <input type="tel" name="advisor_phone" value="<?= esc($organization['advisor_phone'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Advisor Department</label>
+                                <input type="text" name="advisor_department" value="<?= esc($organization['advisor_department'] ?? '') ?>" class="form-input">
+                            </div>
+                            
+                            <!-- Primary Officer Information -->
+                            <div class="form-section-header">
+                                <i class="fas fa-user-shield"></i>
+                                <span>Primary Officer Information</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Position/Title</label>
+                                <input type="text" name="officer_position" value="<?= esc($organization['officer_position'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" name="officer_name" value="<?= esc($organization['officer_name'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="officer_email" value="<?= esc($organization['officer_email'] ?? '') ?>" class="form-input" disabled>
+                                <small class="form-hint">Email cannot be changed</small>
+                            </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label>Contact Email</label>
-                                    <input type="email" name="contact_email" value="<?= esc($organization['email'] ?? '') ?>" class="form-input">
+                                    <label>Phone</label>
+                                    <input type="tel" name="officer_phone" value="<?= esc($organization['officer_phone'] ?? '') ?>" class="form-input">
                                 </div>
                                 <div class="form-group">
-                                    <label>Contact Phone</label>
-                                    <input type="tel" name="contact_phone" value="<?= esc($organization['phone'] ?? '') ?>" class="form-input">
+                                    <label>Student ID</label>
+                                    <input type="text" name="officer_student_id" value="<?= esc($organization['officer_student_id'] ?? '') ?>" class="form-input">
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save Changes
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="settings-card">
-                        <h3><i class="fas fa-image"></i> Organization Logo</h3>
-                        <div class="logo-upload">
-                            <div class="current-logo">
-                                <?php if(!empty($organization['photo'])): ?>
-                                    <img src="<?= $organization['photo'] ?>" alt="Logo">
-                                <?php else: ?>
-                                    <div class="logo-placeholder">
-                                        <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                            
+                            <!-- Organization Logo Upload -->
+                            <div class="form-section-header">
+                                <i class="fas fa-image"></i>
+                                <span>Organization Logo</span>
+                            </div>
+                            <div class="form-group">
+                                <div class="logo-upload">
+                                    <div class="current-logo">
+                                        <?php if(!empty($organization['photo'])): ?>
+                                            <img src="<?= $organization['photo'] ?>" alt="Logo" id="orgLogoPreview">
+                                        <?php else: ?>
+                                            <img src="" alt="Logo" id="orgLogoPreview" style="display: none;">
+                                            <div class="logo-placeholder" id="orgLogoPlaceholder">
+                                                <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                <?php endif; ?>
+                                    <div class="upload-actions">
+                                        <input type="file" id="logoUpload" name="photo" accept="image/*" hidden>
+                                        <button type="button" class="btn btn-outline" onclick="document.getElementById('logoUpload').click()">
+                                            <i class="fas fa-upload"></i> Upload New Logo
+                                        </button>
+                                        <p class="upload-hint">Recommended: 200x200px, PNG or JPG</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="upload-actions">
-                                <input type="file" id="logoUpload" accept="image/*" hidden>
-                                <button class="btn btn-outline" onclick="document.getElementById('logoUpload').click()">
-                                    <i class="fas fa-upload"></i> Upload New Logo
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="resetOrgForm()">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Changes
                                 </button>
-                                <p class="upload-hint">Recommended: 200x200px, PNG or JPG</p>
                             </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </section>
@@ -1931,19 +2011,141 @@
         // Organization Info Form
         document.getElementById('orgInfoForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            
             const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
 
             fetch(baseUrl + 'organization/settings/update', {
                 method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
-                showToast('Organization information updated!', 'success');
+                showToast(data.message || 'Organization information updated!', data.success ? 'success' : 'error');
+                if (data.success) {
+                    // Update dashboard photos if photo was uploaded
+                    if (data.photo) {
+                        const userAvatar = document.querySelector('.user-avatar-img');
+                        if (userAvatar) {
+                            userAvatar.src = data.photo;
+                        }
+                        
+                        const dropdownAvatar = document.getElementById('dropdownAvatarImg');
+                        if (dropdownAvatar) {
+                            dropdownAvatar.src = data.photo;
+                        } else {
+                            // If dropdown avatar doesn't exist as img, create it
+                            const dropdownAvatarDiv = document.querySelector('.dropdown-avatar');
+                            if (dropdownAvatarDiv) {
+                                dropdownAvatarDiv.innerHTML = '<img src="' + data.photo + '" alt="Organization" id="dropdownAvatarImg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">';
+                            }
+                        }
+                        
+                        const profileAvatar = document.querySelector('.profile-avatar-large img');
+                        if (profileAvatar) {
+                            profileAvatar.src = data.photo;
+                        }
+                        
+                        const forumAvatar = document.querySelector('.create-box-avatar img');
+                        if (forumAvatar) {
+                            forumAvatar.src = data.photo;
+                        }
+                        
+                        const preview = document.getElementById('orgLogoPreview');
+                        const placeholder = document.getElementById('orgLogoPlaceholder');
+                        if (preview) {
+                            preview.src = data.photo;
+                            preview.style.display = 'block';
+                            if (placeholder) placeholder.style.display = 'none';
+                        }
+                    }
+                    
+                    setTimeout(() => {
+                        // Navigate to overview (dashboard) section
+                        switchSection('overview');
+                    }, 1500);
+                }
             })
-            .catch(() => {
-                showToast('Organization information updated!', 'success');
+            .catch(error => {
+                showToast('An error occurred while saving organization information', 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             });
+        });
+
+        // Reset Form (Cancel button)
+        function resetOrgForm() {
+            document.getElementById('orgInfoForm').reset();
+            showToast('Changes discarded', 'info');
+            setTimeout(() => {
+                // Navigate to overview (dashboard) section
+                switchSection('overview');
+            }, 1500);
+        }
+
+        // Organization Logo Upload - Preview only, no auto-save
+        document.getElementById('logoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please select an image file', 'error');
+                    return;
+                }
+                
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('Image size must be less than 5MB', 'error');
+                    return;
+                }
+                
+                // Preview the image immediately
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('orgLogoPreview');
+                    const placeholder = document.getElementById('orgLogoPlaceholder');
+                    if (preview) {
+                        preview.src = event.target.result;
+                        preview.style.display = 'block';
+                        if (placeholder) placeholder.style.display = 'none';
+                    }
+                    
+                    // Update dashboard photos immediately
+                    const userAvatar = document.querySelector('.user-avatar-img');
+                    if (userAvatar) {
+                        userAvatar.src = event.target.result;
+                    }
+                    
+                    const dropdownAvatar = document.getElementById('dropdownAvatarImg');
+                    if (dropdownAvatar) {
+                        dropdownAvatar.src = event.target.result;
+                    } else {
+                        // If dropdown avatar doesn't exist as img, create it
+                        const dropdownAvatarDiv = document.querySelector('.dropdown-avatar');
+                        if (dropdownAvatarDiv && !dropdownAvatarDiv.querySelector('img')) {
+                            dropdownAvatarDiv.innerHTML = '<img src="' + event.target.result + '" alt="Organization" id="dropdownAvatarImg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">';
+                        }
+                    }
+                    
+                    const profileAvatar = document.querySelector('.profile-avatar-large img');
+                    if (profileAvatar) {
+                        profileAvatar.src = event.target.result;
+                    }
+                    
+                    const forumAvatar = document.querySelector('.create-box-avatar img');
+                    if (forumAvatar) {
+                        forumAvatar.src = event.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
         });
 
         // Mark all notifications as read
