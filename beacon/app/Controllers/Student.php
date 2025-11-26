@@ -57,6 +57,12 @@ class Student extends BaseController
         $student = $this->studentModel->where('user_id', $userId)->first();
         $profile = $this->userProfileModel->where('user_id', $userId)->first();
         $user = $this->userModel->find($userId);
+        
+        // Get address data if exists
+        $address = null;
+        if ($profile && !empty($profile['address_id'])) {
+            $address = $this->addressModel->find($profile['address_id']);
+        }
 
         // Get student's organization memberships
         $membershipModel = new StudentOrganizationMembershipModel();
@@ -194,43 +200,42 @@ class Student extends BaseController
                 usort($allEventsList, function($a, $b) {
                     return strtotime($b['date']) - strtotime($a['date']);
                 });
-            }
-            
-            // Get products from all joined organizations
-            $productModel = new ProductModel();
-            $orgModelForProducts = new OrganizationModel();
-            $allProductsList = [];
-            foreach ($orgIds as $orgId) {
-                $products = $productModel->getProductsByOrg($orgId);
                 
-                // Get organization info for each product
-                $org = $orgModelForProducts->find($orgId);
-                
-                foreach ($products as $product) {
-                    $productData = [
-                        'id' => $product['product_id'] ?? $product['id'],
-                        'name' => $product['product_name'] ?? $product['name'],
-                        'description' => $product['description'] ?? '',
-                        'price' => number_format((float)$product['price'], 2, '.', ''),
-                        'stock' => $product['stock'] ?? 0,
-                        'sold' => $product['sold'] ?? 0,
-                        'status' => $product['status'] ?? 'available',
-                        'image' => $product['image'] ?? null,
-                        'sizes' => $product['sizes'] ?? null,
-                        'org_id' => $orgId,
-                        'org_name' => $org['organization_name'] ?? '',
-                        'org_acronym' => $org['organization_acronym'] ?? '',
-                    ];
+                // Get products from all joined organizations
+                $productModel = new ProductModel();
+                $orgModelForProducts = new OrganizationModel();
+                foreach ($orgIds as $orgId) {
+                    $products = $productModel->getProductsByOrg($orgId);
                     
-                    $allProductsList[] = $productData;
+                    // Get organization info for each product
+                    $org = $orgModelForProducts->find($orgId);
+                    
+                    foreach ($products as $product) {
+                        $productData = [
+                            'id' => $product['product_id'] ?? $product['id'],
+                            'name' => $product['product_name'] ?? $product['name'],
+                            'description' => $product['description'] ?? '',
+                            'price' => number_format((float)$product['price'], 2, '.', ''),
+                            'stock' => $product['stock'] ?? 0,
+                            'sold' => $product['sold'] ?? 0,
+                            'status' => $product['status'] ?? 'available',
+                            'image' => $product['image'] ?? null,
+                            'sizes' => $product['sizes'] ?? null,
+                            'org_id' => $orgId,
+                            'org_name' => $org['organization_name'] ?? '',
+                            'org_acronym' => $org['organization_acronym'] ?? '',
+                        ];
+                        
+                        $allProductsList[] = $productData;
+                    }
                 }
+                
+                // Sort all products by date (newest first) for shop section
+                usort($allProductsList, function($a, $b) {
+                    // We'll use the order they were added, but we can sort by name or price if needed
+                    return 0;
+                });
             }
-            
-            // Sort all products by date (newest first) for shop section
-            usort($allProductsList, function($a, $b) {
-                // We'll use the order they were added, but we can sort by name or price if needed
-                return 0;
-            });
         }
 
         // Get available organizations from database
@@ -315,6 +320,7 @@ class Student extends BaseController
         $data = [
             'student' => $student,
             'profile' => $profile,
+            'address' => $address,
             'user' => $user,
             'hasJoinedOrg' => $hasJoinedOrg,
             'organizationPosts' => $organizationPosts,
@@ -332,6 +338,146 @@ class Student extends BaseController
         ];
 
         return view('student/dashboard', $data);
+    }
+
+    /**
+     * Update Student Profile
+     */
+    public function updateProfile()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        $profile = $this->userProfileModel->where('user_id', $userId)->first();
+
+        if (!$student || !$profile) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student profile not found']);
+        }
+
+        try {
+            // Update or create address
+            $addressData = [
+                'region' => $this->request->getPost('region') ?? '',
+                'city_municipality' => $this->request->getPost('city_municipality') ?? '',
+                'barangay' => $this->request->getPost('barangay') ?? ''
+            ];
+
+            $addressId = $profile['address_id'];
+            if ($addressId) {
+                $this->addressModel->update($addressId, $addressData);
+            } else {
+                $addressId = $this->addressModel->insert($addressData);
+            }
+
+            // Update user profile
+            $profileData = [
+                'firstname' => $this->request->getPost('firstname') ?? '',
+                'middlename' => $this->request->getPost('middlename') ?? '',
+                'lastname' => $this->request->getPost('lastname') ?? '',
+                'birthday' => $this->request->getPost('birthday') ?: null,
+                'gender' => $this->request->getPost('gender') ?? '',
+                'phone' => $this->request->getPost('phone') ?? '',
+                'address_id' => $addressId
+            ];
+
+            $this->userProfileModel->update($profile['id'], $profileData);
+
+            // Update student info
+            $studentData = [
+                'student_id' => $this->request->getPost('student_id') ?? $student['student_id'],
+                'department' => $this->request->getPost('department') ?? '',
+                'course' => $this->request->getPost('course') ?? '',
+                'year_level' => $this->request->getPost('year_level') ?? null,
+                'organization_name' => $this->request->getPost('organization_name') ?? ''
+            ];
+
+            $this->studentModel->update($student['id'], $studentData);
+
+            // Update session data
+            session()->set([
+                'firstname' => $profileData['firstname'],
+                'lastname' => $profileData['lastname']
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Profile updated successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Profile update error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while updating your profile.'
+            ]);
+        }
+    }
+
+    /**
+     * Upload Profile Photo
+     */
+    public function uploadPhoto()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $photo = $this->request->getFile('photo');
+        
+        if (!$photo || !$photo->isValid()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No valid photo uploaded']);
+        }
+
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($photo->getMimeType(), $allowedTypes)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid file type. Please upload an image.']);
+        }
+
+        // Validate file size (max 5MB)
+        if ($photo->getSize() > 5 * 1024 * 1024) {
+            return $this->response->setJSON(['success' => false, 'message' => 'File size must be less than 5MB']);
+        }
+
+        try {
+            $userId = session()->get('user_id');
+            
+            // Generate unique filename
+            $newName = 'profile_' . $userId . '_' . time() . '.' . $photo->getExtension();
+            
+            // Create upload directory if not exists
+            $uploadPath = FCPATH . 'uploads/profiles/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            
+            // Move uploaded file
+            $photo->move($uploadPath, $newName);
+            
+            // Get the URL for the photo
+            $photoUrl = base_url('uploads/profiles/' . $newName);
+            
+            // Update session with new photo
+            session()->set('photo', $photoUrl);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Profile photo updated successfully!',
+                'photo_url' => $photoUrl
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Photo upload error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while uploading photo.'
+            ]);
+        }
     }
 
     /**
