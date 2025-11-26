@@ -238,7 +238,7 @@ body {
 }
 
 .stat-card {
-    background: rgba(45, 0, 79, 0.6);
+    background: rgba(0, 0, 0, 0.486);
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 16px;
     padding: 1rem 1.25rem;

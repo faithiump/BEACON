@@ -137,5 +137,6 @@
         </section>
     </main>
     <?= view('components/footer') ?>
+    <script src="<?= base_url('assets/js/nav.js') ?>"></script>
 </body>
 </html>

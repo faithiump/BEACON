@@ -7,7 +7,6 @@
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v2.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/launch-org.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/footer.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -292,7 +291,7 @@
             </div>
         </div>
     </div>
-    <?= view('components/footer') ?>
+    <script src="<?= base_url('assets/js/nav.js') ?>"></script>
 </body>
 </html>
 

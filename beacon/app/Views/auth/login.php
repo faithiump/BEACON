@@ -7,7 +7,6 @@
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v2.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>" type="text/css">
     <link rel="stylesheet" href="<?= base_url('assets/css/login.css') ?>" type="text/css">
-    <link rel="stylesheet" href="<?= base_url('assets/css/footer.css') ?>" type="text/css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -64,26 +63,30 @@
         <div class="auth-left-section">
             <div class="auth-left-content">
                 <div class="auth-branding">
-                    <h1 class="auth-welcome-title">Hello, welcome!</h1>
+                    <h1 class="auth-welcome-title">Your beacon of hope</h1>
                     <p class="auth-welcome-text">Access the unified platform for events, announcements, and campus organizations. Connect with your community and stay engaged.</p>
                 </div>
                 
-                <!-- Floating Engagement Cards -->
-                <div class="engagement-cards">
-                    <div class="engagement-card card-1">
-                        <div class="card-icon">📅</div>
-                        <h3>Upcoming Events</h3>
-                        <p>Join campus activities and never miss important dates</p>
+                <!-- Website Information -->
+                <div class="website-info">
+                    <div class="info-section">
+                        <h2 class="info-title">About BEACON</h2>
+                        <p class="info-text">BEACON is CSPC's centralized hub for organization management, event visibility, and student engagement. Stay informed, collaborate seamlessly, and keep the pulse of campus life in one place.</p>
                     </div>
-                    <div class="engagement-card card-2">
-                        <div class="card-icon">👥</div>
-                        <h3>40+ Organizations</h3>
-                        <p>Connect with student groups and find your community</p>
-                    </div>
-                    <div class="engagement-card card-3">
-                        <div class="card-icon">📢</div>
-                        <h3>Stay Informed</h3>
-                        <p>Get the latest announcements and campus updates</p>
+                    
+                    <div class="info-features">
+                        <div class="info-feature">
+                            <h3 class="feature-title">Unified Platform</h3>
+                            <p class="feature-text">All campus organizations, events, and announcements in one convenient location.</p>
+                        </div>
+                        <div class="info-feature">
+                            <h3 class="feature-title">Real-time Updates</h3>
+                            <p class="feature-text">Get instant notifications about upcoming events, important announcements, and organization activities.</p>
+                        </div>
+                        <div class="info-feature">
+                            <h3 class="feature-title">Community Connection</h3>
+                            <p class="feature-text">Connect with over 40+ student organizations and find your community on campus.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -92,8 +95,7 @@
         <!-- Right Side - Login Form -->
         <div class="auth-form-container">
             <div class="auth-form-card">
-                <h1 class="auth-title">Welcome back!</h1>
-                <p class="auth-subtitle">Access the unified platform for events, announcements, and campus organizations.</p>
+                <h1 class="auth-title">Welcome to BEACON!</h1>
                 <?php if(session()->getFlashdata('error')): ?>
                     <div class="alert alert-danger">
                         <?= session()->getFlashdata('error') ?>
@@ -154,8 +156,7 @@
         </div>
     </div>
 
-    <?= view('components/footer') ?>
-
+    <script src="<?= base_url('assets/js/nav.js') ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const roleSelect = document.getElementById('role');

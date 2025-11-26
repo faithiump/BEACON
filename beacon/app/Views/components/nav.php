@@ -31,7 +31,7 @@ $links = [
 <nav class="<?= esc($navClass) ?>">
     <div class="<?= esc($containerClass) ?>">
         <a href="<?= esc($brandUrl) ?>" class="nav-brand">
-            <img src="<?= base_url('assets/images/beacon-logo-v1.png') ?>" alt="BEACON Logo" class="nav-logo-img">
+            <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="nav-logo-img">
             <span class="nav-logo">BEACON</span>
         </a>
         <button class="nav-menu-toggle" id="navMenuToggle" type="button" aria-label="Toggle navigation menu">
