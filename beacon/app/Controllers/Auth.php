@@ -201,7 +201,7 @@ class Auth extends BaseController
         try {
             // 1. Create address record
             $addressData = [
-                'region' => $this->request->getPost('region'),
+                'province' => $this->request->getPost('region'),
                 'city_municipality' => $this->request->getPost('city_municipality'),
                 'barangay' => $this->request->getPost('barangay')
             ];

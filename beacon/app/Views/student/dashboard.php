@@ -1444,8 +1444,8 @@
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label>Region</label>
-                                        <input type="text" name="region" value="<?= esc($address['region'] ?? '') ?>" class="form-control">
+                                        <label>Province</label>
+                                        <input type="text" name="region" value="<?= esc($address['province'] ?? '') ?>" class="form-control">
                                     </div>
                                     <div class="form-group">
                                         <label>City/Municipality</label>

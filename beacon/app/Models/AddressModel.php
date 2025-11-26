@@ -13,7 +13,7 @@ class AddressModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'region',
+        'province',
         'city_municipality',
         'barangay'
     ];

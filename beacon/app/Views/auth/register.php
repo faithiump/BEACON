@@ -140,8 +140,8 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="region">Region</label>
-                                <input type="text" name="region" id="region" class="form-control" placeholder="Enter your region" required>
+                                <label for="region">Province</label>
+                                <input type="text" name="region" id="region" class="form-control" placeholder="Enter your province" required>
                             </div>
                             <div class="form-group">
                                 <label for="city_municipality">City/Municipality</label>

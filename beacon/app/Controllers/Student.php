@@ -362,7 +362,7 @@ class Student extends BaseController
         try {
             // Update or create address
             $addressData = [
-                'region' => $this->request->getPost('region') ?? '',
+                'province' => $this->request->getPost('region') ?? '',
                 'city_municipality' => $this->request->getPost('city_municipality') ?? '',
                 'barangay' => $this->request->getPost('barangay') ?? ''
             ];
