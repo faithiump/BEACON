@@ -99,6 +99,11 @@ class Student extends BaseController
             // Get all memberships including pending for sidebar display
             $allMemberships = $membershipModel->getStudentAllOrganizations($student['id']);
             
+            // Get followed organizations
+            $followModel = new \App\Models\OrganizationFollowModel();
+            $followedOrgs = $followModel->getFollowedOrganizations($student['id']);
+            $followedOrgIds = array_column($followedOrgs, 'org_id');
+            
             if ($hasJoinedOrg) {
                 $orgModel = new OrganizationModel();
                 $announcementModel = new AnnouncementModel();
@@ -128,9 +133,12 @@ class Student extends BaseController
                     $orgIds[] = $membership['org_id'];
                 }
                 
-                // Get announcements from all joined organizations
+                // Combine joined and followed organization IDs (remove duplicates)
+                $allOrgIds = array_unique(array_merge($orgIds, $followedOrgIds));
+                
+                // Get announcements from all joined and followed organizations
                 $allAnnouncementsList = [];
-                foreach ($orgIds as $orgId) {
+                foreach ($allOrgIds as $orgId) {
                     $announcements = $announcementModel->getAnnouncementsByOrg($orgId);
                     
                     // Get organization info for each announcement
@@ -169,10 +177,11 @@ class Student extends BaseController
                     return strtotime($b['created_at']) - strtotime($a['created_at']);
                 });
                 
-                // Get events from all joined organizations
+                // Get events from all joined and followed organizations
                 $allUpcomingEvents = [];
                 $allEventsList = [];
-                foreach ($orgIds as $orgId) {
+                if (!empty($allOrgIds)) {
+                    foreach ($allOrgIds as $orgId) {
                     $events = $eventModel->getEventsByOrg($orgId);
                     $eventCount += count($events);
                     
@@ -230,6 +239,7 @@ class Student extends BaseController
                         if (strtotime($event['date']) >= strtotime(date('Y-m-d'))) {
                             $allUpcomingEvents[] = $eventData;
                         }
+                    }
                     }
                 }
                 
@@ -301,6 +311,16 @@ class Student extends BaseController
             }
         }
         
+        // Get student's follow status for all organizations
+        $followModel = new \App\Models\OrganizationFollowModel();
+        $studentFollows = [];
+        if ($student) {
+            $follows = $followModel->getFollowedOrganizations($student['id']);
+            foreach ($follows as $follow) {
+                $studentFollows[] = $follow['org_id'];
+            }
+        }
+        
         // Get organization photos from user_photos table
         $userPhotoModel = new \App\Models\UserPhotoModel();
         
@@ -313,6 +333,9 @@ class Student extends BaseController
             $membershipStatus = $studentMemberships[$org['id']] ?? null;
             $isMember = ($membershipStatus === 'active');
             $isPending = ($membershipStatus === 'pending');
+            
+            // Check if student is following this organization
+            $isFollowing = in_array($org['id'], $studentFollows);
             
             // Get organization photo from user_photos table
             $orgPhoto = null;
@@ -333,6 +356,7 @@ class Student extends BaseController
                 'event_count' => $orgEventCount,
                 'is_member' => $isMember,
                 'is_pending' => $isPending,
+                'is_following' => $isFollowing,
                 'photo' => $orgPhoto
             ];
         }
@@ -834,6 +858,94 @@ class Student extends BaseController
     /**
      * Join Organization
      */
+    public function followOrg()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $orgId = $this->request->getPost('org_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization ID is required']);
+        }
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        try {
+            $followModel = new \App\Models\OrganizationFollowModel();
+            
+            // Check if already following
+            if ($followModel->isFollowing($student['id'], $orgId)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'You are already following this organization']);
+            }
+
+            // Add follow
+            $followModel->insert([
+                'student_id' => $student['id'],
+                'org_id' => $orgId
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'You are now following this organization',
+                'is_following' => true
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Follow organization error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'An error occurred while following the organization']);
+        }
+    }
+
+    public function unfollowOrg()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $orgId = $this->request->getPost('org_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization ID is required']);
+        }
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        try {
+            $followModel = new \App\Models\OrganizationFollowModel();
+            
+            // Find and delete follow record
+            $follow = $followModel->where('student_id', $student['id'])
+                                  ->where('org_id', $orgId)
+                                  ->first();
+            
+            if (!$follow) {
+                return $this->response->setJSON(['success' => false, 'message' => 'You are not following this organization']);
+            }
+
+            $followModel->delete($follow['id']);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'You have unfollowed this organization',
+                'is_following' => false
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Unfollow organization error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'An error occurred while unfollowing the organization']);
+        }
+    }
+
     public function joinOrg()
     {
         $authCheck = $this->checkAuth();

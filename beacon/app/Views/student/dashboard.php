@@ -363,12 +363,12 @@
                             <!-- Welcome Banner -->
                             <div class="welcome-banner">
                                 <div class="welcome-content">
-                                    <h1>Welcome back, <?= esc($profile['firstname'] ?? 'Student') ?>! 👋</h1>
+                                    <h1>Welcome back, <?= esc(ucfirst($profile['firstname'] ?? 'Student')) ?>! 👋</h1>
                                     <p>Here's what's happening in your campus community</p>
                                 </div>
                                 <div class="welcome-date">
                                     <i class="fas fa-calendar-day"></i>
-                                    <?= date('l, F j, Y') ?>
+                                    <span id="currentDate"><?= date('l, F j, Y') ?></span>
                                 </div>
                             </div>
 
@@ -875,6 +875,15 @@
                                         <button class="btn-primary" onclick="joinOrg(<?= $org['id'] ?>)">
                                             <i class="fas fa-plus"></i> Join Organization
                                         </button>
+                                        <?php if($org['is_following'] ?? false): ?>
+                                            <button class="btn-secondary" id="followBtn_<?= $org['id'] ?>" onclick="unfollowOrg(<?= $org['id'] ?>)">
+                                                <i class="fas fa-check"></i> Following
+                                            </button>
+                                        <?php else: ?>
+                                            <button class="btn-outline" id="followBtn_<?= $org['id'] ?>" onclick="followOrg(<?= $org['id'] ?>)">
+                                                <i class="fas fa-user-plus"></i> Follow
+                                            </button>
+                                        <?php endif; ?>
                                         <button class="btn-secondary" onclick="viewOrgDetails(<?= $org['id'] ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
@@ -2001,6 +2010,78 @@
             }
         });
 
+        function followOrg(orgId) {
+            const followBtn = document.getElementById('followBtn_' + orgId);
+            if (!followBtn) return;
+
+            const originalText = followBtn.innerHTML;
+            followBtn.disabled = true;
+            followBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch(baseUrl + 'student/followOrg', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'org_id=' + orgId
+            })
+            .then(response => response.json())
+            .then(data => {
+                showToast(data.message || 'Failed to follow organization', data.success ? 'success' : 'error');
+                if (data.success) {
+                    followBtn.innerHTML = '<i class="fas fa-check"></i> Following';
+                    followBtn.className = 'btn-secondary';
+                    followBtn.setAttribute('onclick', 'unfollowOrg(' + orgId + ')');
+                } else {
+                    followBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                showToast('An error occurred while following the organization', 'error');
+                followBtn.innerHTML = originalText;
+            })
+            .finally(() => {
+                followBtn.disabled = false;
+            });
+        }
+
+        function unfollowOrg(orgId) {
+            const followBtn = document.getElementById('followBtn_' + orgId);
+            if (!followBtn) return;
+
+            const originalText = followBtn.innerHTML;
+            followBtn.disabled = true;
+            followBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch(baseUrl + 'student/unfollowOrg', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'org_id=' + orgId
+            })
+            .then(response => response.json())
+            .then(data => {
+                showToast(data.message || 'Failed to unfollow organization', data.success ? 'success' : 'error');
+                if (data.success) {
+                    followBtn.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
+                    followBtn.className = 'btn-outline';
+                    followBtn.setAttribute('onclick', 'followOrg(' + orgId + ')');
+                } else {
+                    followBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                showToast('An error occurred while unfollowing the organization', 'error');
+                followBtn.innerHTML = originalText;
+            })
+            .finally(() => {
+                followBtn.disabled = false;
+            });
+        }
+
         function joinOrg(orgId) {
             fetch(baseUrl + 'student/organizations/join', {
                 method: 'POST',
@@ -2215,8 +2296,19 @@
             }, 3000);
         }
 
+        // Update current date automatically
+        function updateCurrentDate() {
+            const dateElement = document.getElementById('currentDate');
+            if (dateElement) {
+                const now = new Date();
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                dateElement.textContent = now.toLocaleDateString('en-US', options);
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentDate();
             loadCartItems();
             updateCombinedBadge();
         });

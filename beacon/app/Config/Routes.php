@@ -87,6 +87,8 @@ $routes->post('student/events/join', 'Student::joinEvent');
 $routes->get('student/announcements', 'Student::viewAnnouncements');
 $routes->get('student/organizations', 'Student::viewOrganizations');
 $routes->post('student/organizations/join', 'Student::joinOrg');
+$routes->post('student/followOrg', 'Student::followOrg');
+$routes->post('student/unfollowOrg', 'Student::unfollowOrg');
 $routes->get('student/products', 'Student::viewProducts');
 $routes->get('student/cart', 'Student::viewCart');
 $routes->post('student/cart/manage', 'Student::manageCartContent');
