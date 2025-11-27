@@ -139,19 +139,22 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group" style="position: relative;">
                                 <label for="province">Province <span style="color: red;">*</span></label>
-                                <input type="text" name="province" id="province" class="form-control" placeholder="Enter your province" required>
+                                <input type="text" name="province" id="province" class="form-control" placeholder="Enter your province" required autocomplete="off">
+                                <div id="province-suggestions" class="autocomplete-suggestions" style="display: none;"></div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="position: relative;">
                                 <label for="city_municipality">City/Municipality <span style="color: red;">*</span></label>
-                                <input type="text" name="city_municipality" id="city_municipality" class="form-control" placeholder="Enter your city or municipality" required>
+                                <input type="text" name="city_municipality" id="city_municipality" class="form-control" placeholder="Enter your city or municipality" required autocomplete="off" disabled>
+                                <div id="city-suggestions" class="autocomplete-suggestions" style="display: none;"></div>
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group" style="position: relative;">
                             <label for="barangay">Barangay <span style="color: red;">*</span></label>
-                            <input type="text" name="barangay" id="barangay" class="form-control" placeholder="Enter your barangay" required>
+                            <input type="text" name="barangay" id="barangay" class="form-control" placeholder="Enter your barangay" required autocomplete="off" disabled>
+                            <div id="barangay-suggestions" class="autocomplete-suggestions" style="display: none;"></div>
                         </div>
                     </div>
 
@@ -212,36 +215,6 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="in_organization">Are you part of an organization? <span style="color: red;">*</span></label>
-                            <div class="select-wrapper">
-                                <select name="in_organization" id="in_organization" class="form-control" required>
-                                    <option value="">Select an option</option>
-                                    <option value="yes">Yes</option>
-                                    <option value="no">No</option>
-                                </select>
-                                <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                        </div>
-
-                        <div class="form-group" id="organization_name_group" style="display: none;">
-                            <label for="organization_name">Organization Name <span style="color: red;">*</span></label>
-                            <div class="select-wrapper">
-                                <select name="organization_name" id="organization_name" class="form-control">
-                                    <option value="">Select your organization</option>
-                                    <?php if(!empty($organizations)): ?>
-                                        <?php foreach($organizations as $org): ?>
-                                            <option value="<?= esc($org['organization_name']) ?>"><?= esc($org['organization_name']) ?></option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
-                                <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Account Credentials Section -->
@@ -282,7 +255,43 @@
     </div>
 
     <script src="<?= base_url('assets/js/nav.js') ?>"></script>
+    <style>
+        .form-group[style*="position: relative"] {
+            position: relative !important;
+        }
+        .autocomplete-suggestions {
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: white !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            max-height: 200px !important;
+            overflow-y: auto !important;
+            z-index: 9999 !important;
+            margin-top: 4px !important;
+            display: block !important;
+        }
+        .suggestion-item {
+            padding: 0.75rem 1rem !important;
+            cursor: pointer !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            transition: background-color 0.2s !important;
+            font-size: 0.875rem !important;
+            color: #1e293b !important;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9 !important;
+        }
+        .suggestion-item:last-child {
+            border-bottom: none !important;
+        }
+    </style>
     <script>
+        const baseUrl = '<?= base_url() ?>';
+        
         // Course options for each department
         const departmentCourses = {
             ccs: [
@@ -370,24 +379,406 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const inOrganizationSelect = document.getElementById('in_organization');
-            const organizationNameGroup = document.getElementById('organization_name_group');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Autocomplete functionality for location fields
+            let provinceTimeout, cityTimeout, barangayTimeout;
+            let selectedProvince = '';
+            let selectedCity = '';
 
-            // Handle organization membership for students
-            if (inOrganizationSelect) {
-                inOrganizationSelect.addEventListener('change', function() {
-                    if (this.value === 'yes') {
-                        organizationNameGroup.style.display = 'block';
-                        document.getElementById('organization_name').required = true;
-                    } else {
-                        organizationNameGroup.style.display = 'none';
-                        document.getElementById('organization_name').required = false;
-                        document.getElementById('organization_name').value = '';
+            // Province autocomplete
+            const provinceInput = document.getElementById('province');
+            const provinceSuggestions = document.getElementById('province-suggestions');
+            const cityInput = document.getElementById('city_municipality');
+            const citySuggestions = document.getElementById('city-suggestions');
+            const barangayInput = document.getElementById('barangay');
+            const barangaySuggestions = document.getElementById('barangay-suggestions');
+
+            if (provinceInput) {
+            provinceInput.addEventListener('input', function() {
+                clearTimeout(provinceTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 1) {
+                    provinceSuggestions.style.display = 'none';
+                    cityInput.disabled = true;
+                    cityInput.value = '';
+                    barangayInput.disabled = true;
+                    barangayInput.value = '';
+                    selectedProvince = '';
+                    selectedCity = '';
+                    return;
+                }
+
+                provinceTimeout = setTimeout(() => {
+                    fetch(baseUrl + 'locations/provinces?q=' + encodeURIComponent(query))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                showSuggestions(provinceSuggestions, data, function(value) {
+                                    provinceInput.value = value;
+                                    selectedProvince = value;
+                                    provinceSuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                    cityInput.disabled = false;
+                                    cityInput.value = '';
+                                    cityInput.focus();
+                                    barangayInput.disabled = true;
+                                    barangayInput.value = '';
+                                    selectedCity = '';
+                                }, function(allSuggestions) {
+                                    showAllSuggestions(provinceSuggestions, allSuggestions, function(value) {
+                                        provinceInput.value = value;
+                                        selectedProvince = value;
+                                        provinceSuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                        cityInput.disabled = false;
+                                        cityInput.value = '';
+                                        cityInput.focus();
+                                        barangayInput.disabled = true;
+                                        barangayInput.value = '';
+                                        selectedCity = '';
+                                    }, provinceInput);
+                                });
+                            } else {
+                                provinceSuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching provinces:', error);
+                            provinceSuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                        });
+                }, 200);
+            });
+
+            provinceInput.addEventListener('focus', function() {
+                const query = this.value.trim();
+                if (query.length >= 1) {
+                    fetch(baseUrl + 'locations/provinces?q=' + encodeURIComponent(query))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length > 0) {
+                                showSuggestions(provinceSuggestions, data, function(value) {
+                                    provinceInput.value = value;
+                                    selectedProvince = value;
+                                    provinceSuggestions.style.display = 'none';
+                                    cityInput.disabled = false;
+                                    cityInput.value = '';
+                                    cityInput.focus();
+                                    barangayInput.disabled = true;
+                                    barangayInput.value = '';
+                                    selectedCity = '';
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error fetching provinces:', error));
+                }
+            });
+
+            provinceInput.addEventListener('blur', function(e) {
+                // Don't hide if clicking on a suggestion
+                setTimeout(() => {
+                    if (!provinceSuggestions.contains(document.activeElement)) {
+                        provinceSuggestions.style.display = 'none';
                     }
-                });
+                }, 300);
+            });
+            
+            // Keep suggestions visible when clicking on them
+            provinceSuggestions.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+            });
+        }
+
+        // City/Municipality autocomplete
+        if (cityInput) {
+            cityInput.addEventListener('input', function() {
+                if (!selectedProvince) {
+                    this.value = '';
+                    return;
+                }
+
+                clearTimeout(cityTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 1) {
+                    citySuggestions.style.display = 'none';
+                    barangayInput.disabled = true;
+                    barangayInput.value = '';
+                    selectedCity = '';
+                    return;
+                }
+
+                cityTimeout = setTimeout(() => {
+                    fetch(baseUrl + 'locations/cities?q=' + encodeURIComponent(query) + '&province=' + encodeURIComponent(selectedProvince))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length > 0) {
+                                showSuggestions(citySuggestions, data, function(value) {
+                                    cityInput.value = value;
+                                    selectedCity = value;
+                                    citySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                    barangayInput.disabled = false;
+                                    barangayInput.value = '';
+                                    barangayInput.focus();
+                                }, function(allSuggestions) {
+                                    showAllSuggestions(citySuggestions, allSuggestions, function(value) {
+                                        cityInput.value = value;
+                                        selectedCity = value;
+                                        citySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                        barangayInput.disabled = false;
+                                        barangayInput.value = '';
+                                        barangayInput.focus();
+                                    }, cityInput);
+                                });
+                            } else {
+                                citySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching cities:', error);
+                            citySuggestions.style.display = 'none';
+                        });
+                }, 200);
+            });
+
+            cityInput.addEventListener('focus', function() {
+                if (!selectedProvince) return;
+                const query = this.value.trim();
+                if (query.length >= 1) {
+                    fetch(baseUrl + 'locations/cities?q=' + encodeURIComponent(query) + '&province=' + encodeURIComponent(selectedProvince))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length > 0) {
+                                showSuggestions(citySuggestions, data, function(value) {
+                                    cityInput.value = value;
+                                    selectedCity = value;
+                                    citySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                    barangayInput.disabled = false;
+                                    barangayInput.value = '';
+                                    barangayInput.focus();
+                                }, function(allSuggestions) {
+                                    showAllSuggestions(citySuggestions, allSuggestions, function(value) {
+                                        cityInput.value = value;
+                                        selectedCity = value;
+                                        citySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                        barangayInput.disabled = false;
+                                        barangayInput.value = '';
+                                        barangayInput.focus();
+                                    }, cityInput);
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error fetching cities:', error));
+                }
+            });
+
+            cityInput.addEventListener('blur', function(e) {
+                // Don't hide if clicking on a suggestion
+                setTimeout(() => {
+                    if (!citySuggestions.contains(document.activeElement)) {
+                        citySuggestions.style.display = 'none';
+                    }
+                }, 300);
+            });
+            
+            // Keep suggestions visible when clicking on them
+            citySuggestions.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+            });
+        }
+
+        // Barangay autocomplete
+        if (barangayInput) {
+            barangayInput.addEventListener('input', function() {
+                if (!selectedProvince || !selectedCity) {
+                    this.value = '';
+                    return;
+                }
+
+                clearTimeout(barangayTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 1) {
+                    barangaySuggestions.style.display = 'none';
+                    return;
+                }
+
+                barangayTimeout = setTimeout(() => {
+                    fetch(baseUrl + 'locations/barangays?q=' + encodeURIComponent(query) + '&province=' + encodeURIComponent(selectedProvince) + '&city=' + encodeURIComponent(selectedCity))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length > 0) {
+                                showSuggestions(barangaySuggestions, data, function(value) {
+                                    barangayInput.value = value;
+                                    barangaySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                }, function(allSuggestions) {
+                                    showAllSuggestions(barangaySuggestions, allSuggestions, function(value) {
+                                        barangayInput.value = value;
+                                        barangaySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                    }, barangayInput);
+                                });
+                            } else {
+                                barangaySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching barangays:', error);
+                            barangaySuggestions.style.display = 'none';
+                        });
+                }, 200);
+            });
+
+            barangayInput.addEventListener('focus', function() {
+                if (!selectedProvince || !selectedCity) return;
+                const query = this.value.trim();
+                if (query.length >= 1) {
+                    fetch(baseUrl + 'locations/barangays?q=' + encodeURIComponent(query) + '&province=' + encodeURIComponent(selectedProvince) + '&city=' + encodeURIComponent(selectedCity))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length > 0) {
+                                showSuggestions(barangaySuggestions, data, function(value) {
+                                    barangayInput.value = value;
+                                    barangaySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                }, function(allSuggestions) {
+                                    showAllSuggestions(barangaySuggestions, allSuggestions, function(value) {
+                                        barangayInput.value = value;
+                                        barangaySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                                    }, barangayInput);
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error fetching barangays:', error));
+                }
+            });
+
+            barangayInput.addEventListener('blur', function(e) {
+                // Don't hide if clicking on a suggestion
+                setTimeout(() => {
+                    if (!barangaySuggestions.contains(document.activeElement)) {
+                        barangaySuggestions.style.display = 'none';
+                    }
+                }, 300);
+            });
+            
+            // Keep suggestions visible when clicking on them
+            barangaySuggestions.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+            });
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            const isProvinceInput = provinceInput && (provinceInput.contains(e.target) || provinceSuggestions.contains(e.target));
+            const isCityInput = cityInput && (cityInput.contains(e.target) || citySuggestions.contains(e.target));
+            const isBarangayInput = barangayInput && (barangayInput.contains(e.target) || barangaySuggestions.contains(e.target));
+
+            if (!isProvinceInput && provinceSuggestions) {
+                provinceSuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+            }
+            if (!isCityInput && citySuggestions) {
+                citySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+            }
+            if (!isBarangayInput && barangaySuggestions) {
+                barangaySuggestions.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+            }
+        });
+
+        function showSuggestions(container, suggestions, onSelect, showAllCallback) {
+            container.innerHTML = '';
+            if (suggestions.length === 0) {
+                container.style.display = 'none';
+                return;
             }
 
+            const displayCount = 10;
+            const hasMore = suggestions.length > displayCount;
+            const itemsToShow = hasMore ? suggestions.slice(0, displayCount) : suggestions;
+
+            itemsToShow.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = suggestion;
+                item.style.cssText = 'padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s; font-size: 0.875rem; color: #1e293b;';
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect(suggestion);
+                    container.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                });
+                item.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                });
+                item.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f1f5f9';
+                });
+                item.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = 'white';
+                });
+                container.appendChild(item);
+            });
+
+            // Show "View All" link if there are 10 or more suggestions
+            if (suggestions.length >= 10 && showAllCallback) {
+                const viewAllLink = document.createElement('div');
+                viewAllLink.className = 'suggestion-item view-all-link';
+                viewAllLink.innerHTML = '<a href="#" style="color: #3b82f6; text-decoration: none; font-weight: 500; display: block;">View All (' + suggestions.length + ' places)</a>';
+                viewAllLink.style.cssText = 'padding: 0.75rem 1rem; cursor: pointer; border-top: 2px solid #e2e8f0; font-size: 0.875rem; text-align: center; background-color: #f8fafc;';
+                viewAllLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (showAllCallback) {
+                        showAllCallback(suggestions);
+                    }
+                });
+                viewAllLink.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+                viewAllLink.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f1f5f9';
+                });
+                viewAllLink.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '#f8fafc';
+                });
+                container.appendChild(viewAllLink);
+            }
+
+            container.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 200px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: block !important;';
+        }
+
+        function showAllSuggestions(container, allSuggestions, onSelect, inputField) {
+            if (!container || !allSuggestions || allSuggestions.length === 0) {
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            allSuggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = suggestion;
+                item.style.cssText = 'padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s; font-size: 0.875rem; color: #1e293b;';
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect(suggestion);
+                    container.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 300px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: none !important;';
+                });
+                item.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                });
+                item.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f1f5f9';
+                });
+                item.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = 'white';
+                });
+                container.appendChild(item);
+            });
+
+            container.style.cssText = 'position: absolute !important; top: 100% !important; left: 0 !important; right: 0 !important; background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; max-height: 300px !important; overflow-y: auto !important; z-index: 9999 !important; margin-top: 4px !important; display: block !important;';
+        }
+        }); // End of DOMContentLoaded for autocomplete
+
+        document.addEventListener('DOMContentLoaded', function () {
             // Handle show/hide confirm password
             const showConfirmPassword = document.getElementById('show_confirm_password');
             const confirmPasswordInput = document.getElementById('confirm_password');

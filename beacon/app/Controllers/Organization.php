@@ -270,76 +270,141 @@ class Organization extends BaseController
     }
 
     /**
-     * Get recent events
+     * Get recent events from all active organizations
      */
     private function getRecentEvents()
     {
-        $orgId = $this->session->get('organization_id');
-        if (!$orgId) {
-            return [];
-        }
-
         $eventModel = new EventModel();
-        $events = $eventModel->getEventsByOrg($orgId, 10);
+        $organizationModel = new OrganizationModel();
+        $userPhotoModel = new UserPhotoModel();
+        $likeModel = new \App\Models\PostLikeModel();
+        $commentModel = new \App\Models\PostCommentModel();
 
-        // Transform database format to view format
-        $formattedEvents = [];
-        foreach ($events as $event) {
-            // Format time - handle both TIME format and string format
-            $timeFormatted = $event['time'];
-            if (strpos($timeFormatted, ':') !== false) {
-                $timeParts = explode(':', $timeFormatted);
-                $hour = (int)$timeParts[0];
-                $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
-                $period = $hour >= 12 ? 'PM' : 'AM';
-                $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
-                $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+        // Get all active organizations
+        $allOrganizations = $organizationModel->where('is_active', 1)->findAll();
+        
+        // Get events from all active organizations
+        $allEvents = [];
+        foreach ($allOrganizations as $org) {
+            $orgEvents = $eventModel->getEventsByOrg($org['id']);
+            
+            // Get organization photo
+            $orgPhoto = null;
+            $userPhoto = $userPhotoModel->where('user_id', $org['user_id'])->first();
+            if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                $orgPhoto = base_url($userPhoto['photo_path']);
             }
-
-            $formattedEvents[] = [
-                'id' => $event['event_id'],
-                'title' => $event['event_name'],
-                'description' => $event['description'],
-                'date' => $event['date'],
-                'time' => $timeFormatted,
-                'location' => $event['venue'],
-                'attendees' => $event['current_attendees'] ?? 0,
-                'max_attendees' => $event['max_attendees'],
-                'status' => $event['status'] ?? 'upcoming',
-                'image' => $event['image'] ?? null,
-            ];
+            
+            foreach ($orgEvents as $event) {
+                $eventId = $event['event_id'] ?? $event['id'];
+                
+                // Get reaction counts
+                $reactionCounts = $likeModel->getReactionCounts('event', $eventId);
+                
+                // Get comment count
+                $commentCount = $commentModel->getCommentCount('event', $eventId);
+                
+                // Format time - handle both TIME format and string format
+                $timeFormatted = $event['time'];
+                if (strpos($timeFormatted, ':') !== false) {
+                    $timeParts = explode(':', $timeFormatted);
+                    $hour = (int)$timeParts[0];
+                    $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                    $period = $hour >= 12 ? 'PM' : 'AM';
+                    $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                    $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+                }
+                
+                $allEvents[] = [
+                    'id' => $eventId,
+                    'org_id' => $org['id'],
+                    'org_name' => $org['organization_name'],
+                    'org_acronym' => $org['organization_acronym'],
+                    'org_photo' => $orgPhoto,
+                    'title' => $event['event_name'] ?? $event['title'],
+                    'description' => $event['description'],
+                    'date' => $event['date'],
+                    'time' => $timeFormatted,
+                    'location' => $event['venue'] ?? $event['location'],
+                    'attendees' => $event['current_attendees'] ?? 0,
+                    'max_attendees' => $event['max_attendees'],
+                    'status' => $event['status'] ?? 'upcoming',
+                    'image' => $event['image'] ?? null,
+                    'created_at' => $event['created_at'],
+                    'reaction_counts' => $reactionCounts,
+                    'comment_count' => $commentCount,
+                ];
+            }
         }
 
-        return $formattedEvents;
+        // Sort by created_at descending (newest first) and limit to 20
+        usort($allEvents, function($a, $b) {
+            $dateA = $a['created_at'] ?? $a['date'];
+            $dateB = $b['created_at'] ?? $b['date'];
+            return strtotime($dateB) - strtotime($dateA);
+        });
+
+        return array_slice($allEvents, 0, 20);
     }
 
     /**
-     * Get recent announcements
+     * Get recent announcements from all active organizations
      */
     private function getRecentAnnouncements()
     {
-        $orgId = $this->session->get('organization_id');
-        if (!$orgId) {
-            return [];
-        }
-
         $announcementModel = new AnnouncementModel();
-        $announcements = $announcementModel->getAnnouncementsByOrg($orgId, 10);
+        $organizationModel = new OrganizationModel();
+        $userPhotoModel = new UserPhotoModel();
+        $likeModel = new \App\Models\PostLikeModel();
+        $commentModel = new \App\Models\PostCommentModel();
 
-        // Transform database format to view format
-        $formattedAnnouncements = [];
-        foreach ($announcements as $announcement) {
-            $formattedAnnouncements[] = [
-                'id' => $announcement['announcement_id'],
-                'title' => $announcement['title'],
-                'content' => $announcement['content'],
-                'priority' => $announcement['priority'] ?? 'normal',
-                'created_at' => $announcement['created_at'],
-                'views' => $announcement['views'] ?? 0,
-            ];
+        // Get all active organizations
+        $allOrganizations = $organizationModel->where('is_active', 1)->findAll();
+        
+        // Get announcements from all active organizations
+        $allAnnouncements = [];
+        foreach ($allOrganizations as $org) {
+            $orgAnnouncements = $announcementModel->getAnnouncementsByOrg($org['id'], 50);
+            
+            // Get organization photo
+            $orgPhoto = null;
+            $userPhoto = $userPhotoModel->where('user_id', $org['user_id'])->first();
+            if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                $orgPhoto = base_url($userPhoto['photo_path']);
+            }
+            
+            foreach ($orgAnnouncements as $announcement) {
+                $announcementId = $announcement['announcement_id'];
+                
+                // Get reaction counts
+                $reactionCounts = $likeModel->getReactionCounts('announcement', $announcementId);
+                
+                // Get comment count
+                $commentCount = $commentModel->getCommentCount('announcement', $announcementId);
+                
+                $allAnnouncements[] = [
+                    'id' => $announcementId,
+                    'org_id' => $org['id'],
+                    'org_name' => $org['organization_name'],
+                    'org_acronym' => $org['organization_acronym'],
+                    'org_photo' => $orgPhoto,
+                    'title' => $announcement['title'],
+                    'content' => $announcement['content'],
+                    'priority' => $announcement['priority'] ?? 'normal',
+                    'created_at' => $announcement['created_at'],
+                    'views' => $announcement['views'] ?? 0,
+                    'reaction_counts' => $reactionCounts,
+                    'comment_count' => $commentCount,
+                ];
+            }
         }
 
-        return $formattedAnnouncements;
+        // Sort by created_at descending (newest first) and limit to 20
+        usort($allAnnouncements, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
+        return array_slice($allAnnouncements, 0, 20);
     }
 
     /**
@@ -1682,6 +1747,245 @@ class Organization extends BaseController
         ];
 
         return $this->response->setJSON(['success' => true, 'data' => $notifications]);
+    }
+
+    /**
+     * Track view for announcements
+     */
+    public function trackView()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $type = $this->request->getPost('type');
+        $id = $this->request->getPost('id');
+
+        if ($type === 'announcement' && $id) {
+            try {
+                $announcementModel = new AnnouncementModel();
+                $announcementModel->incrementViews($id);
+                
+                // Get updated views count
+                $announcement = $announcementModel->find($id);
+                $views = $announcement['views'] ?? 0;
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'views' => $views
+                ]);
+            } catch (\Exception $e) {
+                log_message('error', 'Track view error: ' . $e->getMessage());
+                return $this->response->setJSON(['success' => false, 'message' => 'Error tracking view']);
+            }
+        }
+
+        return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+    }
+
+    /**
+     * Like/React to a post (for organizations)
+     */
+    public function likePost()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $postType = $this->request->getPost('type');
+        $postId = $this->request->getPost('post_id');
+        $reactionType = $this->request->getPost('reaction_type') ?? 'like';
+
+        if (!$postType || !$postId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        // Organizations can't like posts, but they can view reactions
+        // This endpoint is kept for consistency but will return view-only data
+        $likeModel = new \App\Models\PostLikeModel();
+        $reactionCounts = $likeModel->getReactionCounts($postType, $postId);
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'reacted' => false,
+            'reaction_type' => null,
+            'counts' => $reactionCounts
+        ]);
+    }
+
+    /**
+     * Get comments for a post
+     */
+    public function getComments()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $postType = $this->request->getGet('post_type');
+        $postId = $this->request->getGet('post_id');
+
+        if (!$postType || !$postId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        try {
+            $commentModel = new \App\Models\PostCommentModel();
+            $comments = $commentModel->getComments($postType, $postId);
+            
+            // Format comments for display
+            $formattedComments = [];
+            foreach ($comments as $comment) {
+                $userName = '';
+                if (isset($comment['is_organization']) && $comment['is_organization']) {
+                    $userName = $comment['firstname'] ?? 'Organization';
+                } else {
+                    $userName = ($comment['firstname'] ?? '') . ' ' . ($comment['lastname'] ?? '');
+                }
+                
+                $formattedComment = [
+                    'id' => $comment['id'],
+                    'content' => $comment['content'],
+                    'created_at' => $comment['created_at'], // Send raw datetime for JavaScript formatting
+                    'user_name' => trim($userName),
+                    'firstname' => $comment['firstname'] ?? '',
+                    'lastname' => $comment['lastname'] ?? '',
+                    'student_id' => $comment['student_id'] ?? '',
+                    'is_organization' => $comment['is_organization'] ?? false,
+                    'parent_comment_id' => $comment['parent_comment_id'] ?? null,
+                    'replies' => []
+                ];
+                
+                // Format replies recursively if they exist
+                if (isset($comment['replies']) && is_array($comment['replies'])) {
+                    $formattedComment['replies'] = $this->formatRepliesRecursive($comment['replies']);
+                }
+                
+                $formattedComments[] = $formattedComment;
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'comments' => $formattedComments
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Get comments error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error loading comments']);
+        }
+    }
+    
+    /**
+     * Recursively format replies
+     */
+    private function formatRepliesRecursive($replies)
+    {
+        $formattedReplies = [];
+        foreach ($replies as $reply) {
+            $replyUserName = '';
+            if (isset($reply['is_organization']) && $reply['is_organization']) {
+                $replyUserName = $reply['firstname'] ?? 'Organization';
+            } else {
+                $replyUserName = ($reply['firstname'] ?? '') . ' ' . ($reply['lastname'] ?? '');
+            }
+            
+            $formattedReply = [
+                'id' => $reply['id'],
+                'content' => $reply['content'],
+                'created_at' => $reply['created_at'],
+                'user_name' => trim($replyUserName),
+                'firstname' => $reply['firstname'] ?? '',
+                'lastname' => $reply['lastname'] ?? '',
+                'student_id' => $reply['student_id'] ?? '',
+                'is_organization' => $reply['is_organization'] ?? false,
+                'parent_comment_id' => $reply['parent_comment_id'] ?? null,
+                'replies' => []
+            ];
+            
+            // Recursively format nested replies
+            if (isset($reply['replies']) && is_array($reply['replies']) && !empty($reply['replies'])) {
+                $formattedReply['replies'] = $this->formatRepliesRecursive($reply['replies']);
+            }
+            
+            $formattedReplies[] = $formattedReply;
+        }
+        return $formattedReplies;
+    }
+
+    /**
+     * Post a comment (for organizations)
+     */
+    public function comment()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $postType = $this->request->getPost('post_type');
+        $postId = $this->request->getPost('post_id');
+        $content = $this->request->getPost('content');
+        $parentCommentId = $this->request->getPost('parent_comment_id'); // For replies
+
+        if (!$postType || !$postId || !$content || trim($content) === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        try {
+            // Get organization info
+            $orgId = $this->session->get('organization_id');
+            $organizationModel = new OrganizationModel();
+            $organization = $organizationModel->find($orgId);
+            
+            if (!$organization) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+            }
+
+            // Store organization comment with special format
+            $orgName = $organization['organization_name'] ?? 'Organization';
+            $commentContent = "[ORG] " . $orgName . ": " . trim($content);
+            
+            $commentModel = new \App\Models\PostCommentModel();
+            
+            // Insert comment with student_id = NULL to indicate organization comment
+            $data = [
+                'student_id' => null, // NULL indicates organization comment
+                'post_type' => $postType,
+                'post_id' => $postId,
+                'content' => $commentContent
+            ];
+            
+            // Only add parent_comment_id if it's provided and not empty
+            if ($parentCommentId && !empty(trim($parentCommentId))) {
+                $data['parent_comment_id'] = (int)$parentCommentId;
+            }
+            
+            $commentId = $commentModel->insert($data);
+            
+            if (!$commentId) {
+                $errors = $commentModel->errors();
+                log_message('error', 'Post comment insert failed: ' . json_encode($errors));
+                return $this->response->setJSON(['success' => false, 'message' => 'Failed to save comment. Please check if the reply feature is enabled in the database.']);
+            }
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Comment posted successfully',
+                'comment' => [
+                    'id' => $commentId,
+                    'content' => trim($content),
+                    'user_name' => $orgName,
+                    'created_at' => date('M d, Y \a\t g:i A')
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Post comment error: ' . $e->getMessage());
+            log_message('error', 'Post comment trace: ' . $e->getTraceAsString());
+            $errorMessage = 'Error posting comment: ' . $e->getMessage();
+            // Check if it's a column doesn't exist error
+            if (strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'Unknown column') !== false) {
+                $errorMessage = 'Reply feature not available. Please run the SQL script to add reply support.';
+            }
+            return $this->response->setJSON(['success' => false, 'message' => $errorMessage]);
+        }
     }
 
     // ==========================================

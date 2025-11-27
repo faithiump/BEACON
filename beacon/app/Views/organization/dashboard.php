@@ -416,17 +416,17 @@
                         <!-- Feed Posts (Announcements) -->
                         <?php if(!empty($recentAnnouncements)): ?>
                             <?php foreach($recentAnnouncements as $announcement): ?>
-                            <div class="feed-post">
+                            <div class="feed-post" data-announcement-id="<?= $announcement['id'] ?>">
                                 <div class="post-header">
                                     <div class="post-author-avatar">
-                                        <?php if(!empty($organization['photo'])): ?>
-                                            <img src="<?= esc($organization['photo']) ?>" alt="<?= esc($organization['name']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        <?php if(!empty($announcement['org_photo'])): ?>
+                                            <img src="<?= esc($announcement['org_photo']) ?>" alt="<?= esc($announcement['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                                         <?php else: ?>
-                                            <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                            <?= strtoupper(substr($announcement['org_acronym'] ?? 'ORG', 0, 2)) ?>
                                         <?php endif; ?>
                                     </div>
                                     <div class="post-author-info">
-                                        <span class="post-author-name"><?= $organization['name'] ?? 'Organization' ?></span>
+                                        <span class="post-author-name"><?= esc($announcement['org_name'] ?? 'Organization') ?></span>
                                         <span class="post-time">
                                             <i class="fas fa-clock"></i> <?= date('M d, Y \a\t g:i A', strtotime($announcement['created_at'])) ?>
                                             <?php if($announcement['priority'] === 'high'): ?>
@@ -434,6 +434,7 @@
                                             <?php endif; ?>
                                         </span>
                                     </div>
+                                    <?php if(isset($announcement['org_id']) && $announcement['org_id'] == $organization['id']): ?>
                                     <div class="post-menu">
                                         <button class="post-menu-btn" onclick="togglePostMenu(<?= $announcement['id'] ?>)">
                                             <i class="fas fa-ellipsis-h"></i>
@@ -443,6 +444,7 @@
                                             <button onclick="deleteAnnouncement(<?= $announcement['id'] ?>)"><i class="fas fa-trash"></i> Delete</button>
                                         </div>
                                     </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="post-content">
                                     <h3 class="post-title"><?= esc($announcement['title']) ?></h3>
@@ -452,8 +454,39 @@
                                     <span><i class="fas fa-eye"></i> <?= $announcement['views'] ?? 0 ?> views</span>
                                 </div>
                                 <div class="post-actions">
-                                    <button class="post-action"><i class="far fa-thumbs-up"></i> Like</button>
-                                    <button class="post-action"><i class="far fa-comment"></i> Comment</button>
+                                    <div class="reaction-wrapper" data-post-type="announcement" data-post-id="<?= $announcement['id'] ?>">
+                                        <button class="post-action reaction-btn" 
+                                                onmouseenter="showReactionPicker(this)" 
+                                                onmouseleave="hideReactionPicker(this)"
+                                                onclick="quickReact('announcement', <?= $announcement['id'] ?>, this, '')">
+                                            <span class="reaction-icon">👍</span>
+                                            <?php if(($announcement['reaction_counts']['total'] ?? 0) > 0): ?>
+                                            <span class="reaction-count"><?= $announcement['reaction_counts']['total'] ?></span>
+                                            <?php endif; ?>
+                                        </button>
+                                        <div class="reaction-picker" style="display: none;">
+                                            <div class="reaction-option" data-reaction="like" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'like', this)">👍</div>
+                                            <div class="reaction-option" data-reaction="love" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'love', this)">❤️</div>
+                                            <div class="reaction-option" data-reaction="care" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'care', this)">🥰</div>
+                                            <div class="reaction-option" data-reaction="haha" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'haha', this)">😂</div>
+                                            <div class="reaction-option" data-reaction="wow" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'wow', this)">😮</div>
+                                            <div class="reaction-option" data-reaction="sad" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'sad', this)">😢</div>
+                                            <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠</div>
+                                        </div>
+                                    </div>
+                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')">
+                                        <i class="far fa-comment"></i> Comment
+                                        <?php if(($announcement['comment_count'] ?? 0) > 0): ?>
+                                        <span class="comment-count"><?= $announcement['comment_count'] ?></span>
+                                        <?php endif; ?>
+                                    </button>
+                                </div>
+                                <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
+                                    <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
+                                    <div class="comment-input-wrapper">
+                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
+                                        <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
+                                    </div>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -474,10 +507,16 @@
                             <div class="feed-post event-post">
                                 <div class="post-header">
                                     <div class="post-author-avatar event-avatar">
-                                        <i class="fas fa-calendar-alt"></i>
+                                        <?php if(!empty($event['org_photo'])): ?>
+                                            <img src="<?= esc($event['org_photo']) ?>" alt="<?= esc($event['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        <?php else: ?>
+                                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; color: white; font-weight: 600; font-size: 0.875rem;">
+                                                <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="post-author-info">
-                                        <span class="post-author-name"><?= $organization['name'] ?? 'Organization' ?> created an event</span>
+                                        <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?> created an event</span>
                                         <span class="post-time">
                                             <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($event['created_at'] ?? $event['date'])) ?>
                                         </span>
@@ -498,9 +537,43 @@
                                         <p class="event-attendees"><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
                                     </div>
                                 </div>
+                                <div class="post-stats">
+                                    <span><i class="fas fa-eye"></i> <?= $event['views'] ?? 0 ?> views</span>
+                                </div>
                                 <div class="post-actions">
-                                    <button class="post-action"><i class="fas fa-star"></i> Interested</button>
-                                    <button class="post-action"><i class="fas fa-check"></i> Going</button>
+                                    <div class="reaction-wrapper" data-post-type="event" data-post-id="<?= $event['id'] ?>">
+                                        <button class="post-action reaction-btn" 
+                                                onmouseenter="showReactionPicker(this)" 
+                                                onmouseleave="hideReactionPicker(this)"
+                                                onclick="quickReact('event', <?= $event['id'] ?>, this, '')">
+                                            <span class="reaction-icon">👍</span>
+                                            <?php if(($event['reaction_counts']['total'] ?? 0) > 0): ?>
+                                            <span class="reaction-count"><?= $event['reaction_counts']['total'] ?></span>
+                                            <?php endif; ?>
+                                        </button>
+                                        <div class="reaction-picker" style="display: none;">
+                                            <div class="reaction-option" data-reaction="like" onclick="setReaction('event', <?= $event['id'] ?>, 'like', this)">👍</div>
+                                            <div class="reaction-option" data-reaction="love" onclick="setReaction('event', <?= $event['id'] ?>, 'love', this)">❤️</div>
+                                            <div class="reaction-option" data-reaction="care" onclick="setReaction('event', <?= $event['id'] ?>, 'care', this)">🥰</div>
+                                            <div class="reaction-option" data-reaction="haha" onclick="setReaction('event', <?= $event['id'] ?>, 'haha', this)">😂</div>
+                                            <div class="reaction-option" data-reaction="wow" onclick="setReaction('event', <?= $event['id'] ?>, 'wow', this)">😮</div>
+                                            <div class="reaction-option" data-reaction="sad" onclick="setReaction('event', <?= $event['id'] ?>, 'sad', this)">😢</div>
+                                            <div class="reaction-option" data-reaction="angry" onclick="setReaction('event', <?= $event['id'] ?>, 'angry', this)">😠</div>
+                                        </div>
+                                    </div>
+                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $event['id'] ?>, 'event')">
+                                        <i class="far fa-comment"></i> Comment
+                                        <?php if(($event['comment_count'] ?? 0) > 0): ?>
+                                        <span class="comment-count"><?= $event['comment_count'] ?></span>
+                                        <?php endif; ?>
+                                    </button>
+                                </div>
+                                <div class="comments-section" id="comments-event-<?= $event['id'] ?>" style="display: none;">
+                                    <div class="comments-list" id="comments-list-event-<?= $event['id'] ?>"></div>
+                                    <div class="comment-input-wrapper">
+                                        <input type="text" class="comment-input" id="comment-input-event-<?= $event['id'] ?>" placeholder="Write a comment...">
+                                        <button class="btn-send" onclick="postComment(<?= $event['id'] ?>, 'event')"><i class="fas fa-paper-plane"></i></button>
+                                    </div>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -2332,7 +2405,704 @@
             const query = e.target.value.toLowerCase();
             // Add search logic here
         });
+
+        // Reaction functions (same as student dashboard)
+        const reactionIcons = {
+            'like': '👍',
+            'love': '❤️',
+            'care': '🥰',
+            'haha': '😂',
+            'wow': '😮',
+            'sad': '😢',
+            'angry': '😠'
+        };
+
+        function showReactionPicker(button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            if (wrapper) {
+                const picker = wrapper.querySelector('.reaction-picker');
+                if (picker) {
+                    picker.style.display = 'flex';
+                }
+            }
+        }
+
+        function hideReactionPicker(button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            if (wrapper) {
+                const picker = wrapper.querySelector('.reaction-picker');
+                if (picker) {
+                    setTimeout(() => {
+                        if (!picker.matches(':hover') && !button.matches(':hover')) {
+                            picker.style.display = 'none';
+                        }
+                    }, 200);
+                }
+            }
+        }
+
+        function hideAllReactionPickers() {
+            const allPickers = document.querySelectorAll('.reaction-picker');
+            allPickers.forEach(picker => {
+                picker.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('scroll', function() {
+            hideAllReactionPickers();
+        }, true);
+
+        document.addEventListener('click', function(event) {
+            const clickedElement = event.target;
+            const isReactionButton = clickedElement.closest('.reaction-btn');
+            const isReactionPicker = clickedElement.closest('.reaction-picker');
+            const isReactionOption = clickedElement.closest('.reaction-option');
+            
+            if (!isReactionButton && !isReactionPicker && !isReactionOption) {
+                hideAllReactionPickers();
+            }
+        });
+
+        function quickReact(postType, postId, button, currentReaction) {
+            if (currentReaction) {
+                setReaction(postType, postId, 'like', button);
+            } else {
+                setReaction(postType, postId, 'like', button);
+            }
+        }
+
+        function setReaction(postType, postId, reactionType, button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            const reactionIcon = wrapper ? wrapper.querySelector('.reaction-icon') : null;
+            const reactionCount = wrapper ? wrapper.querySelector('.reaction-count') : null;
+            
+            fetch(baseUrl + 'organization/likePost', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `type=${postType}&post_id=${postId}&reaction_type=${reactionType}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.reacted && data.reaction_type) {
+                        button.classList.add('reacted', 'reaction-' + data.reaction_type);
+                        button.classList.remove('reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
+                        button.classList.add('reaction-' + data.reaction_type);
+                        
+                        if (reactionIcon) {
+                            reactionIcon.textContent = reactionIcons[data.reaction_type] || '👍';
+                        }
+                    } else {
+                        button.classList.remove('reacted', 'reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
+                        
+                        if (reactionIcon) {
+                            reactionIcon.textContent = '👍';
+                        }
+                    }
+                    
+                    const totalCount = data.counts ? data.counts.total : 0;
+                    if (totalCount > 0) {
+                        if (reactionCount) {
+                            reactionCount.textContent = totalCount;
+                        } else {
+                            const newCount = document.createElement('span');
+                            newCount.className = 'reaction-count';
+                            newCount.textContent = totalCount;
+                            button.appendChild(newCount);
+                        }
+                    } else {
+                        if (reactionCount) {
+                            reactionCount.remove();
+                        }
+                    }
+                    
+                    const picker = wrapper ? wrapper.querySelector('.reaction-picker') : null;
+                    if (picker) {
+                        picker.style.display = 'none';
+                    }
+                } else {
+                    showToast(data.message || 'Failed to react to post', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while reacting to post', 'error');
+            });
+        }
+
+        function toggleComments(postId, postType) {
+            const commentsSection = document.getElementById(`comments-${postType}-${postId}`);
+            if (commentsSection) {
+                if (commentsSection.style.display === 'none') {
+                    commentsSection.style.display = 'block';
+                    loadComments(postId, postType);
+                } else {
+                    commentsSection.style.display = 'none';
+                }
+            }
+        }
+
+        function loadComments(postId, postType) {
+            const commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+            if (!commentsList) return;
+            
+            fetch(baseUrl + `organization/getComments?post_type=${postType}&post_id=${postId}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    commentsList.innerHTML = '';
+                    if (data.comments.length === 0) {
+                        commentsList.innerHTML = '<p style="padding: 1rem; color: #64748b; text-align: center; font-size: 0.875rem;">No comments yet. Be the first to comment!</p>';
+                    } else {
+                        // Show first 2 comments, hide the rest
+                        const totalComments = data.comments.length;
+                        const visibleComments = totalComments > 2 ? data.comments.slice(0, 2) : data.comments;
+                        const hiddenComments = totalComments > 2 ? data.comments.slice(2) : [];
+                        
+                        visibleComments.forEach(comment => {
+                            const commentDiv = createCommentElement(comment, postType, postId);
+                            commentsList.appendChild(commentDiv);
+                        });
+                        
+                        // Add "See more" button if there are more than 2 comments
+                        if (totalComments > 2) {
+                            const seeMoreBtn = document.createElement('button');
+                            seeMoreBtn.className = 'see-more-comments';
+                            seeMoreBtn.textContent = `See more comments (${hiddenComments.length} more)`;
+                            seeMoreBtn.style.cssText = 'width: 100%; padding: 0.75rem; margin-top: 0.5rem; background: transparent; border: 1px solid #e2e8f0; border-radius: 8px; color: #3b82f6; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s;';
+                            seeMoreBtn.onmouseenter = function() { this.style.backgroundColor = '#f1f5f9'; };
+                            seeMoreBtn.onmouseleave = function() { this.style.backgroundColor = 'transparent'; };
+                            seeMoreBtn.onclick = function() {
+                                hiddenComments.forEach(comment => {
+                                    const commentDiv = createCommentElement(comment, postType, postId);
+                                    commentsList.insertBefore(commentDiv, seeMoreBtn);
+                                });
+                                seeMoreBtn.remove();
+                            };
+                            commentsList.appendChild(seeMoreBtn);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading comments:', error);
+            });
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return 'Just now';
+            
+            const date = new Date(dateString);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                // If invalid, try to parse as MySQL datetime format
+                const mysqlDate = new Date(dateString.replace(' ', 'T'));
+                if (isNaN(mysqlDate.getTime())) {
+                    return 'Just now';
+                }
+                return formatRelativeTime(mysqlDate);
+            }
+            
+            return formatRelativeTime(date);
+        }
+        
+        function formatRelativeTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function renderReplies(replies, postType, postId) {
+            let html = '';
+            replies.forEach(reply => {
+                const replyUserName = reply.user_name || (reply.firstname + ' ' + reply.lastname) || 'User';
+                const replyId = reply.id;
+                const hasNestedReplies = reply.replies && reply.replies.length > 0;
+                
+                html += `
+                    <div class="comment-item" style="padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+                        <div style="display: flex; gap: 0.75rem;">
+                            <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem; flex-shrink: 0;">
+                                ${replyUserName.charAt(0).toUpperCase()}
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 0.8125rem; color: #1e293b; margin-bottom: 0.25rem;">${replyUserName}</div>
+                                <div style="color: #475569; font-size: 0.8125rem; margin-bottom: 0.25rem;">${reply.content}</div>
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem;">
+                                    <div style="color: #94a3b8; font-size: 0.7rem;">${formatTime(reply.created_at)}</div>
+                                    <button onclick="showReplyInput(${replyId}, '${postType}', ${postId})" style="background: none; border: none; color: #3b82f6; font-size: 0.7rem; cursor: pointer; font-weight: 500; padding: 0;">Reply</button>
+                                </div>
+                                <div id="reply-input-${replyId}" style="display: none; margin-top: 0.75rem;">
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <input type="text" id="reply-text-${replyId}" placeholder="Write a reply..." style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem;">
+                                        <button onclick="postReply(${replyId}, '${postType}', ${postId})" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem;">Send</button>
+                                    </div>
+                                </div>
+                                ${hasNestedReplies ? '<div class="comment-replies" style="margin-left: 2rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">' + renderReplies(reply.replies, postType, postId) + '</div>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function createCommentElement(comment, postType, postId) {
+            const commentDiv = document.createElement('div');
+            commentDiv.className = 'comment-item';
+            commentDiv.style.cssText = 'padding: 0.75rem; border-bottom: 1px solid #e2e8f0;';
+            const userName = comment.user_name || (comment.firstname + ' ' + comment.lastname) || 'User';
+            const commentId = comment.id;
+            const hasReplies = comment.replies && comment.replies.length > 0;
+            
+            let repliesHtml = '';
+            if (hasReplies) {
+                repliesHtml = '<div class="comment-replies" style="margin-left: 2.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">';
+                repliesHtml += renderReplies(comment.replies, postType, postId);
+                repliesHtml += '</div>';
+            }
+            
+            commentDiv.innerHTML = `
+                <div style="display: flex; gap: 0.75rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.875rem; flex-shrink: 0;">
+                        ${userName.charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 0.25rem;">${userName}</div>
+                        <div style="color: #475569; font-size: 0.875rem; margin-bottom: 0.25rem;">${comment.content}</div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem;">
+                            <div style="color: #94a3b8; font-size: 0.75rem;">${formatTime(comment.created_at)}</div>
+                            <button onclick="showReplyInput(${commentId}, '${postType}', ${postId})" style="background: none; border: none; color: #3b82f6; font-size: 0.75rem; cursor: pointer; font-weight: 500; padding: 0;">Reply</button>
+                        </div>
+                        <div id="reply-input-${commentId}" style="display: none; margin-top: 0.75rem;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" id="reply-text-${commentId}" placeholder="Write a reply..." style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem;">
+                                <button onclick="postReply(${commentId}, '${postType}', ${postId})" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem;">Send</button>
+                            </div>
+                        </div>
+                        ${repliesHtml}
+                    </div>
+                </div>
+            `;
+            
+            return commentDiv;
+        }
+
+        function showReplyInput(commentId, postType, postId) {
+            const replyInput = document.getElementById(`reply-input-${commentId}`);
+            if (replyInput) {
+                replyInput.style.display = replyInput.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function postReply(parentCommentId, postType, postId) {
+            const input = document.getElementById(`reply-text-${parentCommentId}`);
+            if (!input) return;
+
+            const content = input.value.trim();
+            if (!content) {
+                showToast('Please enter a reply', 'error');
+                return;
+            }
+
+            fetch(baseUrl + 'organization/comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `post_type=${postType}&post_id=${postId}&content=${encodeURIComponent(content)}&parent_comment_id=${parentCommentId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    input.value = '';
+                    document.getElementById(`reply-input-${parentCommentId}`).style.display = 'none';
+                    loadComments(postId, postType);
+                } else {
+                    showToast(data.message || 'Failed to post reply', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while posting reply', 'error');
+            });
+        }
+
+        function postComment(postId, postType) {
+            const input = document.getElementById(`comment-input-${postType}-${postId}`);
+            if (!input) return;
+
+            const content = input.value.trim();
+            if (!content) {
+                showToast('Please enter a comment', 'error');
+                return;
+            }
+
+            fetch(baseUrl + 'organization/comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `post_type=${postType}&post_id=${postId}&content=${encodeURIComponent(content)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    input.value = '';
+                    loadComments(postId, postType);
+                    const commentBtn = document.querySelector(`.comment-btn[onclick*="${postId}"]`);
+                    if (commentBtn) {
+                        const countSpan = commentBtn.querySelector('.comment-count');
+                        const currentCount = countSpan ? parseInt(countSpan.textContent) || 0 : 0;
+                        if (countSpan) {
+                            countSpan.textContent = currentCount + 1;
+                        } else {
+                            const newCount = document.createElement('span');
+                            newCount.className = 'comment-count';
+                            newCount.textContent = currentCount + 1;
+                            commentBtn.appendChild(newCount);
+                        }
+                    }
+                } else {
+                    showToast(data.message || 'Failed to post comment', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while posting comment', 'error');
+            });
+        }
+
+        // Track views when announcements are displayed
+        document.addEventListener('DOMContentLoaded', function() {
+            const announcementPosts = document.querySelectorAll('.feed-post[data-announcement-id]');
+            announcementPosts.forEach(post => {
+                const announcementId = post.getAttribute('data-announcement-id');
+                if (announcementId) {
+                    // Track view
+                    fetch(baseUrl + 'organization/trackView', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: `type=announcement&id=${announcementId}`
+                    }).then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update view count in the UI
+                            const viewSpan = post.querySelector('.post-stats span');
+                            if (viewSpan && data.views !== undefined) {
+                                viewSpan.innerHTML = `<i class="fas fa-eye"></i> ${data.views} views`;
+                            }
+                        }
+                    }).catch(error => console.error('Error tracking view:', error));
+                }
+            });
+        });
     </script>
+
+    <style>
+        /* Post Actions Styles - Matching Student Dashboard */
+        .post-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 0.75rem;
+        }
+
+        .post-action {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .post-action:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .post-action i {
+            font-size: 1.1rem;
+        }
+
+        /* Reaction Button Styles - Matching Student Dashboard */
+        .reaction-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .reaction-btn {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .reaction-btn:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .reaction-btn.reacted {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .reaction-btn.reaction-love {
+            color: #ef4444;
+        }
+
+        .reaction-btn.reaction-care {
+            color: #f59e0b;
+        }
+
+        .reaction-btn.reaction-haha {
+            color: #f59e0b;
+        }
+
+        .reaction-btn.reaction-wow {
+            color: #f59e0b;
+        }
+
+        .reaction-btn.reaction-sad {
+            color: #3b82f6;
+        }
+
+        .reaction-btn.reaction-angry {
+            color: #ef4444;
+        }
+
+        .reaction-icon {
+            font-size: 1.1em;
+            margin-right: 0.25rem;
+        }
+
+        .reaction-count {
+            margin-left: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .reaction-picker {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 30px;
+            padding: 0.5rem 0.35rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            gap: 0.15rem;
+            z-index: 1000;
+            margin-bottom: 0.75rem;
+            animation: slideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .reaction-option {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.9rem;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            padding: 0.3rem;
+        }
+
+        .reaction-option:hover {
+            transform: scale(1.25) translateY(-3px);
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .reaction-option::before {
+            content: attr(data-reaction);
+            position: absolute;
+            bottom: calc(100% + 0.6rem);
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-transform: capitalize;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .reaction-option:hover::before {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .reaction-option::after {
+            content: '';
+            position: absolute;
+            bottom: calc(100% - 0.2rem);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #1e293b;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .reaction-option:hover::after {
+            opacity: 1;
+        }
+
+        .reaction-option[data-reaction="like"]:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .reaction-option[data-reaction="love"]:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .reaction-option[data-reaction="care"]:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .reaction-option[data-reaction="haha"]:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .reaction-option[data-reaction="wow"]:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .reaction-option[data-reaction="sad"]:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .reaction-option[data-reaction="angry"]:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .comment-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comment-count {
+            margin-left: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .comments-section {
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .comments-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .comment-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .btn-send {
+            padding: 0.75rem 1.25rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-send:hover {
+            background: #2563eb;
+        }
+
+        .btn-send i {
+            font-size: 0.875rem;
+        }
+    </style>
 </body>
 </html>
 

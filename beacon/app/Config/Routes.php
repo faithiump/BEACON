@@ -40,6 +40,10 @@ $routes->post('organization/announcements/delete/(:num)', 'Organization::deleteA
 // Organization Settings
 $routes->post('organization/settings/update', 'Organization::editOrgInfo');
 $routes->post('organization/uploadPhoto', 'Organization::uploadPhoto');
+$routes->post('organization/trackView', 'Organization::trackView');
+$routes->post('organization/likePost', 'Organization::likePost');
+$routes->post('organization/comment', 'Organization::comment');
+$routes->get('organization/getComments', 'Organization::getComments');
 
 // Organization Members
 $routes->get('organization/members', 'Organization::viewMembers');
@@ -79,6 +83,11 @@ $routes->get('admin/students/view/(:num)', 'Admin\\Login::viewStudent/$1');
 
 // Admin user management
 $routes->get('admin/users', 'Admin\\Login::manageUsers');
+
+// Location routes
+$routes->get('locations/provinces', 'Locations::getProvinces');
+$routes->get('locations/cities', 'Locations::getCities');
+$routes->get('locations/barangays', 'Locations::getBarangays');
 
 // Student routes
 $routes->get('student/dashboard', 'Student::dashboard');

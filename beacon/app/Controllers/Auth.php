@@ -41,17 +41,7 @@ class Auth extends BaseController
 
     public function register(): string
     {
-        // Get all active organizations for the dropdown
-        $organizationModel = new \App\Models\OrganizationModel();
-        $organizations = $organizationModel->where('is_active', 1)
-            ->orderBy('organization_name', 'ASC')
-            ->findAll();
-        
-        $data = [
-            'organizations' => $organizations
-        ];
-        
-        return view('auth/register', $data);
+        return view('auth/register');
     }
 
     public function processLogin()
@@ -191,13 +181,7 @@ class Auth extends BaseController
             'department' => 'required|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
             'course' => 'required',
             'year_level' => 'required|in_list[1,2,3,4,5]',
-            'in_organization' => 'required|in_list[yes,no]'
         ];
-        
-        // If student is in organization, require organization name
-        if ($this->request->getPost('in_organization') === 'yes') {
-            $rules['organization_name'] = 'required|min_length[3]';
-        }
 
         if (!$this->validate($rules)) {
             $errors = $validation->getErrors();
@@ -259,11 +243,7 @@ class Auth extends BaseController
                 'student_id' => $this->request->getPost('student_id'),
                 'department' => $this->request->getPost('department'),
                 'course' => $this->request->getPost('course'),
-                'year_level' => $this->request->getPost('year_level'),
-                'in_organization' => $this->request->getPost('in_organization'),
-                'organization_name' => $this->request->getPost('in_organization') === 'yes' 
-                    ? $this->request->getPost('organization_name') 
-                    : null
+                'year_level' => $this->request->getPost('year_level')
             ];
             $studentId = $this->studentModel->insert($studentData);
             

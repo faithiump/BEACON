@@ -841,14 +841,15 @@ class Student extends BaseController
      */
     public function comment()
     {
-        $authCheck = $this->checkAuth();
-        if ($authCheck !== true) {
+        // Allow both students and organizations to comment
+        if (!session()->get('isLoggedIn')) {
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
         }
 
         $content = trim($this->request->getPost('content'));
-        $postType = $this->request->getPost('type'); // 'announcement' or 'event'
-        $postId = $this->request->getPost('target_id');
+        $postType = $this->request->getPost('post_type') ?? $this->request->getPost('type'); // 'announcement' or 'event'
+        $postId = $this->request->getPost('post_id') ?? $this->request->getPost('target_id');
+        $parentCommentId = $this->request->getPost('parent_comment_id'); // For replies
 
         if (empty($content)) {
             return $this->response->setJSON(['success' => false, 'message' => 'Comment cannot be empty']);
@@ -859,10 +860,22 @@ class Student extends BaseController
         }
 
         $userId = session()->get('user_id');
-        $student = $this->studentModel->where('user_id', $userId)->first();
+        $role = session()->get('role');
         
-        if (!$student) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        // Get student ID - for organizations, we'll need to handle differently
+        $studentId = null;
+        if ($role === 'student') {
+            $student = $this->studentModel->where('user_id', $userId)->first();
+            if (!$student) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+            }
+            $studentId = $student['id'];
+        } elseif ($role === 'organization') {
+            // Organizations can view comments but cannot comment themselves
+            // For now, return error - organizations viewing their posts will see student comments
+            return $this->response->setJSON(['success' => false, 'message' => 'Organizations cannot comment on posts']);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid user role']);
         }
 
         try {
@@ -872,7 +885,8 @@ class Student extends BaseController
                 'student_id' => $student['id'],
                 'post_type' => $postType,
                 'post_id' => $postId,
-                'content' => $content
+                'content' => $content,
+                'parent_comment_id' => $parentCommentId ? (int)$parentCommentId : null
             ]);
 
             if ($commentId) {
@@ -907,8 +921,8 @@ class Student extends BaseController
 
     public function likePost()
     {
-        $authCheck = $this->checkAuth();
-        if ($authCheck !== true) {
+        // Allow both students and organizations to like posts
+        if (!session()->get('isLoggedIn')) {
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
         }
 
@@ -928,22 +942,34 @@ class Student extends BaseController
         $postId = (int)$postId;
 
         $userId = session()->get('user_id');
-        $student = $this->studentModel->where('user_id', $userId)->first();
+        $role = session()->get('role');
         
-        if (!$student) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        // Get student ID - for organizations, we'll need to handle differently
+        $studentId = null;
+        if ($role === 'student') {
+            $student = $this->studentModel->where('user_id', $userId)->first();
+            if (!$student) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+            }
+            $studentId = $student['id'];
+        } elseif ($role === 'organization') {
+            // Organizations can view reactions but cannot react themselves
+            // For now, return error - organizations viewing their posts will see student reactions
+            return $this->response->setJSON(['success' => false, 'message' => 'Organizations cannot react to posts']);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid user role']);
         }
 
         try {
             $likeModel = new \App\Models\PostLikeModel();
             
             // Validate student ID
-            if (empty($student['id'])) {
+            if (empty($studentId)) {
                 return $this->response->setJSON(['success' => false, 'message' => 'Student ID not found']);
             }
             
             // Use setReaction for Facebook-style reactions
-            $result = $likeModel->setReaction($student['id'], $postType, $postId, $reactionType);
+            $result = $likeModel->setReaction($studentId, $postType, $postId, $reactionType);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -969,12 +995,12 @@ class Student extends BaseController
 
     public function getComments()
     {
-        $authCheck = $this->checkAuth();
-        if ($authCheck !== true) {
+        // Allow both students and organizations to view comments
+        if (!session()->get('isLoggedIn')) {
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
         }
 
-        $postType = $this->request->getGet('type');
+        $postType = $this->request->getGet('post_type') ?? $this->request->getGet('type');
         $postId = $this->request->getGet('post_id');
 
         if (!in_array($postType, ['announcement', 'event'])) {
@@ -987,13 +1013,25 @@ class Student extends BaseController
 
             $formattedComments = [];
             foreach ($comments as $comment) {
-                $formattedComments[] = [
+                $formattedComment = [
                     'id' => $comment['id'],
                     'content' => $comment['content'],
                     'user_name' => trim(($comment['firstname'] ?? '') . ' ' . ($comment['lastname'] ?? '')),
+                    'firstname' => $comment['firstname'] ?? '',
+                    'lastname' => $comment['lastname'] ?? '',
                     'student_id' => $comment['student_id'] ?? '',
-                    'created_at' => $comment['created_at']
+                    'created_at' => $comment['created_at'],
+                    'parent_comment_id' => $comment['parent_comment_id'] ?? null,
+                    'is_organization' => $comment['is_organization'] ?? false,
+                    'replies' => []
                 ];
+                
+                // Format replies recursively if they exist
+                if (isset($comment['replies']) && is_array($comment['replies'])) {
+                    $formattedComment['replies'] = $this->formatRepliesRecursive($comment['replies']);
+                }
+                
+                $formattedComments[] = $formattedComment;
             }
 
             return $this->response->setJSON([
@@ -1004,6 +1042,43 @@ class Student extends BaseController
             log_message('error', 'Get comments error: ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'An error occurred while fetching comments']);
         }
+    }
+    
+    /**
+     * Recursively format replies
+     */
+    private function formatRepliesRecursive($replies)
+    {
+        $formattedReplies = [];
+        foreach ($replies as $reply) {
+            $replyUserName = '';
+            if (isset($reply['is_organization']) && $reply['is_organization']) {
+                $replyUserName = $reply['firstname'] ?? 'Organization';
+            } else {
+                $replyUserName = trim(($reply['firstname'] ?? '') . ' ' . ($reply['lastname'] ?? ''));
+            }
+            
+            $formattedReply = [
+                'id' => $reply['id'],
+                'content' => $reply['content'],
+                'created_at' => $reply['created_at'],
+                'user_name' => $replyUserName,
+                'firstname' => $reply['firstname'] ?? '',
+                'lastname' => $reply['lastname'] ?? '',
+                'student_id' => $reply['student_id'] ?? '',
+                'is_organization' => $reply['is_organization'] ?? false,
+                'parent_comment_id' => $reply['parent_comment_id'] ?? null,
+                'replies' => []
+            ];
+            
+            // Recursively format nested replies
+            if (isset($reply['replies']) && is_array($reply['replies']) && !empty($reply['replies'])) {
+                $formattedReply['replies'] = $this->formatRepliesRecursive($reply['replies']);
+            }
+            
+            $formattedReplies[] = $formattedReply;
+        }
+        return $formattedReplies;
     }
 
     /**
