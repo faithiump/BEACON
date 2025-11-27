@@ -840,11 +840,19 @@
                             <h1 class="section-title">Announcements</h1>
                             <p class="section-subtitle">Stay updated with the latest news and updates</p>
                         </div>
+                        <div class="filter-group">
+                            <select class="filter-select" id="announcementFilter">
+                                <option value="recent">Recent Announcements</option>
+                                <option value="all">All Announcements</option>
+                                <option value="important">Important</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="announcements-list-full">
+                    <div class="announcements-list-full" id="announcementsList">
                         <?php if(!empty($allAnnouncements)): ?>
                             <?php foreach($allAnnouncements as $announcement): ?>
-                            <div class="announcement-card <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>">
+                            <div class="announcement-card <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>" data-announcement-id="<?= $announcement['id'] ?>" data-priority="<?= $announcement['priority'] ?? 'normal' ?>" data-created-at="<?= $announcement['created_at'] ?>">
                                 <div class="announcement-card-header">
                                     <?php if($announcement['priority'] === 'high'): ?>
                                     <span class="priority-badge high"><i class="fas fa-exclamation-circle"></i> Important</span>
@@ -2018,6 +2026,13 @@
                 }, 100);
             }
             
+            // Initialize announcement filter if switching to announcements section
+            if (sectionId === 'announcements') {
+                setTimeout(() => {
+                    initializeAnnouncementFilter();
+                }, 100);
+            }
+            
             // Hide announcements badge when announcements section is viewed
             if (sectionId === 'announcements') {
                 const announcementsNavBadge = document.getElementById('announcementsNavBadge');
@@ -2214,6 +2229,112 @@
             if (eventFilter) {
                 // Apply initial filter (defaults to 'all')
                 filterEvents(eventFilter.value || 'all');
+            }
+        }
+
+        // Announcement Filter Functions
+        const announcementFilter = document.getElementById('announcementFilter');
+        if (announcementFilter) {
+            announcementFilter.addEventListener('change', function() {
+                filterAnnouncements(this.value);
+            });
+        }
+
+        function filterAnnouncements(filterType) {
+            const announcementCards = document.querySelectorAll('.announcement-card');
+            
+            let visibleCount = 0;
+            const cardsArray = Array.from(announcementCards);
+            
+            // Sort cards based on filter
+            if (filterType === 'oldest') {
+                // Sort by date ascending (oldest first)
+                cardsArray.sort((a, b) => {
+                    const dateA = new Date(a.getAttribute('data-created-at'));
+                    const dateB = new Date(b.getAttribute('data-created-at'));
+                    return dateA - dateB;
+                });
+            } else {
+                // Sort by date descending (newest first) for recent and all
+                cardsArray.sort((a, b) => {
+                    const dateA = new Date(a.getAttribute('data-created-at'));
+                    const dateB = new Date(b.getAttribute('data-created-at'));
+                    return dateB - dateA;
+                });
+            }
+            
+            // Reorder cards in DOM
+            const announcementsList = document.getElementById('announcementsList');
+            if (announcementsList) {
+                cardsArray.forEach(card => {
+                    announcementsList.appendChild(card);
+                });
+            }
+            
+            // Filter and show/hide cards
+            cardsArray.forEach(card => {
+                const priority = card.getAttribute('data-priority');
+                
+                let shouldShow = false;
+                
+                switch(filterType) {
+                    case 'all':
+                    case 'oldest':
+                        shouldShow = true;
+                        break;
+                    case 'recent':
+                        // Show all, but sorted by newest first (already sorted above)
+                        shouldShow = true;
+                        break;
+                    case 'important':
+                        // Show only high priority announcements
+                        shouldShow = priority === 'high';
+                        break;
+                    default:
+                        shouldShow = true;
+                }
+                
+                if (shouldShow) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show empty state if no announcements match the filter
+            const announcementsListContainer = document.getElementById('announcementsList');
+            let emptyState = announcementsListContainer.querySelector('.empty-announcements-state');
+            
+            if (visibleCount === 0) {
+                if (!emptyState) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-announcements-state';
+                    emptyDiv.style.cssText = 'text-align: center; padding: 3rem;';
+                    emptyDiv.innerHTML = `
+                        <div style="color: var(--gray-500);">
+                            <i class="fas fa-bullhorn" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">No Announcements Found</h3>
+                            <p>No announcements match the selected filter.</p>
+                        </div>
+                    `;
+                    announcementsListContainer.appendChild(emptyDiv);
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } else {
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize announcement filter when announcements section is loaded
+        function initializeAnnouncementFilter() {
+            const announcementFilter = document.getElementById('announcementFilter');
+            if (announcementFilter) {
+                // Apply initial filter (defaults to 'recent')
+                filterAnnouncements(announcementFilter.value || 'recent');
             }
         }
 
