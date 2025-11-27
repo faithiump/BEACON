@@ -120,18 +120,6 @@
                         </span>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon security">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 class="stat-value">98.5%</h3>
-                        <p class="stat-label">Security Compliance</p>
-                        <span class="stat-change positive">
-                            <i class="fas fa-check-circle"></i> All systems secure
-                        </span>
-                    </div>
-                </div>
             </div>
 
             <!-- Navigation Tabs -->
@@ -145,8 +133,8 @@
                 <button class="tab-btn" data-tab="users">
                     <i class="fas fa-users"></i> User Management
                 </button>
-                <button class="tab-btn" data-tab="security">
-                    <i class="fas fa-shield-alt"></i> Security & Compliance
+                <button class="tab-btn" data-tab="transactions">
+                    <i class="fas fa-money-bill-wave"></i> Transactions & Payments
                 </button>
             </div>
 
@@ -184,7 +172,7 @@
                                                 <i class="fas fa-times"></i> Reject
                                             </button>
                                             <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>, 'organizations')" title="View Details">
-                                                <i class="fas fa-eye"></i>
+                                                <i class="fas fa-eye"></i> View
                                             </button>
                                         </div>
                                     </div>
@@ -253,10 +241,15 @@
                                 <i class="fas fa-user-graduate"></i>
                                 Active Student Accounts
                             </h2>
+                            <?php if (isset($total_students_count) && $total_students_count > 2): ?>
+                                <button class="btn-view-all" id="viewAllStudentsBtn" onclick="toggleAllStudents()">
+                                    <i class="fas fa-list"></i> View All Accounts (<?= number_format($total_students_count) ?>)
+                                </button>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <div class="table-container">
-                                <table class="data-table">
+                                <table class="data-table" id="studentsTable">
                                     <thead>
                                         <tr>
                                             <th>Student Name</th>
@@ -266,10 +259,10 @@
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="studentsTableBody">
                                         <?php if (!empty($students)): ?>
-                                            <?php foreach ($students as $student): ?>
-                                                <tr>
+                                            <?php foreach ($students as $index => $student): ?>
+                                                <tr class="student-row <?= $index >= 2 ? 'student-row-hidden' : '' ?>">
                                                     <td><?= esc($student['name']) ?></td>
                                                     <td><?= esc($student['course']) ?></td>
                                                     <td><span class="status-badge active"><?= esc($student['status']) ?></span></td>
@@ -301,45 +294,34 @@
                         </div>
                         <div class="card-body">
                             <div class="comments-list">
-                                <div class="comment-item">
-                                    <div class="comment-avatar">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div class="comment-content">
-                                        <div class="comment-header">
-                                            <strong>John Doe</strong>
-                                            <span class="comment-time">2 hours ago</span>
+                                <?php if (!empty($recent_comments)): ?>
+                                    <?php foreach ($recent_comments as $comment): ?>
+                                        <div class="comment-item">
+                                            <div class="comment-avatar">
+                                                <?php if (!empty($comment['profile_image'])): ?>
+                                                    <img src="<?= esc($comment['profile_image']) ?>" alt="<?= esc($comment['student_name']) ?>" onerror="this.style.display='none'; this.parentElement.querySelector('i').style.display='flex';">
+                                                <?php endif; ?>
+                                                <i class="fas fa-user" <?= !empty($comment['profile_image']) ? 'style="display: none;"' : '' ?>></i>
+                                            </div>
+                                            <div class="comment-content">
+                                                <div class="comment-header">
+                                                    <strong><?= esc($comment['student_name']) ?></strong>
+                                                    <span class="comment-time"><?= esc($comment['time_ago']) ?></span>
+                                                </div>
+                                                <p><?= esc($comment['content']) ?></p>
+                                                <span class="comment-context">
+                                                    On: <?= esc($comment['post_title']) ?> 
+                                                    (<?= esc($comment['post_type']) ?>) • 
+                                                    <?= esc($comment['organization_name']) ?>
+                                                </span>
+                                            </div>
                                         </div>
-                                        <p>"Great event! Looking forward to the next one."</p>
-                                        <span class="comment-context">On: Tech Innovation Hub Event</span>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                                        No comments found.
                                     </div>
-                                </div>
-                                <div class="comment-item">
-                                    <div class="comment-avatar">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div class="comment-content">
-                                        <div class="comment-header">
-                                            <strong>Jane Smith</strong>
-                                            <span class="comment-time">5 hours ago</span>
-                                        </div>
-                                        <p>"The workshop was very informative. Thanks!"</p>
-                                        <span class="comment-context">On: Business Workshop</span>
-                                    </div>
-                                </div>
-                                <div class="comment-item">
-                                    <div class="comment-avatar">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div class="comment-content">
-                                        <div class="comment-header">
-                                            <strong>Sarah Johnson</strong>
-                                            <span class="comment-time">1 day ago</span>
-                                        </div>
-                                        <p>"Can't wait to join this organization!"</p>
-                                        <span class="comment-context">On: Green Energy Initiative</span>
-                                    </div>
-                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -354,85 +336,35 @@
                     </div>
                     <div class="card-body">
                         <div class="activity-stats">
-                            <div class="activity-stat-item">
-                                <h4>John Doe</h4>
-                                <p>Computer Science</p>
-                                <div class="org-memberships">
-                                    <span class="org-tag">Tech Innovation Hub</span>
-                                    <span class="org-tag">Computer Science Society</span>
-                                    <span class="org-tag">Coding Club</span>
+                            <?php if (!empty($student_activity)): ?>
+                                <?php foreach ($student_activity as $activity): ?>
+                                    <div class="activity-stat-item">
+                                        <h4><?= esc($activity['student_name']) ?></h4>
+                                        <p><?= esc($activity['course']) ?></p>
+                                        <div class="org-memberships">
+                                            <?php if (!empty($activity['organizations'])): ?>
+                                                <?php foreach ($activity['organizations'] as $org): ?>
+                                                    <span class="org-tag"><?= esc($org) ?></span>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <span class="org-tag" style="opacity: 0.6;">No memberships</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="activity-metrics">
+                                            <span><i class="fas fa-comments"></i> <?= number_format($activity['comment_count']) ?> comment<?= $activity['comment_count'] != 1 ? 's' : '' ?></span>
+                                            <span><i class="fas fa-heart"></i> <?= number_format($activity['event_likes_count']) ?> event<?= $activity['event_likes_count'] != 1 ? 's' : '' ?> liked</span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div style="text-align: center; padding: 2rem; color: #64748b;">
+                                    No student activity data available.
                                 </div>
-                                <div class="activity-metrics">
-                                    <span><i class="fas fa-comments"></i> 12 comments</span>
-                                    <span><i class="fas fa-calendar"></i> 5 events attended</span>
-                                </div>
-                            </div>
-                            <div class="activity-stat-item">
-                                <h4>Jane Smith</h4>
-                                <p>Business Administration</p>
-                                <div class="org-memberships">
-                                    <span class="org-tag">Business Administration Club</span>
-                                    <span class="org-tag">Entrepreneurship Society</span>
-                                </div>
-                                <div class="activity-metrics">
-                                    <span><i class="fas fa-comments"></i> 8 comments</span>
-                                    <span><i class="fas fa-calendar"></i> 3 events attended</span>
-                                </div>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
 
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2>
-                            <i class="fas fa-money-bill-wave"></i>
-                            Student Transactions & Payments
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Transaction Type</th>
-                                        <th>Amount</th>
-                                        <th>Organization</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>John Doe</td>
-                                        <td>Event Registration</td>
-                                        <td>₱500.00</td>
-                                        <td>Tech Innovation Hub</td>
-                                        <td>2024-01-25</td>
-                                        <td><span class="status-badge success">Paid</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Jane Smith</td>
-                                        <td>Membership Fee</td>
-                                        <td>₱200.00</td>
-                                        <td>Business Administration Club</td>
-                                        <td>2024-01-24</td>
-                                        <td><span class="status-badge success">Paid</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Sarah Johnson</td>
-                                        <td>Event Registration</td>
-                                        <td>₱300.00</td>
-                                        <td>Green Energy Initiative</td>
-                                        <td>2024-01-23</td>
-                                        <td><span class="status-badge pending">Pending</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Tab Content: User Management -->
@@ -499,154 +431,55 @@
                 </div>
             </div>
 
-            <!-- Tab Content: Security & Compliance -->
-            <div class="tab-content" id="security">
-                <div class="content-grid">
-                    <div class="content-card">
-                        <div class="card-header">
-                            <h2>
-                                <i class="fas fa-shield-alt"></i>
-                                Security Status
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="security-status">
-                                <div class="security-item success">
-                                    <i class="fas fa-check-circle"></i>
-                                    <div>
-                                        <h4>System Security</h4>
-                                        <p>All systems operational</p>
-                                    </div>
-                                </div>
-                                <div class="security-item success">
-                                    <i class="fas fa-check-circle"></i>
-                                    <div>
-                                        <h4>Data Encryption</h4>
-                                        <p>SSL/TLS enabled</p>
-                                    </div>
-                                </div>
-                                <div class="security-item warning">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <div>
-                                        <h4>Password Policy</h4>
-                                        <p>3 users with weak passwords</p>
-                                    </div>
-                                </div>
-                                <div class="security-item success">
-                                    <i class="fas fa-check-circle"></i>
-                                    <div>
-                                        <h4>Backup Status</h4>
-                                        <p>Last backup: 2 hours ago</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="content-card">
-                        <div class="card-header">
-                            <h2>
-                                <i class="fas fa-exclamation-triangle"></i>
-                                Security Alerts
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert-list">
-                                <div class="alert-item warning">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <div>
-                                        <p><strong>Failed Login Attempts</strong></p>
-                                        <span>5 failed attempts detected in last 24 hours</span>
-                                    </div>
-                                </div>
-                                <div class="alert-item info">
-                                    <i class="fas fa-info-circle"></i>
-                                    <div>
-                                        <p><strong>Password Reset Requests</strong></p>
-                                        <span>12 password reset requests today</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+            <!-- Tab Content: Transactions & Payments -->
+            <div class="tab-content" id="transactions">
                 <div class="content-card">
                     <div class="card-header">
                         <h2>
-                            <i class="fas fa-clipboard-check"></i>
-                            Compliance Monitoring
+                            <i class="fas fa-money-bill-wave"></i>
+                            Student Transactions & Payments
                         </h2>
                     </div>
                     <div class="card-body">
-                        <div class="compliance-grid">
-                            <div class="compliance-item">
-                                <h4>Data Privacy Compliance</h4>
-                                <div class="compliance-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 95%"></div>
-                                    </div>
-                                    <span>95%</span>
-                                </div>
-                            </div>
-                            <div class="compliance-item">
-                                <h4>Account Verification</h4>
-                                <div class="compliance-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 88%"></div>
-                                    </div>
-                                    <span>88%</span>
-                                </div>
-                            </div>
-                            <div class="compliance-item">
-                                <h4>Activity Logging</h4>
-                                <div class="compliance-progress">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 100%"></div>
-                                    </div>
-                                    <span>100%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2>
-                            <i class="fas fa-history"></i>
-                            Recent Security Events
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="activity-list">
-                            <div class="activity-item">
-                                <div class="activity-icon security">
-                                    <i class="fas fa-shield-alt"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <p><strong>Security scan completed</strong> - No threats detected</p>
-                                    <span class="activity-time">1 hour ago</span>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon warning">
-                                    <i class="fas fa-exclamation"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <p><strong>Failed login attempt</strong> - IP: 192.168.1.100</p>
-                                    <span class="activity-time">3 hours ago</span>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon success">
-                                    <i class="fas fa-check"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <p><strong>Database backup completed</strong> - All data secured</p>
-                                    <span class="activity-time">2 hours ago</span>
-                                </div>
-                            </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Transaction Type</th>
+                                        <th>Amount</th>
+                                        <th>Organization</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>John Doe</td>
+                                        <td>Event Registration</td>
+                                        <td>₱500.00</td>
+                                        <td>Tech Innovation Hub</td>
+                                        <td>2024-01-25</td>
+                                        <td><span class="status-badge success">Paid</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jane Smith</td>
+                                        <td>Membership Fee</td>
+                                        <td>₱200.00</td>
+                                        <td>Business Administration Club</td>
+                                        <td>2024-01-24</td>
+                                        <td><span class="status-badge success">Paid</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sarah Johnson</td>
+                                        <td>Event Registration</td>
+                                        <td>₱300.00</td>
+                                        <td>Green Energy Initiative</td>
+                                        <td>2024-01-23</td>
+                                        <td><span class="status-badge pending">Pending</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -754,6 +587,32 @@
             // Open modal or navigate to details page
             const returnParam = returnTo ? '?return=' + returnTo : '';
             window.location.href = '<?= base_url('admin/students/view') ?>/' + id + returnParam;
+        }
+
+        // Toggle view all students
+        let showAllStudents = false;
+        function toggleAllStudents() {
+            showAllStudents = !showAllStudents;
+            const hiddenRows = document.querySelectorAll('.student-row-hidden');
+            const viewAllBtn = document.getElementById('viewAllStudentsBtn');
+            
+            if (showAllStudents) {
+                hiddenRows.forEach(row => {
+                    row.classList.remove('student-row-hidden');
+                    row.style.display = '';
+                });
+                if (viewAllBtn) {
+                    viewAllBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Show Less';
+                }
+            } else {
+                hiddenRows.forEach(row => {
+                    row.classList.add('student-row-hidden');
+                    row.style.display = 'none';
+                });
+                if (viewAllBtn) {
+                    viewAllBtn.innerHTML = '<i class="fas fa-list"></i> View All Accounts (<?= isset($total_students_count) ? number_format($total_students_count) : 0 ?>)';
+                }
+            }
         }
 
         // User Management Search and Filter

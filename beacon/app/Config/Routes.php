@@ -79,6 +79,8 @@ $routes->get('admin/logout', 'Admin\\Login::logout');
 $routes->post('admin/organizations/approve/(:num)', 'Admin\\Login::approveOrganization/$1');
 $routes->post('admin/organizations/reject/(:num)', 'Admin\\Login::rejectOrganization/$1');
 $routes->get('admin/organizations/view/(:num)', 'Admin\\Login::viewOrganization/$1');
+$routes->get('admin/organizations/file/(:num)', 'Admin\\Login::viewOrganizationFile/$1');
+$routes->get('admin/organizations/file/(:num)/download', 'Admin\\Login::downloadOrganizationFile/$1');
 
 // Admin student management
 $routes->get('admin/students/view/(:num)', 'Admin\\Login::viewStudent/$1');
