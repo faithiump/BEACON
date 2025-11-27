@@ -2795,7 +2795,8 @@
         }
 
         function viewOrgDetails(orgId) {
-            showToast('Organization details coming soon!', 'info');
+            // Navigate to organization details page
+            window.location.href = baseUrl + 'student/organization/' + orgId;
         }
 
         // Payment Functions
