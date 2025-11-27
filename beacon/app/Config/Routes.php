@@ -27,6 +27,7 @@ $routes->get('organization/logout', 'Organization::logout');
 // Organization Events
 $routes->get('organization/events', 'Organization::viewEvents');
 $routes->get('organization/events/get/(:num)', 'Organization::getEvent/$1');
+$routes->get('organization/department-students', 'Organization::getDepartmentStudents');
 $routes->post('organization/events/create', 'Organization::createEvent');
 $routes->post('organization/events/update/(:num)', 'Organization::updateEvent/$1');
 $routes->post('organization/events/delete/(:num)', 'Organization::deleteEvent/$1');
@@ -94,6 +95,7 @@ $routes->get('locations/barangays', 'Locations::getBarangays');
 $routes->get('student/dashboard', 'Student::dashboard');
 $routes->get('student/events', 'Student::viewEvents');
 $routes->post('student/events/join', 'Student::joinEvent');
+$routes->post('student/events/interested', 'Student::toggleEventInterest');
 $routes->get('student/announcements', 'Student::viewAnnouncements');
 $routes->get('student/organizations', 'Student::viewOrganizations');
 $routes->get('student/organization/(:num)', 'Student::viewOrganization/$1');

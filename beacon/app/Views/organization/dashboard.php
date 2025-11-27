@@ -458,10 +458,23 @@
                                         <button class="post-action reaction-btn" 
                                                 onmouseenter="showReactionPicker(this)" 
                                                 onmouseleave="hideReactionPicker(this)"
-                                                onclick="quickReact('announcement', <?= $announcement['id'] ?>, this, '')">
-                                            <span class="reaction-icon">👍</span>
-                                            <?php if(($announcement['reaction_counts']['total'] ?? 0) > 0): ?>
-                                            <span class="reaction-count"><?= $announcement['reaction_counts']['total'] ?></span>
+                                                onclick="toggleReactionBreakdown(this); quickReact('announcement', <?= $announcement['id'] ?>, this, '')">
+                                            <?php 
+                                            $reactionCounts = $announcement['reaction_counts'] ?? ['total' => 0];
+                                            $reactionIcons = ['like' => '👍', 'love' => '❤️', 'care' => '🥰', 'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😠'];
+                                            // Find the most common reaction
+                                            $topReaction = 'like';
+                                            $topCount = 0;
+                                            foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType) {
+                                                if (($reactionCounts[$reactionType] ?? 0) > $topCount) {
+                                                    $topCount = $reactionCounts[$reactionType];
+                                                    $topReaction = $reactionType;
+                                                }
+                                            }
+                                            ?>
+                                            <span class="reaction-icon"><?= $reactionIcons[$topReaction] ?? '👍' ?></span>
+                                            <?php if(($reactionCounts['total'] ?? 0) > 0): ?>
+                                            <span class="reaction-count"><?= $reactionCounts['total'] ?></span>
                                             <?php endif; ?>
                                         </button>
                                         <div class="reaction-picker" style="display: none;">
@@ -473,6 +486,19 @@
                                             <div class="reaction-option" data-reaction="sad" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'sad', this)">😢</div>
                                             <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠</div>
                                         </div>
+                                        <?php if(($reactionCounts['total'] ?? 0) > 0): ?>
+                                        <div class="reaction-breakdown" style="display: none; position: absolute; bottom: 100%; left: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; margin-bottom: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; min-width: 200px;">
+                                            <?php foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType): ?>
+                                                <?php if(($reactionCounts[$reactionType] ?? 0) > 0): ?>
+                                                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;">
+                                                    <span><?= $reactionIcons[$reactionType] ?></span>
+                                                    <span style="text-transform: capitalize;"><?= $reactionType ?></span>
+                                                    <span style="margin-left: auto; font-weight: 600;"><?= $reactionCounts[$reactionType] ?></span>
+                                                </div>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
                                     </div>
                                     <button class="post-action comment-btn" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')">
                                         <i class="far fa-comment"></i> Comment
@@ -504,7 +530,7 @@
                         <!-- Recent Events as Posts -->
                         <?php if(!empty($recentEvents)): ?>
                             <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
-                            <div class="feed-post event-post">
+                            <div class="feed-post event-post" data-event-id="<?= $event['id'] ?>">
                                 <div class="post-header">
                                     <div class="post-author-avatar event-avatar">
                                         <?php if(!empty($event['org_photo'])): ?>
@@ -535,6 +561,7 @@
                                         <h3><?= esc($event['title']) ?></h3>
                                         <p class="event-location"><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
                                         <p class="event-attendees"><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
+                                        <p class="event-interested"><i class="fas fa-star"></i> <?= $event['interest_count'] ?? 0 ?> interested</p>
                                     </div>
                                 </div>
                                 <div class="post-stats">
@@ -545,10 +572,23 @@
                                         <button class="post-action reaction-btn" 
                                                 onmouseenter="showReactionPicker(this)" 
                                                 onmouseleave="hideReactionPicker(this)"
-                                                onclick="quickReact('event', <?= $event['id'] ?>, this, '')">
-                                            <span class="reaction-icon">👍</span>
-                                            <?php if(($event['reaction_counts']['total'] ?? 0) > 0): ?>
-                                            <span class="reaction-count"><?= $event['reaction_counts']['total'] ?></span>
+                                                onclick="toggleReactionBreakdown(this); quickReact('event', <?= $event['id'] ?>, this, '')">
+                                            <?php 
+                                            $reactionCounts = $event['reaction_counts'] ?? ['total' => 0];
+                                            $reactionIcons = ['like' => '👍', 'love' => '❤️', 'care' => '🥰', 'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😠'];
+                                            // Find the most common reaction
+                                            $topReaction = 'like';
+                                            $topCount = 0;
+                                            foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType) {
+                                                if (($reactionCounts[$reactionType] ?? 0) > $topCount) {
+                                                    $topCount = $reactionCounts[$reactionType];
+                                                    $topReaction = $reactionType;
+                                                }
+                                            }
+                                            ?>
+                                            <span class="reaction-icon"><?= $reactionIcons[$topReaction] ?? '👍' ?></span>
+                                            <?php if(($reactionCounts['total'] ?? 0) > 0): ?>
+                                            <span class="reaction-count"><?= $reactionCounts['total'] ?></span>
                                             <?php endif; ?>
                                         </button>
                                         <div class="reaction-picker" style="display: none;">
@@ -560,6 +600,19 @@
                                             <div class="reaction-option" data-reaction="sad" onclick="setReaction('event', <?= $event['id'] ?>, 'sad', this)">😢</div>
                                             <div class="reaction-option" data-reaction="angry" onclick="setReaction('event', <?= $event['id'] ?>, 'angry', this)">😠</div>
                                         </div>
+                                        <?php if(($reactionCounts['total'] ?? 0) > 0): ?>
+                                        <div class="reaction-breakdown" style="display: none; position: absolute; bottom: 100%; left: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; margin-bottom: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; min-width: 200px;">
+                                            <?php foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType): ?>
+                                                <?php if(($reactionCounts[$reactionType] ?? 0) > 0): ?>
+                                                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;">
+                                                    <span><?= $reactionIcons[$reactionType] ?></span>
+                                                    <span style="text-transform: capitalize;"><?= $reactionType ?></span>
+                                                    <span style="margin-left: auto; font-weight: 600;"><?= $reactionCounts[$reactionType] ?></span>
+                                                </div>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
                                     </div>
                                     <button class="post-action comment-btn" onclick="toggleComments(<?= $event['id'] ?>, 'event')">
                                         <i class="far fa-comment"></i> Comment
@@ -709,11 +762,20 @@
                                     <span><i class="fas fa-calendar"></i> <?= date('M d, Y', strtotime($event['date'])) ?></span>
                                     <span><i class="fas fa-clock"></i> <?= $event['time'] ?></span>
                                     <span><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></span>
+                                    <span><i class="fas fa-star"></i> <?= $event['interest_count'] ?? 0 ?> interested</span>
                                     <span><i class="fas fa-bullhorn"></i>
-                                        <?php if(($event['audience_type'] ?? 'all') === 'department'): ?>
+                                        <?php 
+                                        $eventAudienceType = $event['audience_type'] ?? 'all';
+                                        if ($eventAudienceType === 'specific_students'): 
+                                            $studentAccess = $event['student_access'] ?? [];
+                                            if (is_string($studentAccess)) {
+                                                $studentAccess = json_decode($studentAccess, true) ?? [];
+                                            }
+                                            $studentCount = is_array($studentAccess) ? count($studentAccess) : 0;
+                                        ?>
+                                            Specific students (<?= $studentCount ?>)
+                                        <?php elseif($eventAudienceType === 'department'): ?>
                                             Dept: <?= strtoupper($event['department_access'] ?? '') ?>
-                                        <?php elseif(($event['audience_type'] ?? 'all') === 'students'): ?>
-                                            Students only
                                         <?php else: ?>
                                             Open for all
                                         <?php endif; ?>
@@ -1583,6 +1645,7 @@
                             <select name="audience_type" id="audience_type" class="form-input" required>
                                 <option value="all">Open for all</option>
                                 <option value="department">Specific department</option>
+                                <option value="specific_students">Specific students</option>
                             </select>
                         </div>
                     </div>
@@ -1601,6 +1664,15 @@
                             </select>
                         </div>
                     </div>
+                </div>
+                <div class="form-group" id="specific_students_group" style="display: none;">
+                    <label>Select Specific Students</label>
+                    <div class="select-wrapper">
+                        <select name="specific_students[]" id="specific_students" class="form-input" multiple size="6">
+                            <option value="">Select a department to load students</option>
+                        </select>
+                    </div>
+                    <small class="form-hint">Hold Ctrl (Cmd on Mac) to select multiple students.</small>
                 </div>
                 <div class="form-group">
                     <label>Event Image</label>
@@ -1888,6 +1960,12 @@
             }
             
             const formData = new FormData(form);
+            if (formData.get('audience_type') === 'specific_students') {
+                const selectedStudents = formData.getAll('specific_students[]');
+                if (selectedStudents.length === 0) {
+                    formData.append('specific_students[]', '');
+                }
+            }
 
             // Show loading state
             const submitBtn = form.closest('.modal').querySelector('.btn-primary');
@@ -1929,16 +2007,42 @@
             });
         }
 
+        let departmentStudentsCache = {};
+        let currentSpecificStudents = [];
+
         function updateAudienceFields(value) {
-            const group = document.getElementById('department_access_group');
-            if (!group) return;
+            const deptGroup = document.getElementById('department_access_group');
+            const studentGroup = document.getElementById('specific_students_group');
+            const deptSelect = document.getElementById('department_access');
+            if (!deptGroup || !studentGroup) return;
+            
             if (value === 'department') {
-                group.style.display = 'block';
+                deptGroup.style.display = 'block';
+                studentGroup.style.display = 'none';
+                if (deptSelect && deptSelect.value) {
+                    loadDepartmentStudents(deptSelect.value, currentSpecificStudents);
+                }
+            } else if (value === 'specific_students') {
+                deptGroup.style.display = 'block';
+                studentGroup.style.display = 'block';
+                if (deptSelect && deptSelect.value) {
+                    loadDepartmentStudents(deptSelect.value, currentSpecificStudents);
+                } else {
+                    const studentsSelect = document.getElementById('specific_students');
+                    if (studentsSelect) {
+                        studentsSelect.innerHTML = '<option value="">Select a department to load students</option>';
+                    }
+                }
             } else {
-                group.style.display = 'none';
-                const deptSelect = document.getElementById('department_access');
+                deptGroup.style.display = 'none';
+                studentGroup.style.display = 'none';
                 if (deptSelect) {
                     deptSelect.value = '';
+                }
+                currentSpecificStudents = [];
+                const studentsSelect = document.getElementById('specific_students');
+                if (studentsSelect) {
+                    studentsSelect.innerHTML = '<option value="">Select a department to load students</option>';
                 }
             }
         }
@@ -1948,6 +2052,79 @@
             audienceSelect.addEventListener('change', function() {
                 updateAudienceFields(this.value);
             });
+        }
+
+        const departmentSelect = document.getElementById('department_access');
+        if (departmentSelect) {
+            departmentSelect.addEventListener('change', function() {
+                const audienceType = document.getElementById('audience_type').value;
+                if (audienceType === 'specific_students') {
+                    loadDepartmentStudents(this.value, currentSpecificStudents);
+                } else if (audienceType === 'department') {
+                    currentSpecificStudents = [];
+                    loadDepartmentStudents(this.value, currentSpecificStudents);
+                }
+            });
+        }
+
+        function renderDepartmentStudents(students, preselected = []) {
+            const group = document.getElementById('specific_students_group');
+            const select = document.getElementById('specific_students');
+            if (!group || !select) return;
+            select.innerHTML = '';
+            if (!students || students.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No registered students found for this department.';
+                select.appendChild(option);
+                group.style.display = 'block';
+                return;
+            }
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = `${student.student_id} - ${student.name}`;
+                if (preselected && preselected.includes(parseInt(student.id))) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            group.style.display = 'block';
+        }
+
+        function loadDepartmentStudents(department, preselected = []) {
+            const group = document.getElementById('specific_students_group');
+            const select = document.getElementById('specific_students');
+            if (!group || !select) return;
+
+            if (!department) {
+                group.style.display = 'none';
+                select.innerHTML = '<option value="">Select a department to load students</option>';
+                return;
+            }
+
+            if (departmentStudentsCache[department]) {
+                renderDepartmentStudents(departmentStudentsCache[department], preselected);
+                return;
+            }
+
+            select.innerHTML = '<option value="">Loading students...</option>';
+            group.style.display = 'block';
+
+            fetch(baseUrl + 'organization/department-students?department=' + encodeURIComponent(department))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        departmentStudentsCache[department] = data.students || [];
+                        renderDepartmentStudents(departmentStudentsCache[department], preselected);
+                    } else {
+                        select.innerHTML = '<option value="">Unable to load students</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching students:', error);
+                    select.innerHTML = '<option value="">Unable to load students</option>';
+                });
         }
 
         let currentEventId = null;
@@ -1968,6 +2145,7 @@
                         // Populate form fields
                         document.getElementById('event_id').value = event.id;
                         document.getElementById('event_title').value = event.title || '';
+                        currentSpecificStudents = Array.isArray(event.specific_students) ? event.specific_students : [];
                         document.getElementById('event_description').value = event.description || '';
                         document.getElementById('event_date').value = event.date || '';
                         
@@ -1993,6 +2171,7 @@
                         document.getElementById('audience_type').value = event.audience_type || 'all';
                         document.getElementById('department_access').value = event.department_access || '';
                         updateAudienceFields(event.audience_type || 'all');
+                        loadDepartmentStudents(event.department_access || '', currentSpecificStudents);
                         
                         // Show current image if exists
                         if (event.image) {
@@ -2022,6 +2201,7 @@
 
         function resetEventFormFields() {
             currentEventId = null;
+            currentSpecificStudents = [];
             const form = document.getElementById('eventForm');
             form.reset();
             document.getElementById('event_id').value = '';
@@ -2032,6 +2212,7 @@
             document.getElementById('audience_type').value = 'all';
             document.getElementById('department_access').value = '';
             updateAudienceFields('all');
+            loadDepartmentStudents('', []);
         }
 
         function openEventModal() {
@@ -2633,6 +2814,11 @@
                 if (picker) {
                     picker.style.display = 'flex';
                 }
+                // Also show reaction breakdown if it exists
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = 'block';
+                }
             }
         }
 
@@ -2646,6 +2832,11 @@
                             picker.style.display = 'none';
                         }
                     }, 200);
+                }
+                // Also hide reaction breakdown
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = 'none';
                 }
             }
         }
@@ -2684,6 +2875,7 @@
             const wrapper = button.closest('.reaction-wrapper');
             const reactionIcon = wrapper ? wrapper.querySelector('.reaction-icon') : null;
             const reactionCount = wrapper ? wrapper.querySelector('.reaction-count') : null;
+            const breakdown = wrapper ? wrapper.querySelector('.reaction-breakdown') : null;
             
             fetch(baseUrl + 'organization/likePost', {
                 method: 'POST',
@@ -2700,15 +2892,42 @@
                         button.classList.add('reacted', 'reaction-' + data.reaction_type);
                         button.classList.remove('reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
                         button.classList.add('reaction-' + data.reaction_type);
-                        
-                        if (reactionIcon) {
-                            reactionIcon.textContent = reactionIcons[data.reaction_type] || '👍';
-                        }
                     } else {
                         button.classList.remove('reacted', 'reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
+                    }
+                    
+                    // Update reaction icon to show most common reaction
+                    if (data.counts) {
+                        const counts = data.counts;
+                        let topReaction = 'like';
+                        let topCount = 0;
+                        const reactionTypes = ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'];
+                        reactionTypes.forEach(type => {
+                            if ((counts[type] || 0) > topCount) {
+                                topCount = counts[type];
+                                topReaction = type;
+                            }
+                        });
                         
                         if (reactionIcon) {
-                            reactionIcon.textContent = '👍';
+                            reactionIcon.textContent = reactionIcons[topReaction] || '👍';
+                        }
+                        
+                        // Update reaction breakdown
+                        if (breakdown && counts.total > 0) {
+                            breakdown.innerHTML = '';
+                            reactionTypes.forEach(type => {
+                                if ((counts[type] || 0) > 0) {
+                                    const div = document.createElement('div');
+                                    div.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;';
+                                    div.innerHTML = `
+                                        <span>${reactionIcons[type]}</span>
+                                        <span style="text-transform: capitalize;">${type}</span>
+                                        <span style="margin-left: auto; font-weight: 600;">${counts[type]}</span>
+                                    `;
+                                    breakdown.appendChild(div);
+                                }
+                            });
                         }
                     }
                     
@@ -2725,6 +2944,9 @@
                     } else {
                         if (reactionCount) {
                             reactionCount.remove();
+                        }
+                        if (breakdown) {
+                            breakdown.style.display = 'none';
                         }
                     }
                     
@@ -3003,8 +3225,9 @@
             });
         }
 
-        // Track views when announcements are displayed
+        // Track views when announcements and events are displayed
         document.addEventListener('DOMContentLoaded', function() {
+            // Track announcement views
             const announcementPosts = document.querySelectorAll('.feed-post[data-announcement-id]');
             announcementPosts.forEach(post => {
                 const announcementId = post.getAttribute('data-announcement-id');
@@ -3017,6 +3240,32 @@
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: `type=announcement&id=${announcementId}`
+                    }).then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update view count in the UI
+                            const viewSpan = post.querySelector('.post-stats span');
+                            if (viewSpan && data.views !== undefined) {
+                                viewSpan.innerHTML = `<i class="fas fa-eye"></i> ${data.views} views`;
+                            }
+                        }
+                    }).catch(error => console.error('Error tracking view:', error));
+                }
+            });
+            
+            // Track event views
+            const eventPosts = document.querySelectorAll('.feed-post[data-event-id]');
+            eventPosts.forEach(post => {
+                const eventId = post.getAttribute('data-event-id');
+                if (eventId) {
+                    // Track view
+                    fetch(baseUrl + 'organization/trackView', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: `type=event&id=${eventId}`
                     }).then(response => response.json())
                     .then(data => {
                         if (data.success) {

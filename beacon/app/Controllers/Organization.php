@@ -318,6 +318,12 @@ class Organization extends BaseController
                 // Get comment count
                 $commentCount = $commentModel->getCommentCount('event', $eventId);
                 
+                // Get interest count
+                $db = \Config\Database::connect();
+                $interestCount = $db->table('event_interests')
+                    ->where('event_id', $eventId)
+                    ->countAllResults();
+                
                 // Format time - handle both TIME format and string format
                 $timeFormatted = $event['time'];
                 if (strpos($timeFormatted, ':') !== false) {
@@ -329,6 +335,14 @@ class Organization extends BaseController
                     $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
                 }
                 
+                $studentAccessList = [];
+                if (!empty($event['student_access'])) {
+                    $decodedStudents = is_array($event['student_access']) ? $event['student_access'] : json_decode($event['student_access'], true);
+                    if (is_array($decodedStudents)) {
+                        $studentAccessList = array_map('intval', $decodedStudents);
+                    }
+                }
+
                 $allEvents[] = [
                     'id' => $eventId,
                     'org_id' => $org['id'],
@@ -342,6 +356,7 @@ class Organization extends BaseController
                     'location' => $event['venue'] ?? $event['location'],
                     'audience_type' => $event['audience_type'] ?? 'all',
                     'department_access' => $event['department_access'] ?? null,
+                    'student_access' => $studentAccessList,
                     'attendees' => $event['current_attendees'] ?? 0,
                     'max_attendees' => $event['max_attendees'],
                     'status' => $event['status'] ?? 'upcoming',
@@ -349,6 +364,7 @@ class Organization extends BaseController
                     'created_at' => $event['created_at'],
                     'reaction_counts' => $reactionCounts,
                     'comment_count' => $commentCount,
+                    'interest_count' => $interestCount,
                 ];
             }
         }
@@ -767,6 +783,15 @@ class Organization extends BaseController
             $timeFormatted = $hour . ':' . $minute;
         }
 
+        // Decode student access
+        $specificStudents = [];
+        if (!empty($event['student_access'])) {
+            $decodedStudents = json_decode($event['student_access'], true);
+            if (is_array($decodedStudents)) {
+                $specificStudents = array_map('intval', $decodedStudents);
+            }
+        }
+
         // Format response data
         $responseData = [
             'id' => $event['event_id'],
@@ -777,6 +802,7 @@ class Organization extends BaseController
             'location' => $event['venue'],
             'audience_type' => $event['audience_type'] ?? 'all',
             'department_access' => $event['department_access'] ?? null,
+            'specific_students' => $specificStudents,
             'max_attendees' => $event['max_attendees'],
             'image' => $event['image'] ?? null,
         ];
@@ -810,12 +836,35 @@ class Organization extends BaseController
 
         // Prepare event data
         $audienceType = strtolower($this->request->getPost('audience_type') ?? 'all');
-        if (!in_array($audienceType, ['all', 'department', 'students'])) {
+        if (!in_array($audienceType, ['all', 'department', 'specific_students'])) {
             $audienceType = 'all';
         }
-        $departmentAccess = $audienceType === 'department'
-            ? strtolower($this->request->getPost('department_access') ?? '')
-            : null;
+        $departmentAccess = null;
+        if ($audienceType === 'department') {
+            $departmentAccess = strtolower($this->request->getPost('department_access') ?? '');
+        } elseif ($audienceType === 'specific_students') {
+            $departmentAccess = strtolower($this->request->getPost('department_access') ?? '');
+        }
+
+        $specificStudents = [];
+        if ($audienceType === 'specific_students' && !empty($departmentAccess)) {
+            $specificStudentsInput = $this->request->getPost('specific_students');
+            if (is_array($specificStudentsInput)) {
+                $studentIds = array_filter(array_map('intval', $specificStudentsInput));
+                if (!empty($studentIds)) {
+                    $studentModel = new StudentModel();
+                    $validStudents = $studentModel->select('students.id')
+                        ->whereIn('students.id', $studentIds)
+                        ->where('students.department', $departmentAccess)
+                        ->findAll();
+                    if (!empty($validStudents)) {
+                        $specificStudents = array_column($validStudents, 'id');
+                    }
+                }
+            }
+        }
+
+        $studentAccessResponse = $specificStudents;
 
         $eventData = [
             'org_id' => $orgId,
@@ -827,6 +876,7 @@ class Organization extends BaseController
             'venue' => $this->request->getPost('location'),
             'audience_type' => $audienceType,
             'department_access' => $audienceType === 'department' ? $departmentAccess : null,
+            'student_access' => !empty($specificStudents) ? json_encode($specificStudents) : null,
             'max_attendees' => $this->request->getPost('max_attendees') ? (int)$this->request->getPost('max_attendees') : null,
             'current_attendees' => 0,
             'status' => 'upcoming',
@@ -883,6 +933,7 @@ class Organization extends BaseController
             'location' => $createdEvent['venue'],
             'audience_type' => $createdEvent['audience_type'] ?? 'all',
             'department_access' => $createdEvent['department_access'] ?? null,
+            'student_access' => $studentAccessResponse,
             'attendees' => $createdEvent['current_attendees'],
             'max_attendees' => $createdEvent['max_attendees'],
             'status' => $createdEvent['status'],
@@ -940,15 +991,20 @@ class Organization extends BaseController
         }
         if ($this->request->getPost('audience_type') !== null) {
             $audienceType = strtolower($this->request->getPost('audience_type'));
-            if (!in_array($audienceType, ['all', 'department', 'students'])) {
+            if (!in_array($audienceType, ['all', 'department', 'specific_students'])) {
                 $audienceType = 'all';
             }
             $updateData['audience_type'] = $audienceType;
             if ($audienceType === 'department') {
                 $departmentAccess = strtolower($this->request->getPost('department_access') ?? '');
                 $updateData['department_access'] = $departmentAccess ?: null;
+                $updateData['student_access'] = null;
+            } elseif ($audienceType === 'specific_students') {
+                $departmentAccess = strtolower($this->request->getPost('department_access') ?? '');
+                $updateData['department_access'] = $departmentAccess ?: null;
             } else {
                 $updateData['department_access'] = null;
+                $updateData['student_access'] = null;
             }
         } elseif ($this->request->getPost('department_access') !== null) {
             $departmentAccess = strtolower($this->request->getPost('department_access'));
@@ -956,6 +1012,33 @@ class Organization extends BaseController
             if ($departmentAccess) {
                 $updateData['audience_type'] = 'department';
             }
+        }
+
+        $finalAudienceType = $updateData['audience_type'] ?? $event['audience_type'] ?? 'all';
+        $specificStudents = null;
+        $specificStudentsInput = $this->request->getPost('specific_students');
+        if ($finalAudienceType === 'specific_students') {
+            $finalDepartment = $updateData['department_access'] ?? $event['department_access'] ?? null;
+            if ($finalDepartment && is_array($specificStudentsInput)) {
+                $studentIds = array_filter(array_map('intval', $specificStudentsInput));
+                if (!empty($studentIds)) {
+                    $studentModel = new StudentModel();
+                    $validStudents = $studentModel->select('students.id')
+                        ->whereIn('students.id', $studentIds)
+                        ->where('students.department', $finalDepartment)
+                        ->findAll();
+                    if (!empty($validStudents)) {
+                        $specificStudents = json_encode(array_column($validStudents, 'id'));
+                    }
+                }
+            }
+            // Set student_access - null if no students selected, otherwise the JSON array
+            $updateData['student_access'] = $specificStudents;
+        } elseif ($finalAudienceType === 'department') {
+            $updateData['student_access'] = null;
+        } else {
+            // For 'all' or any other type, clear student_access
+            $updateData['student_access'] = null;
         }
 
         // Handle image upload
@@ -1038,6 +1121,42 @@ class Organization extends BaseController
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Event deleted successfully'
+        ]);
+    }
+
+    /**
+     * Get students by department for event audience selection
+     */
+    public function getDepartmentStudents()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $department = strtolower($this->request->getGet('department') ?? '');
+        if (empty($department)) {
+            return $this->response->setJSON(['success' => true, 'students' => []]);
+        }
+
+        $studentModel = new StudentModel();
+        $students = $studentModel->select('students.id, students.student_id, user_profiles.firstname, user_profiles.lastname')
+            ->join('user_profiles', 'user_profiles.user_id = students.user_id')
+            ->where('students.department', $department)
+            ->orderBy('user_profiles.firstname', 'ASC')
+            ->orderBy('user_profiles.lastname', 'ASC')
+            ->findAll();
+
+        $formattedStudents = array_map(function($student) {
+            return [
+                'id' => (int)$student['id'],
+                'student_id' => $student['student_id'],
+                'name' => trim(($student['firstname'] ?? '') . ' ' . ($student['lastname'] ?? '')),
+            ];
+        }, $students);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'students' => $formattedStudents
         ]);
     }
 
@@ -1882,6 +2001,23 @@ class Organization extends BaseController
                 // Get updated views count
                 $announcement = $announcementModel->find($id);
                 $views = $announcement['views'] ?? 0;
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'views' => $views
+                ]);
+            } catch (\Exception $e) {
+                log_message('error', 'Track view error: ' . $e->getMessage());
+                return $this->response->setJSON(['success' => false, 'message' => 'Error tracking view']);
+            }
+        } elseif ($type === 'event' && $id) {
+            try {
+                $eventModel = new EventModel();
+                $eventModel->incrementViews($id);
+                
+                // Get updated views count
+                $event = $eventModel->find($id);
+                $views = $event['views'] ?? 0;
                 
                 return $this->response->setJSON([
                     'success' => true,

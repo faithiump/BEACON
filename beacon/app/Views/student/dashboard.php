@@ -536,11 +536,23 @@
                                         <p><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
                                         <p><i class="fas fa-users"></i> <?= $event['attendees'] ?> going</p>
                                         <div class="event-preview-actions">
-                                            <button class="btn btn-primary btn-sm" onclick="joinEvent(<?= $event['id'] ?>)">
-                                                <i class="fas fa-check"></i> Join Event
-                                            </button>
-                                            <button class="btn btn-outline btn-sm">
-                                                <i class="fas fa-star"></i> Interested
+                                            <?php if(isset($event['can_join']) && $event['can_join']): ?>
+                                                <?php if(isset($event['has_joined']) && $event['has_joined']): ?>
+                                                    <button class="btn btn-success btn-sm" onclick="joinEvent(<?= $event['id'] ?>)" style="background-color: #10b981; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+                                                        <i class="fas fa-check"></i> <span>Joined</span>
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button class="btn btn-primary btn-sm" onclick="joinEvent(<?= $event['id'] ?>)" style="border-radius: 25px; padding: 0.5rem 1.25rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                                        <i class="fas fa-plus"></i> <span>Join Event</span>
+                                                    </button>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <button class="btn btn-outline btn-sm" disabled style="opacity: 0.6; cursor: not-allowed; border-radius: 25px; padding: 0.5rem 1.25rem;" title="This event is only for specific invited students">
+                                                    <i class="fas fa-lock"></i> <span>Invitation Only</span>
+                                                </button>
+                                            <?php endif; ?>
+                                            <button class="btn btn-outline btn-sm interested-btn" onclick="toggleInterested(<?= $event['id'] ?>)" data-event-id="<?= $event['id'] ?>" style="border-radius: 25px; padding: 0.5rem 1.25rem; display: inline-flex; align-items: center; gap: 0.5rem; <?= (isset($event['is_interested']) && $event['is_interested']) ? 'background-color: #fef3c7; border-color: #fbbf24; color: #92400e;' : '' ?>">
+                                                <i class="fas fa-star <?= (isset($event['is_interested']) && $event['is_interested']) ? 'fas' : 'far' ?>"></i> <span>Interested</span>
                                             </button>
                                         </div>
                                     </div>
@@ -775,9 +787,21 @@
                                     </div>
                                 </div>
                                 <div class="event-card-footer">
-                                    <button class="btn-primary" onclick="joinEvent(<?= $event['id'] ?>)">
-                                        <i class="fas fa-plus"></i> Join Event
-                                    </button>
+                                    <?php if(isset($event['can_join']) && $event['can_join']): ?>
+                                        <?php if(isset($event['has_joined']) && $event['has_joined']): ?>
+                                            <button class="btn-primary" onclick="joinEvent(<?= $event['id'] ?>)" style="background-color: #10b981; border-color: #10b981; border-radius: 20px; padding: 0.625rem 1.25rem; font-weight: 500; color: white;">
+                                                <i class="fas fa-check" style="margin-right: 0.5rem;"></i> Joined
+                                            </button>
+                                        <?php else: ?>
+                                            <button class="btn-primary" onclick="joinEvent(<?= $event['id'] ?>)">
+                                                <i class="fas fa-plus"></i> Join Event
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <button class="btn-secondary" disabled style="opacity: 0.6; cursor: not-allowed;" title="This event is only for specific invited students">
+                                            <i class="fas fa-lock"></i> Invitation Only
+                                        </button>
+                                    <?php endif; ?>
                                     <button class="btn-secondary" onclick="viewEventDetails(<?= $event['id'] ?>)">
                                         <i class="fas fa-info-circle"></i>
                                     </button>
@@ -2019,6 +2043,13 @@
 
         // Event Functions
         function joinEvent(eventId) {
+            const button = event.target.closest('button');
+            const originalHtml = button.innerHTML;
+            
+            // Disable button during request
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
+            
             fetch(baseUrl + 'student/events/join', {
                 method: 'POST',
                 headers: {
@@ -2029,12 +2060,103 @@
             })
             .then(response => response.json())
             .then(data => {
+                if (data.success && data.has_joined) {
+                    // Update button to show joined state
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    button.style.backgroundColor = '#10b981';
+                    button.style.border = 'none';
+                    button.style.borderRadius = '25px';
+                    button.style.padding = '0.5rem 1.25rem';
+                    button.style.fontWeight = '500';
+                    button.style.color = 'white';
+                    button.style.display = 'inline-flex';
+                    button.style.alignItems = 'center';
+                    button.style.gap = '0.5rem';
+                    button.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
+                    button.innerHTML = '<i class="fas fa-check"></i> <span>Joined</span>';
+                    
+                    // Update attendees count if provided
+                    if (data.attendees !== undefined) {
+                        const attendeesElement = document.querySelector(`[data-event-id="${eventId}"] .event-attendees`);
+                        if (attendeesElement) {
+                            attendeesElement.textContent = `${data.attendees} going`;
+                        }
+                    }
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
                 showToast(data.message, data.success ? 'success' : 'error');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+                showToast('An error occurred. Please try again.', 'error');
             });
         }
 
         function viewEventDetails(eventId) {
             showToast('Event details coming soon!', 'info');
+        }
+
+        function toggleInterested(eventId) {
+            const button = event.target.closest('.interested-btn');
+            if (!button) return;
+            
+            const originalHtml = button.innerHTML;
+            const isCurrentlyInterested = button.style.backgroundColor === 'rgb(254, 243, 199)' || button.style.backgroundColor === '#fef3c7';
+            
+            // Disable button during request
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Loading...</span>';
+            
+            fetch(baseUrl + 'student/events/interested', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `event_id=${eventId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.disabled = false;
+                if (data.success) {
+                    if (data.is_interested) {
+                        // Mark as interested
+                        button.style.backgroundColor = '#fef3c7';
+                        button.style.borderColor = '#fbbf24';
+                        button.style.color = '#92400e';
+                        const starIcon = button.querySelector('.fa-star');
+                        if (starIcon) {
+                            starIcon.classList.remove('far');
+                            starIcon.classList.add('fas');
+                        }
+                    } else {
+                        // Remove interested
+                        button.style.backgroundColor = '';
+                        button.style.borderColor = '';
+                        button.style.color = '';
+                        const starIcon = button.querySelector('.fa-star');
+                        if (starIcon) {
+                            starIcon.classList.remove('fas');
+                            starIcon.classList.add('far');
+                        }
+                    }
+                    showToast(data.message, 'success');
+                } else {
+                    button.innerHTML = originalHtml;
+                    showToast(data.message || 'An error occurred', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+                showToast('An error occurred. Please try again.', 'error');
+            });
         }
 
         // Organization Functions

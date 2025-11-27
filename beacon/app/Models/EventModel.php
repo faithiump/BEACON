@@ -22,10 +22,12 @@ class EventModel extends Model
         'venue',
         'audience_type',
         'department_access',
+        'student_access',
         'max_attendees',
         'current_attendees',
         'image',
-        'status'
+        'status',
+        'views'
     ];
 
     // Dates
@@ -43,8 +45,9 @@ class EventModel extends Model
         'date' => 'required|valid_date',
         'time' => 'required',
         'venue' => 'required|min_length[3]|max_length[255]',
-        'audience_type' => 'permit_empty|in_list[all,department,students]',
+        'audience_type' => 'permit_empty|in_list[all,department,specific_students]',
         'department_access' => 'permit_empty|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
+        'student_access' => 'permit_empty',
         'max_attendees' => 'permit_empty|integer|greater_than[0]'
     ];
 
@@ -121,6 +124,19 @@ class EventModel extends Model
             ->join('organizations', 'organizations.id = events.org_id')
             ->where('events.event_id', $eventId)
             ->first();
+    }
+
+    /**
+     * Increment views count for an event
+     */
+    public function incrementViews($eventId)
+    {
+        $event = $this->find($eventId);
+        if ($event) {
+            $this->update($eventId, [
+                'views' => ($event['views'] ?? 0) + 1
+            ]);
+        }
     }
 }
 

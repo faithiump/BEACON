@@ -218,9 +218,12 @@ class Student extends BaseController
                     return strtotime($b['created_at']) - strtotime($a['created_at']);
                 });
                 
-                // Get events from followed organizations only
+                // Get events from followed organizations AND events where student is specifically invited
                 $allUpcomingEvents = [];
                 $allEventsList = [];
+                $processedEventIds = []; // Track processed events to avoid duplicates
+                
+                // First, get events from followed/member organizations
                 if (!empty($orgIdsForPosts)) {
                     foreach ($orgIdsForPosts as $orgId) {
                     // Verify organization is active before fetching posts
@@ -243,14 +246,32 @@ class Student extends BaseController
                     
                     foreach ($events as $event) {
                         $eventId = $event['event_id'] ?? $event['id'];
+                        $processedEventIds[] = $eventId;
                         
                         $audienceType = $event['audience_type'] ?? 'all';
                         $departmentAccess = strtolower($event['department_access'] ?? '');
+                        $studentAccessList = [];
+                        if (!empty($event['student_access'])) {
+                            $decodedStudents = is_array($event['student_access']) ? $event['student_access'] : json_decode($event['student_access'], true);
+                            if (is_array($decodedStudents)) {
+                                $studentAccessList = array_map('intval', $decodedStudents);
+                            }
+                        }
                         $canView = true;
+                        $canJoin = true;
                         if ($audienceType === 'department') {
                             $studentDept = strtolower($student['department'] ?? '');
                             if ($departmentAccess && $studentDept !== $departmentAccess) {
                                 $canView = false;
+                            }
+                        } elseif ($audienceType === 'specific_students') {
+                            // All students can see the event, but only specific students can join
+                            $canView = true;
+                            if (!empty($studentAccessList)) {
+                                $canJoin = in_array((int)$student['id'], $studentAccessList, true);
+                            } else {
+                                // If no students selected, no one can join
+                                $canJoin = false;
                             }
                         }
                         if (!$canView) {
@@ -283,6 +304,34 @@ class Student extends BaseController
                         $commentModel = new \App\Models\PostCommentModel();
                         $commentCount = $commentModel->getCommentCount('event', $eventId);
                         
+                        // Check if student has joined this event
+                        $hasJoined = false;
+                        $db = \Config\Database::connect();
+                        $attendeeCheck = $db->table('event_attendees')
+                            ->where('event_id', $eventId)
+                            ->where('student_id', $student['id'])
+                            ->get()
+                            ->getRowArray();
+                        if ($attendeeCheck) {
+                            $hasJoined = true;
+                        }
+                        
+                        // Check if student is interested in this event
+                        $isInterested = false;
+                        $interestCheck = $db->table('event_interests')
+                            ->where('event_id', $eventId)
+                            ->where('student_id', $student['id'])
+                            ->get()
+                            ->getRowArray();
+                        if ($interestCheck) {
+                            $isInterested = true;
+                        }
+                        
+                        // Get interest count
+                        $interestCount = $db->table('event_interests')
+                            ->where('event_id', $eventId)
+                            ->countAllResults();
+                        
                         $eventData = [
                             'id' => $eventId,
                             'title' => $event['event_name'] ?? $event['title'],
@@ -293,6 +342,11 @@ class Student extends BaseController
                             'location' => $event['venue'] ?? $event['location'],
                             'audience_type' => $audienceType,
                             'department_access' => $departmentAccess,
+                            'student_access' => $studentAccessList,
+                            'can_join' => $canJoin,
+                            'has_joined' => $hasJoined,
+                            'is_interested' => $isInterested,
+                            'interest_count' => $interestCount,
                             'attendees' => $event['current_attendees'] ?? 0,
                             'max_attendees' => $event['max_attendees'],
                             'status' => $event['status'] ?? 'upcoming',
@@ -318,6 +372,151 @@ class Student extends BaseController
                             $allUpcomingEvents[] = $eventData;
                         }
                     }
+                    }
+                }
+                
+                // Also fetch events from ALL active organizations where student is specifically invited
+                // This ensures students see events they're invited to even if they don't follow the org
+                $allActiveOrgs = $orgModel->where('is_active', 1)->findAll();
+                foreach ($allActiveOrgs as $org) {
+                    // Skip if already processed (from followed/member orgs)
+                    if (in_array($org['id'], $orgIdsForPosts)) {
+                        continue;
+                    }
+                    
+                    $events = $eventModel->getEventsByOrg($org['id']);
+                    
+                    // Get organization photo for events
+                    $orgPhotoForEvent = null;
+                    if ($org && !empty($org['user_id'])) {
+                        $orgUserPhotoForEvent = $userPhotoModel->where('user_id', $org['user_id'])->first();
+                        if ($orgUserPhotoForEvent && !empty($orgUserPhotoForEvent['photo_path'])) {
+                            $orgPhotoForEvent = base_url($orgUserPhotoForEvent['photo_path']);
+                        }
+                    }
+                    
+                    foreach ($events as $event) {
+                        $eventId = $event['event_id'] ?? $event['id'];
+                        
+                        // Skip if already processed
+                        if (in_array($eventId, $processedEventIds)) {
+                            continue;
+                        }
+                        
+                        $audienceType = $event['audience_type'] ?? 'all';
+                        
+                        // Show all events with 'specific_students' to everyone, but only allow specific students to join
+                        if ($audienceType === 'specific_students') {
+                            $studentAccessList = [];
+                            if (!empty($event['student_access'])) {
+                                $decodedStudents = is_array($event['student_access']) ? $event['student_access'] : json_decode($event['student_access'], true);
+                                if (is_array($decodedStudents)) {
+                                    $studentAccessList = array_map('intval', $decodedStudents);
+                                }
+                            }
+                            
+                            // All students can see, but check if this student can join
+                            $canJoin = false;
+                            if (!empty($studentAccessList) && in_array((int)$student['id'], $studentAccessList, true)) {
+                                $canJoin = true;
+                            }
+                            
+                            $processedEventIds[] = $eventId;
+                                
+                                // Format time
+                                $timeFormatted = $event['time'];
+                                if (strpos($timeFormatted, ':') !== false) {
+                                    $timeParts = explode(':', $timeFormatted);
+                                    $hour = (int)$timeParts[0];
+                                    $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                                    $period = $hour >= 12 ? 'PM' : 'AM';
+                                    $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                                    $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+                                }
+                                
+                                // Format date for display
+                                $eventDate = date('F j, Y', strtotime($event['date']));
+                                
+                                // Get reaction counts and user's reaction
+                                $likeModel = new \App\Models\PostLikeModel();
+                                $reactionCounts = $likeModel->getReactionCounts('event', $eventId);
+                                $userReaction = null;
+                                if ($student) {
+                                    $userReaction = $likeModel->getUserReaction($student['id'], 'event', $eventId);
+                                }
+                                
+                                // Get comment count
+                                $commentModel = new \App\Models\PostCommentModel();
+                                $commentCount = $commentModel->getCommentCount('event', $eventId);
+                                
+                                // Check if student has joined this event
+                                $hasJoined = false;
+                                $db = \Config\Database::connect();
+                                $attendeeCheck = $db->table('event_attendees')
+                                    ->where('event_id', $eventId)
+                                    ->where('student_id', $student['id'])
+                                    ->get()
+                                    ->getRowArray();
+                                if ($attendeeCheck) {
+                                    $hasJoined = true;
+                                }
+                                
+                                // Check if student is interested in this event
+                                $isInterested = false;
+                                $interestCheck = $db->table('event_interests')
+                                    ->where('event_id', $eventId)
+                                    ->where('student_id', $student['id'])
+                                    ->get()
+                                    ->getRowArray();
+                                if ($interestCheck) {
+                                    $isInterested = true;
+                                }
+                                
+                                // Get interest count
+                                $interestCount = $db->table('event_interests')
+                                    ->where('event_id', $eventId)
+                                    ->countAllResults();
+                                
+                                $eventData = [
+                                    'id' => $eventId,
+                                    'title' => $event['event_name'] ?? $event['title'],
+                                    'description' => $event['description'],
+                                    'date' => $event['date'],
+                                    'date_formatted' => $eventDate,
+                                    'time' => $timeFormatted,
+                                    'location' => $event['venue'] ?? $event['location'],
+                                    'audience_type' => $audienceType,
+                                    'department_access' => strtolower($event['department_access'] ?? ''),
+                                    'student_access' => $studentAccessList,
+                                    'can_join' => $canJoin,
+                                    'has_joined' => $hasJoined,
+                                    'is_interested' => $isInterested,
+                                    'interest_count' => $interestCount,
+                                    'attendees' => $event['current_attendees'] ?? 0,
+                                    'max_attendees' => $event['max_attendees'],
+                                    'status' => $event['status'] ?? 'upcoming',
+                                    'image' => $event['image'] ?? null,
+                                    'created_at' => $event['created_at'] ?? $event['date'],
+                                    'org_id' => $org['id'],
+                                    'org_name' => $org['organization_name'] ?? '',
+                                    'org_acronym' => $org['organization_acronym'] ?? '',
+                                    'org_type' => ucfirst(str_replace('_', ' ', $event['org_type'] ?? 'academic')),
+                                    'org_photo' => $orgPhotoForEvent,
+                                    'reaction_counts' => $reactionCounts,
+                                    'user_reaction' => $userReaction,
+                                    'like_count' => $reactionCounts['total'],
+                                    'is_liked' => $userReaction !== null,
+                                    'comment_count' => $commentCount
+                                ];
+                                
+                                $organizationPosts['events'][] = $eventData;
+                                $allEventsList[] = $eventData;
+                                
+                                // Collect upcoming events for sidebar (only future events)
+                                if (strtotime($event['date']) >= strtotime(date('Y-m-d'))) {
+                                    $allUpcomingEvents[] = $eventData;
+                                }
+                        }
                     }
                 }
                 
@@ -1130,12 +1329,188 @@ class Student extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Event ID is required']);
         }
 
-        // Mock event joining - implement actual database logic
-        return $this->response->setJSON([
-            'success' => true, 
-            'message' => 'Successfully registered for the event!',
-            'event_id' => $eventId
-        ]);
+        // Get student data
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        // Get event data
+        $eventModel = new EventModel();
+        $event = $eventModel->find($eventId);
+        
+        if (!$event) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event not found']);
+        }
+
+        // Check if student can join based on audience type
+        $audienceType = $event['audience_type'] ?? 'all';
+        if ($audienceType === 'specific_students') {
+            $studentAccessList = [];
+            if (!empty($event['student_access'])) {
+                $decodedStudents = is_array($event['student_access']) ? $event['student_access'] : json_decode($event['student_access'], true);
+                if (is_array($decodedStudents)) {
+                    $studentAccessList = array_map('intval', $decodedStudents);
+                }
+            }
+            
+            if (empty($studentAccessList) || !in_array((int)$student['id'], $studentAccessList, true)) {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'You are not authorized to join this event. This event is only for specific invited students.'
+                ]);
+            }
+        } elseif ($audienceType === 'department') {
+            $studentDept = strtolower($student['department'] ?? '');
+            $departmentAccess = strtolower($event['department_access'] ?? '');
+            if ($departmentAccess && $studentDept !== $departmentAccess) {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'You are not authorized to join this event. This event is only for students from ' . strtoupper($departmentAccess) . ' department.'
+                ]);
+            }
+        }
+
+        // Check if student has already joined
+        $db = \Config\Database::connect();
+        $existingAttendee = $db->table('event_attendees')
+            ->where('event_id', $eventId)
+            ->where('student_id', $student['id'])
+            ->get()
+            ->getRowArray();
+        
+        if ($existingAttendee) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'You have already joined this event.',
+                'has_joined' => true
+            ]);
+        }
+        
+        // Check max attendees limit
+        if (!empty($event['max_attendees']) && $event['current_attendees'] >= $event['max_attendees']) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'This event has reached its maximum capacity.'
+            ]);
+        }
+        
+        // Add student to event attendees
+        $attendeeData = [
+            'event_id' => $eventId,
+            'student_id' => $student['id'],
+            'joined_at' => date('Y-m-d H:i:s')
+        ];
+        
+        if ($db->table('event_attendees')->insert($attendeeData)) {
+            // Update current_attendees count
+            $eventModel->update($eventId, [
+                'current_attendees' => ($event['current_attendees'] ?? 0) + 1
+            ]);
+            
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => 'Successfully registered for the event!',
+                'event_id' => $eventId,
+                'has_joined' => true,
+                'attendees' => ($event['current_attendees'] ?? 0) + 1
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'Failed to join event. Please try again.'
+            ]);
+        }
+    }
+
+    /**
+     * Toggle interest in an event
+     */
+    public function toggleEventInterest()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $authCheck;
+        }
+
+        $eventId = $this->request->getPost('event_id');
+
+        if (empty($eventId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event ID is required']);
+        }
+
+        // Get student data
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        // Get event data
+        $eventModel = new EventModel();
+        $event = $eventModel->find($eventId);
+        
+        if (!$event) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event not found']);
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Check if student is already interested
+        $existingInterest = $db->table('event_interests')
+            ->where('event_id', $eventId)
+            ->where('student_id', $student['id'])
+            ->get()
+            ->getRowArray();
+        
+        if ($existingInterest) {
+            // Remove interest
+            $db->table('event_interests')
+                ->where('event_id', $eventId)
+                ->where('student_id', $student['id'])
+                ->delete();
+            
+            // Get updated interest count
+            $interestCount = $db->table('event_interests')
+                ->where('event_id', $eventId)
+                ->countAllResults();
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Removed from interested',
+                'is_interested' => false,
+                'interest_count' => $interestCount
+            ]);
+        } else {
+            // Add interest
+            $interestData = [
+                'event_id' => $eventId,
+                'student_id' => $student['id'],
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            
+            if ($db->table('event_interests')->insert($interestData)) {
+                // Get updated interest count
+                $interestCount = $db->table('event_interests')
+                    ->where('event_id', $eventId)
+                    ->countAllResults();
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Marked as interested',
+                    'is_interested' => true,
+                    'interest_count' => $interestCount
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to mark as interested. Please try again.'
+                ]);
+            }
+        }
     }
 
     /**
