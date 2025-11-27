@@ -78,7 +78,7 @@
                             <h4>Quick Actions</h4>
                         </div>
                         <div class="quick-actions-list">
-                            <button class="quick-action-item" onclick="openModal('eventModal')">
+                            <button class="quick-action-item" onclick="openEventModal()">
                                 <div class="quick-action-icon event">
                                     <i class="fas fa-calendar-plus"></i>
                                 </div>
@@ -398,7 +398,7 @@
                                 </button>
                             </div>
                             <div class="create-post-actions">
-                                <button class="post-action-btn" onclick="openModal('eventModal')">
+                                <button class="post-action-btn" onclick="openEventModal()">
                                     <i class="fas fa-calendar-plus text-primary"></i>
                                     <span>Event</span>
                                 </button>
@@ -683,7 +683,7 @@
                         <h1 class="section-title">Events Management</h1>
                         <p class="section-subtitle">Create and manage your organization's events</p>
                     </div>
-                    <button class="btn btn-primary" onclick="openModal('eventModal')">
+                    <button class="btn btn-primary" onclick="openEventModal()">
                         <i class="fas fa-plus"></i> New Event
                     </button>
                 </div>
@@ -709,6 +709,15 @@
                                     <span><i class="fas fa-calendar"></i> <?= date('M d, Y', strtotime($event['date'])) ?></span>
                                     <span><i class="fas fa-clock"></i> <?= $event['time'] ?></span>
                                     <span><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></span>
+                                    <span><i class="fas fa-bullhorn"></i>
+                                        <?php if(($event['audience_type'] ?? 'all') === 'department'): ?>
+                                            Dept: <?= strtoupper($event['department_access'] ?? '') ?>
+                                        <?php elseif(($event['audience_type'] ?? 'all') === 'students'): ?>
+                                            Students only
+                                        <?php else: ?>
+                                            Open for all
+                                        <?php endif; ?>
+                                    </span>
                                 </div>
                                 <?php if(!empty($event['max_attendees'])): ?>
                                 <div class="event-progress">
@@ -730,6 +739,9 @@
                                 <button class="btn btn-primary" onclick="editEvent(<?= $event['id'] ?>)">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
+                                <button class="btn btn-outline" style="color: #ef4444; border-color: #fecaca;" onclick="deleteEvent(<?= $event['id'] ?>)">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -738,7 +750,7 @@
                             <i class="fas fa-calendar-plus"></i>
                             <h3>No Events Yet</h3>
                             <p>Create your first event to engage with your members</p>
-                            <button class="btn btn-primary" onclick="openModal('eventModal')">Create Event</button>
+                            <button class="btn btn-primary" onclick="openEventModal()">Create Event</button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1529,48 +1541,82 @@
     <div class="modal-overlay" id="eventModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-calendar-plus"></i> Create New Event</h3>
-                <button class="modal-close" onclick="closeModal('eventModal')">
+                <h3 id="eventModalTitle"><i class="fas fa-calendar-plus"></i> Create New Event</h3>
+                <button class="modal-close" onclick="closeEventModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="eventForm" class="modal-body" enctype="multipart/form-data">
+                <input type="hidden" name="event_id" id="event_id" value="">
                 <div class="form-group">
                     <label>Event Title *</label>
-                    <input type="text" name="title" class="form-input" required placeholder="Enter event title">
+                    <input type="text" name="title" id="event_title" class="form-input" required placeholder="Enter event title">
                 </div>
                 <div class="form-group">
                     <label>Description *</label>
-                    <textarea name="description" class="form-input" rows="3" required placeholder="Describe your event"></textarea>
+                    <textarea name="description" id="event_description" class="form-input" rows="3" required placeholder="Describe your event"></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Date *</label>
-                        <input type="date" name="date" class="form-input" required>
+                        <input type="date" name="date" id="event_date" class="form-input" required>
                     </div>
                     <div class="form-group">
                         <label>Time *</label>
-                        <input type="time" name="time" class="form-input" required>
+                        <input type="time" name="time" id="event_time" class="form-input" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Location *</label>
-                        <input type="text" name="location" class="form-input" required placeholder="Event venue">
+                        <input type="text" name="location" id="event_location" class="form-input" required placeholder="Event venue">
                     </div>
                     <div class="form-group">
                         <label>Max Attendees</label>
-                        <input type="number" name="max_attendees" class="form-input" min="1" placeholder="Leave empty for unlimited">
+                        <input type="number" name="max_attendees" id="event_max_attendees" class="form-input" min="1" placeholder="Leave empty for unlimited">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Audience Type *</label>
+                        <div class="select-wrapper">
+                            <select name="audience_type" id="audience_type" class="form-input" required>
+                                <option value="all">Open for all</option>
+                                <option value="department">Specific department</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="department_access_group" style="display: none;">
+                        <label>Select Department</label>
+                        <div class="select-wrapper">
+                            <select name="department_access" id="department_access" class="form-input">
+                                <option value="">Choose department</option>
+                                <option value="ccs">College of Computer Studies (CCS)</option>
+                                <option value="cea">College of Engineering and Architecture (CEA)</option>
+                                <option value="cthbm">College of Tourism, Hospitality, and Business Management (CTHBM)</option>
+                                <option value="chs">College of Health Sciences (CHS)</option>
+                                <option value="ctde">College of Technological and Developmental Education (CTDE)</option>
+                                <option value="cas">College of Arts and Sciences (CAS)</option>
+                                <option value="gs">Graduate School (GS)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Event Image</label>
-                    <input type="file" name="image" class="form-input" accept="image/*">
+                    <input type="file" name="image" id="event_image" class="form-input" accept="image/*">
+                    <div id="event_image_preview" style="margin-top: 0.5rem; display: none;">
+                        <img id="event_image_preview_img" src="" alt="Current image" style="max-width: 200px; max-height: 150px; border-radius: 8px;">
+                        <p style="font-size: 0.875rem; color: #64748b; margin-top: 0.25rem;">Current image (leave empty to keep current image)</p>
+                    </div>
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitEvent()">Create Event</button>
+                <button type="button" class="btn btn-danger" id="eventDeleteBtn" style="display: none;" onclick="deleteCurrentEvent()">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button class="btn btn-outline" onclick="closeEventModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="eventSubmitBtn" onclick="submitEvent()">Create Event</button>
             </div>
         </div>
     </div>
@@ -1832,6 +1878,8 @@
         // Event Functions
         function submitEvent() {
             const form = document.getElementById('eventForm');
+            const eventId = document.getElementById('event_id').value;
+            const isEdit = eventId && eventId !== '';
             
             // Validate required fields
             if (!form.checkValidity()) {
@@ -1845,24 +1893,27 @@
             const submitBtn = form.closest('.modal').querySelector('.btn-primary');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (isEdit ? 'Updating...' : 'Creating...');
 
-            fetch(baseUrl + 'organization/events/create', {
+            const url = isEdit 
+                ? baseUrl + 'organization/events/update/' + eventId
+                : baseUrl + 'organization/events/create';
+
+            fetch(url, {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Event created successfully!', 'success');
-                    closeModal('eventModal');
-                    form.reset();
-                    // Reload page to show new event
+                    showToast(isEdit ? 'Event updated successfully!' : 'Event created successfully!', 'success');
+                    closeEventModal();
+                    // Reload page to show updated/new event
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
                 } else {
-                    showToast(data.message || 'Failed to create event', 'error');
+                    showToast(data.message || (isEdit ? 'Failed to update event' : 'Failed to create event'), 'error');
                     if (data.errors) {
                         console.error('Validation errors:', data.errors);
                     }
@@ -1872,14 +1923,154 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('An error occurred while creating the event', 'error');
+                showToast('An error occurred while ' + (isEdit ? 'updating' : 'creating') + ' the event', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
         }
 
+        function updateAudienceFields(value) {
+            const group = document.getElementById('department_access_group');
+            if (!group) return;
+            if (value === 'department') {
+                group.style.display = 'block';
+            } else {
+                group.style.display = 'none';
+                const deptSelect = document.getElementById('department_access');
+                if (deptSelect) {
+                    deptSelect.value = '';
+                }
+            }
+        }
+
+        const audienceSelect = document.getElementById('audience_type');
+        if (audienceSelect) {
+            audienceSelect.addEventListener('change', function() {
+                updateAudienceFields(this.value);
+            });
+        }
+
+        let currentEventId = null;
+
         function editEvent(id) {
-            showToast('Edit event functionality coming soon', 'info');
+            currentEventId = id;
+            
+            // Fetch event data
+            fetch(baseUrl + 'organization/events/get/' + id)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const event = data.data;
+                        
+                        // Update modal title
+                        document.getElementById('eventModalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Event';
+                        
+                        // Populate form fields
+                        document.getElementById('event_id').value = event.id;
+                        document.getElementById('event_title').value = event.title || '';
+                        document.getElementById('event_description').value = event.description || '';
+                        document.getElementById('event_date').value = event.date || '';
+                        
+                        // Format time for input (HH:MM format)
+                        let timeValue = event.time || '';
+                        if (timeValue) {
+                            // If time is in 12-hour format (e.g., "8:00 AM"), convert to 24-hour
+                            if (timeValue.includes('AM') || timeValue.includes('PM')) {
+                                const timeParts = timeValue.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                let hour = parseInt(timeParts[0]);
+                                const minute = parseInt(timeParts[1] || 0);
+                                const period = timeValue.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                
+                                if (period === 'PM' && hour !== 12) hour += 12;
+                                if (period === 'AM' && hour === 12) hour = 0;
+                                
+                                timeValue = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                            }
+                        }
+                        document.getElementById('event_time').value = timeValue;
+                        document.getElementById('event_location').value = event.location || '';
+                        document.getElementById('event_max_attendees').value = event.max_attendees || '';
+                        document.getElementById('audience_type').value = event.audience_type || 'all';
+                        document.getElementById('department_access').value = event.department_access || '';
+                        updateAudienceFields(event.audience_type || 'all');
+                        
+                        // Show current image if exists
+                        if (event.image) {
+                            const previewDiv = document.getElementById('event_image_preview');
+                            const previewImg = document.getElementById('event_image_preview_img');
+                            previewImg.src = baseUrl + 'uploads/events/' + event.image;
+                            previewDiv.style.display = 'block';
+                        } else {
+                            document.getElementById('event_image_preview').style.display = 'none';
+                        }
+                        
+                        // Update action buttons
+                        document.getElementById('eventSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Update Event';
+                        document.getElementById('eventDeleteBtn').style.display = 'inline-flex';
+                        
+                        // Open modal
+                        openModal('eventModal');
+                    } else {
+                        showToast(data.message || 'Failed to load event data', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('An error occurred while loading event data', 'error');
+                });
+        }
+
+        function resetEventFormFields() {
+            currentEventId = null;
+            const form = document.getElementById('eventForm');
+            form.reset();
+            document.getElementById('event_id').value = '';
+            document.getElementById('eventModalTitle').innerHTML = '<i class="fas fa-calendar-plus"></i> Create New Event';
+            document.getElementById('eventSubmitBtn').innerHTML = 'Create Event';
+            document.getElementById('eventDeleteBtn').style.display = 'none';
+            document.getElementById('event_image_preview').style.display = 'none';
+            document.getElementById('audience_type').value = 'all';
+            document.getElementById('department_access').value = '';
+            updateAudienceFields('all');
+        }
+
+        function openEventModal() {
+            resetEventFormFields();
+            openModal('eventModal');
+        }
+
+        function closeEventModal() {
+            resetEventFormFields();
+            closeModal('eventModal');
+        }
+
+        function deleteCurrentEvent() {
+            if (!currentEventId) return;
+            deleteEvent(currentEventId);
+        }
+
+        function deleteEvent(id) {
+            if (!confirm('Are you sure you want to delete this event?')) {
+                return;
+            }
+
+            fetch(baseUrl + 'organization/events/delete/' + id, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Event deleted successfully', 'success');
+                    closeEventModal();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Failed to delete event', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while deleting the event', 'error');
+            });
         }
 
         function viewEventAttendees(id) {

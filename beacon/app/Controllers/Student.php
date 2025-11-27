@@ -244,6 +244,19 @@ class Student extends BaseController
                     foreach ($events as $event) {
                         $eventId = $event['event_id'] ?? $event['id'];
                         
+                        $audienceType = $event['audience_type'] ?? 'all';
+                        $departmentAccess = strtolower($event['department_access'] ?? '');
+                        $canView = true;
+                        if ($audienceType === 'department') {
+                            $studentDept = strtolower($student['department'] ?? '');
+                            if ($departmentAccess && $studentDept !== $departmentAccess) {
+                                $canView = false;
+                            }
+                        }
+                        if (!$canView) {
+                            continue;
+                        }
+                        
                         // Format time
                         $timeFormatted = $event['time'];
                         if (strpos($timeFormatted, ':') !== false) {
@@ -278,6 +291,8 @@ class Student extends BaseController
                             'date_formatted' => $eventDate,
                             'time' => $timeFormatted,
                             'location' => $event['venue'] ?? $event['location'],
+                            'audience_type' => $audienceType,
+                            'department_access' => $departmentAccess,
                             'attendees' => $event['current_attendees'] ?? 0,
                             'max_attendees' => $event['max_attendees'],
                             'status' => $event['status'] ?? 'upcoming',

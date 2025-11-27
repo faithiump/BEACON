@@ -520,11 +520,11 @@
                                     <p class="post-text">🎉 New event from <?= esc($event['org_acronym'] ?? 'Organization') ?>!</p>
                                 </div>
                                 <div class="event-preview-card">
-                                    <div class="event-preview-banner">
+                                    <div class="event-preview-banner" style="position: relative; overflow: hidden;">
                                         <?php if(!empty($event['image'])): ?>
-                                            <img src="<?= base_url('uploads/events/' . $event['image']) ?>" alt="<?= esc($event['title']) ?>">
+                                            <img src="<?= base_url('uploads/events/' . $event['image']) ?>" alt="<?= esc($event['title']) ?>" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;">
                                         <?php endif; ?>
-                                        <div class="event-preview-overlay">
+                                        <div class="event-preview-overlay" style="position: relative; z-index: 2;">
                                             <div class="event-date-badge">
                                                 <span class="edb-day"><?= date('d', strtotime($event['date'])) ?></span>
                                                 <span class="edb-month"><?= strtoupper(date('M', strtotime($event['date']))) ?></span>

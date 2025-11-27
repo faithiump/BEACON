@@ -20,6 +20,8 @@ class EventModel extends Model
         'date',
         'time',
         'venue',
+        'audience_type',
+        'department_access',
         'max_attendees',
         'current_attendees',
         'image',
@@ -41,6 +43,8 @@ class EventModel extends Model
         'date' => 'required|valid_date',
         'time' => 'required',
         'venue' => 'required|min_length[3]|max_length[255]',
+        'audience_type' => 'permit_empty|in_list[all,department,students]',
+        'department_access' => 'permit_empty|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
         'max_attendees' => 'permit_empty|integer|greater_than[0]'
     ];
 
