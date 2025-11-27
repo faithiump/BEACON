@@ -1684,11 +1684,28 @@
                 </div>
             </form>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="eventDeleteBtn" style="display: none;" onclick="deleteCurrentEvent()">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
                 <button class="btn btn-outline" onclick="closeEventModal()">Cancel</button>
                 <button type="button" class="btn btn-primary" id="eventSubmitBtn" onclick="submitEvent()">Create Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendees Modal -->
+    <div class="modal-overlay" id="attendeesModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="attendeesModalTitle"><i class="fas fa-users"></i> Event Attendees</h3>
+                <button class="modal-close" onclick="closeAttendeesModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="attendeesContent">
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                        <p style="margin-top: 1rem; color: #64748b;">Loading attendees...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2185,8 +2202,6 @@
                         
                         // Update action buttons
                         document.getElementById('eventSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Update Event';
-                        document.getElementById('eventDeleteBtn').style.display = 'inline-flex';
-                        
                         // Open modal
                         openModal('eventModal');
                     } else {
@@ -2207,7 +2222,6 @@
             document.getElementById('event_id').value = '';
             document.getElementById('eventModalTitle').innerHTML = '<i class="fas fa-calendar-plus"></i> Create New Event';
             document.getElementById('eventSubmitBtn').innerHTML = 'Create Event';
-            document.getElementById('eventDeleteBtn').style.display = 'none';
             document.getElementById('event_image_preview').style.display = 'none';
             document.getElementById('audience_type').value = 'all';
             document.getElementById('department_access').value = '';
@@ -2255,7 +2269,114 @@
         }
 
         function viewEventAttendees(id) {
-            showToast('View attendees functionality coming soon', 'info');
+            if (!id) {
+                showToast('Event ID is missing', 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('attendeesModal');
+            const content = document.getElementById('attendeesContent');
+            const title = document.getElementById('attendeesModalTitle');
+            
+            if (!modal || !content || !title) {
+                showToast('Modal elements not found', 'error');
+                return;
+            }
+            
+            // Show loading state
+            content.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                    <p style="margin-top: 1rem; color: #64748b;">Loading attendees...</p>
+                </div>
+            `;
+            
+            // Open modal using the same pattern as other modals
+            openModal('attendeesModal');
+            
+            // Ensure baseUrl has trailing slash
+            const url = (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + 'organization/events/attendees/' + id;
+            
+            // Fetch attendees
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    title.innerHTML = `<i class="fas fa-users"></i> ${data.event_title} - Attendees`;
+                    
+                    if (data.attendees && data.attendees.length > 0) {
+                        let html = `
+                            <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+                                <p style="color: #64748b; font-size: 0.875rem;"><strong>Total:</strong> ${data.total} attendee${data.total !== 1 ? 's' : ''}</p>
+                            </div>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                        `;
+                        
+                        data.attendees.forEach(attendee => {
+                            const nameParts = attendee.name ? attendee.name.split(' ').filter(n => n) : ['N', 'A'];
+                            const initials = nameParts.map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            const hasPhoto = attendee.photo_url && attendee.photo_url !== '';
+                            
+                            html += `
+                                <div style="display: flex; align-items: center; padding: 1rem; margin-bottom: 0.5rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${hasPhoto ? 'transparent' : '#3b82f6'}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 1rem; flex-shrink: 0; overflow: hidden;">
+                                        ${hasPhoto ? `<img src="${attendee.photo_url}" alt="${attendee.name || 'Student'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.style.display='none'; this.parentElement.style.background='#3b82f6'; this.parentElement.innerHTML='${initials}';" />` : initials}
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <p style="font-weight: 600; margin: 0; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${attendee.name || 'N/A'}</p>
+                                        <p style="font-size: 0.875rem; color: #64748b; margin: 0.25rem 0 0 0;">${attendee.student_number || 'N/A'} • ${attendee.course || 'N/A'} • Year ${attendee.year_level || 'N/A'}</p>
+                                        <p style="font-size: 0.75rem; color: #94a3b8; margin: 0.25rem 0 0 0;">Joined: ${attendee.joined_at || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                        content.innerHTML = html;
+                    } else {
+                        content.innerHTML = `
+                            <div style="text-align: center; padding: 3rem;">
+                                <i class="fas fa-users" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+                                <p style="color: #64748b; font-size: 1rem;">No attendees yet</p>
+                                <p style="color: #94a3b8; font-size: 0.875rem; margin-top: 0.5rem;">Students will appear here once they join this event.</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    content.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                            <p style="color: #64748b;">${data.message || 'Failed to load attendees'}</p>
+                        </div>
+                    `;
+                    showToast(data.message || 'Failed to load attendees', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading attendees:', error);
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                        <p style="color: #64748b;">An error occurred while loading attendees</p>
+                        <p style="color: #94a3b8; font-size: 0.875rem; margin-top: 0.5rem;">${error.message || 'Please try again'}</p>
+                    </div>
+                `;
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        }
+
+        function closeAttendeesModal() {
+            closeModal('attendeesModal');
         }
 
         // Announcement Functions

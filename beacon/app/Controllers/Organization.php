@@ -1169,13 +1169,78 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // Sample data
-        $attendees = [
-            ['id' => 1, 'name' => 'John Doe', 'student_id' => 'STU-001', 'registered_at' => '2025-11-20'],
-            ['id' => 2, 'name' => 'Jane Smith', 'student_id' => 'STU-002', 'registered_at' => '2025-11-21'],
-        ];
+        $eventId = $id ?? $this->request->getGet('event_id');
+        if (empty($eventId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event ID is required']);
+        }
 
-        return $this->response->setJSON(['success' => true, 'data' => $attendees]);
+        // Verify event belongs to this organization
+        $orgId = $this->session->get('organization_id');
+        $eventModel = new EventModel();
+        $event = $eventModel->find($eventId);
+        
+        if (!$event) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event not found']);
+        }
+
+        // Get organization from event
+        $db = \Config\Database::connect();
+        $eventOrg = $db->table('organizations')
+            ->where('id', $event['org_id'])
+            ->get()
+            ->getRowArray();
+        
+        if (!$eventOrg || $eventOrg['id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized to view this event']);
+        }
+
+        // Fetch attendees with student and user profile information
+        $attendees = $db->table('event_attendees ea')
+            ->select('ea.id, ea.joined_at, s.id as student_id, s.student_id as student_number, s.course, s.department, s.year_level, up.firstname, up.middlename, up.lastname, u.email, u.id as user_id')
+            ->join('students s', 'ea.student_id = s.id', 'inner')
+            ->join('users u', 's.user_id = u.id', 'inner')
+            ->join('user_profiles up', 'u.id = up.user_id', 'left')
+            ->where('ea.event_id', $eventId)
+            ->orderBy('ea.joined_at', 'DESC')
+            ->get()
+            ->getResultArray();
+        
+        // Also get photos from user_photos table
+        $userPhotoModel = new UserPhotoModel();
+
+        // Format attendees data
+        $formattedAttendees = [];
+        foreach ($attendees as $attendee) {
+            $fullName = trim(($attendee['firstname'] ?? '') . ' ' . ($attendee['middlename'] ?? '') . ' ' . ($attendee['lastname'] ?? ''));
+            $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+            
+            // Get student photo from user_photos table
+            $photoUrl = null;
+            $userPhoto = $userPhotoModel->where('user_id', $attendee['user_id'] ?? null)->first();
+            if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                $photoUrl = base_url($userPhoto['photo_path']);
+            }
+            
+            $formattedAttendees[] = [
+                'id' => $attendee['id'],
+                'student_id' => $attendee['student_id'],
+                'student_number' => $attendee['student_number'] ?? 'N/A',
+                'name' => $fullName,
+                'email' => $attendee['email'] ?? 'N/A',
+                'course' => $attendee['course'] ?? 'N/A',
+                'department' => strtoupper($attendee['department'] ?? 'N/A'),
+                'year_level' => $attendee['year_level'] ?? 'N/A',
+                'joined_at' => $attendee['joined_at'] ? date('M d, Y h:i A', strtotime($attendee['joined_at'])) : 'N/A',
+                'photo_url' => $photoUrl
+            ];
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'event_title' => $event['event_name'] ?? $event['title'] ?? 'Event',
+            'attendees' => $formattedAttendees,
+            'total' => count($formattedAttendees)
+        ]);
     }
 
     // ==========================================
