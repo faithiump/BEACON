@@ -110,9 +110,8 @@ class Student extends BaseController
             $eventModel = new EventModel();
             $userPhotoModel = new \App\Models\UserPhotoModel();
             
+            $orgIds = [];
             if ($hasJoinedOrg) {
-                $orgIds = [];
-                
                 // Build joined organizations list and collect org IDs
                 foreach ($memberships as $membership) {
                     // Get organization photo from user_photos table
@@ -134,19 +133,19 @@ class Student extends BaseController
                     ];
                     $orgIds[] = $membership['org_id'];
                 }
-                
-                // Combine joined and followed organization IDs (remove duplicates)
-                $allOrgIds = array_unique(array_merge($orgIds, $followedOrgIds));
             }
             
-            // Get ALL active organizations for posts (not just joined/followed)
-            $allActiveOrgs = $orgModel->where('is_active', 1)->findAll();
-            $allActiveOrgIds = array_column($allActiveOrgs, 'id');
+            // Get posts from followed organizations AND organizations where student is a member
+            $orgIdsForPosts = array_unique(array_merge($followedOrgIds, $orgIds));
+            if (empty($orgIdsForPosts)) {
+                // If student hasn't followed any organizations and isn't a member of any, show empty feed
+                $orgIdsForPosts = [];
+            }
             
-            // Get announcements from ALL active organizations
+            // Get announcements from followed organizations only
             $allAnnouncementsList = [];
-            if (!empty($allActiveOrgIds)) {
-                foreach ($allActiveOrgIds as $orgId) {
+            if (!empty($orgIdsForPosts)) {
+                foreach ($orgIdsForPosts as $orgId) {
                     $announcements = $announcementModel->getAnnouncementsByOrg($orgId);
                     
                     // Get organization info for each announcement
@@ -204,11 +203,11 @@ class Student extends BaseController
                     return strtotime($b['created_at']) - strtotime($a['created_at']);
                 });
                 
-                // Get events from ALL active organizations
+                // Get events from followed organizations only
                 $allUpcomingEvents = [];
                 $allEventsList = [];
-                if (!empty($allActiveOrgIds)) {
-                    foreach ($allActiveOrgIds as $orgId) {
+                if (!empty($orgIdsForPosts)) {
+                    foreach ($orgIdsForPosts as $orgId) {
                     $events = $eventModel->getEventsByOrg($orgId);
                     $eventCount += count($events);
                     
@@ -300,10 +299,10 @@ class Student extends BaseController
                     return strtotime($b['date']) - strtotime($a['date']);
                 });
                 
-                // Get products from all joined organizations
+                // Get products from followed organizations only
                 $productModel = new ProductModel();
                 $orgModelForProducts = new OrganizationModel();
-                foreach ($orgIds as $orgId) {
+                foreach ($orgIdsForPosts as $orgId) {
                     $products = $productModel->getProductsByOrg($orgId);
                     
                     // Get organization info for each product

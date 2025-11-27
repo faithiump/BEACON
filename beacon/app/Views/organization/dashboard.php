@@ -1317,6 +1317,10 @@
                                                 <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
                                             </div>
                                         <?php endif; ?>
+                                        <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                                        <button type="button" class="change-photo-btn" onclick="document.getElementById('profilePhotoInput').click()" style="position: absolute; bottom: 10px; right: 10px; background: #007bff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                            <i class="fas fa-camera"></i>
+                                        </button>
                                     </div>
                                     <div class="upload-actions">
                                         <input type="file" id="logoUpload" name="photo" accept="image/*" hidden>
@@ -2040,70 +2044,15 @@
             .then(data => {
                 showToast(data.message || 'Organization information updated!', data.success ? 'success' : 'error');
                 if (data.success) {
-                    // Update dashboard photos if photo was uploaded
+                    // If photo was uploaded, reload page to reflect changes
                     if (data.photo) {
-                        // Update all organization photos in the dashboard
-                        const userAvatar = document.querySelector('.user-avatar-img');
-                        if (userAvatar) {
-                            userAvatar.src = data.photo;
-                        }
-                        
-                        const dropdownAvatar = document.getElementById('dropdownAvatarImg');
-                        if (dropdownAvatar) {
-                            dropdownAvatar.src = data.photo;
-                        } else {
-                            // If dropdown avatar doesn't exist as img, create it
-                            const dropdownAvatarDiv = document.querySelector('.dropdown-avatar');
-                            if (dropdownAvatarDiv) {
-                                dropdownAvatarDiv.innerHTML = '<img src="' + data.photo + '" alt="Organization" id="dropdownAvatarImg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">';
-                            }
-                        }
-                        
-                        const profileAvatar = document.querySelector('.profile-avatar-large img');
-                        if (profileAvatar) {
-                            profileAvatar.src = data.photo;
-                        }
-                        
-                        const forumAvatar = document.querySelector('.create-box-avatar img');
-                        if (forumAvatar) {
-                            forumAvatar.src = data.photo;
-                        }
-                        
-                        // Update create post box avatar
-                        const createPostAvatar = document.querySelector('.post-avatar');
-                        if (createPostAvatar) {
-                            const existingImg = createPostAvatar.querySelector('img');
-                            if (existingImg) {
-                                existingImg.src = data.photo;
-                            } else {
-                                createPostAvatar.innerHTML = '<img src="' + data.photo + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
-                            }
-                        }
-                        
-                        // Update all announcement post avatars
-                        const announcementAvatars = document.querySelectorAll('.post-author-avatar:not(.event-avatar)');
-                        announcementAvatars.forEach(avatar => {
-                            const existingImg = avatar.querySelector('img');
-                            if (existingImg) {
-                                existingImg.src = data.photo;
-                            } else {
-                                avatar.innerHTML = '<img src="' + data.photo + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
-                            }
-                        });
-                        
-                        const preview = document.getElementById('orgLogoPreview');
-                        const placeholder = document.getElementById('orgLogoPlaceholder');
-                        if (preview) {
-                            preview.src = data.photo;
-                            preview.style.display = 'block';
-                            if (placeholder) placeholder.style.display = 'none';
-                        }
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        setTimeout(() => {
+                            // Navigate to overview (dashboard) section
+                            switchSection('overview');
+                        }, 1500);
                     }
-                    
-                    setTimeout(() => {
-                        // Navigate to overview (dashboard) section
-                        switchSection('overview');
-                    }, 1500);
                 }
             })
             .catch(error => {
@@ -2124,6 +2073,156 @@
                 switchSection('overview');
             }, 1500);
         }
+
+        // Direct Profile Photo Upload (like student dashboard)
+        document.getElementById('profilePhotoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please select an image file', 'error');
+                    return;
+                }
+                
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('Image size must be less than 5MB', 'error');
+                    return;
+                }
+                
+                // Preview the image
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('orgLogoPreview');
+                    const placeholder = document.getElementById('orgLogoPlaceholder');
+                    if (preview) {
+                        preview.src = event.target.result;
+                        preview.style.display = 'block';
+                        if (placeholder) placeholder.style.display = 'none';
+                    }
+                    
+                    // Update dashboard photos immediately
+                    const userAvatar = document.querySelector('.user-avatar-img');
+                    if (userAvatar) {
+                        userAvatar.src = event.target.result;
+                    }
+                    
+                    const dropdownAvatar = document.getElementById('dropdownAvatarImg');
+                    if (dropdownAvatar) {
+                        dropdownAvatar.src = event.target.result;
+                    } else {
+                        const dropdownAvatarDiv = document.querySelector('.dropdown-avatar');
+                        if (dropdownAvatarDiv) {
+                            dropdownAvatarDiv.innerHTML = '<img src="' + event.target.result + '" alt="Organization" id="dropdownAvatarImg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">';
+                        }
+                    }
+                    
+                    const profileAvatar = document.querySelector('.profile-avatar-large img');
+                    if (profileAvatar) {
+                        profileAvatar.src = event.target.result;
+                    }
+                    
+                    const forumAvatar = document.querySelector('.create-box-avatar img');
+                    if (forumAvatar) {
+                        forumAvatar.src = event.target.result;
+                    }
+                    
+                    const createPostAvatar = document.querySelector('.post-avatar');
+                    if (createPostAvatar) {
+                        const existingImg = createPostAvatar.querySelector('img');
+                        if (existingImg) {
+                            existingImg.src = event.target.result;
+                        } else {
+                            createPostAvatar.innerHTML = '<img src="' + event.target.result + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                        }
+                    }
+                    
+                    const announcementAvatars = document.querySelectorAll('.post-author-avatar:not(.event-avatar)');
+                    announcementAvatars.forEach(avatar => {
+                        const existingImg = avatar.querySelector('img');
+                        if (existingImg) {
+                            existingImg.src = event.target.result;
+                        } else {
+                            avatar.innerHTML = '<img src="' + event.target.result + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+                
+                // Upload the photo
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                fetch(baseUrl + 'organization/uploadPhoto', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showToast(data.message, data.success ? 'success' : 'error');
+                    if (data.success) {
+                        // Update all photos with the new URL from server
+                        if (data.photo) {
+                            const userAvatar = document.querySelector('.user-avatar-img');
+                            if (userAvatar) {
+                                userAvatar.src = data.photo;
+                            }
+                            
+                            const dropdownAvatar = document.getElementById('dropdownAvatarImg');
+                            if (dropdownAvatar) {
+                                dropdownAvatar.src = data.photo;
+                            } else {
+                                const dropdownAvatarDiv = document.querySelector('.dropdown-avatar');
+                                if (dropdownAvatarDiv) {
+                                    dropdownAvatarDiv.innerHTML = '<img src="' + data.photo + '" alt="Organization" id="dropdownAvatarImg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">';
+                                }
+                            }
+                            
+                            const profileAvatar = document.querySelector('.profile-avatar-large img');
+                            if (profileAvatar) {
+                                profileAvatar.src = data.photo;
+                            }
+                            
+                            const forumAvatar = document.querySelector('.create-box-avatar img');
+                            if (forumAvatar) {
+                                forumAvatar.src = data.photo;
+                            }
+                            
+                            const createPostAvatar = document.querySelector('.post-avatar');
+                            if (createPostAvatar) {
+                                const existingImg = createPostAvatar.querySelector('img');
+                                if (existingImg) {
+                                    existingImg.src = data.photo;
+                                } else {
+                                    createPostAvatar.innerHTML = '<img src="' + data.photo + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                                }
+                            }
+                            
+                            const announcementAvatars = document.querySelectorAll('.post-author-avatar:not(.event-avatar)');
+                            announcementAvatars.forEach(avatar => {
+                                const existingImg = avatar.querySelector('img');
+                                if (existingImg) {
+                                    existingImg.src = data.photo;
+                                } else {
+                                    avatar.innerHTML = '<img src="' + data.photo + '" alt="Organization" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">';
+                                }
+                            });
+                            
+                            const preview = document.getElementById('orgLogoPreview');
+                            if (preview) {
+                                preview.src = data.photo;
+                            }
+                        }
+                        // Reload page to reflect changes
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                })
+                .catch(error => {
+                    showToast('An error occurred while uploading photo', 'error');
+                });
+            }
+        });
 
         // Organization Logo Upload - Preview only, no auto-save
         document.getElementById('logoUpload').addEventListener('change', function(e) {

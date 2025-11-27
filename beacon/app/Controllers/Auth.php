@@ -338,8 +338,9 @@ class Auth extends BaseController
         $googleUser = $oauth2->userinfo->get();
     
         // Load models
-        $userModel    = new \App\Models\UserModel();
-        $studentModel = new \App\Models\StudentModel();
+        $userModel         = new \App\Models\UserModel();
+        $studentModel      = new \App\Models\StudentModel();
+        $organizationModel = new \App\Models\OrganizationModel();
     
         /* ----------------------------------------------------------
          * 1. CHECK USERS TABLE BY EMAIL
@@ -351,51 +352,90 @@ class Auth extends BaseController
                 ->with('error', 'Your Google account is not registered in the system.');
         }
     
-        // User exists but MUST be student
-        if ($user['role'] !== 'student') {
-            return redirect()->to('/auth/login')
-                ->with('error', 'This Google account is not registered as a student.');
-        }
-    
-        /* ----------------------------------------------------------
-         * 2. LOAD STUDENT RECORD
-         * ---------------------------------------------------------- */
-        $student = $studentModel->where('user_id', $user['id'])->first();
-    
-        if (! $student) {
-            return redirect()->to('/auth/login')
-                ->with('error', 'Student record not found.');
-        }
-    
-        /* ----------------------------------------------------------
-         * 3. SET SESSION FOR STUDENT LOGIN
-         * ---------------------------------------------------------- */
-        // Get photo from user_photos table first, fallback to Google picture if not found
-        $userPhotoModel = new UserPhotoModel();
-        $userPhoto = $userPhotoModel->where('user_id', $user['id'])->first();
-        $photoUrl = null;
-        if ($userPhoto && !empty($userPhoto['photo_path'])) {
-            $photoUrl = base_url($userPhoto['photo_path']);
-        } else {
-            // Use Google picture only if no photo in database
-            $photoUrl = $googleUser->picture ?? null;
-        }
+        // Check if user role is student or organization
+        if ($user['role'] === 'student') {
+            /* ----------------------------------------------------------
+             * 2. LOAD STUDENT RECORD
+             * ---------------------------------------------------------- */
+            $student = $studentModel->where('user_id', $user['id'])->first();
         
-        session()->set([
-            'isLoggedIn'    => true,
-            'role'          => 'student',
-            'user_id'       => $user['id'],
-            'student_id'    => $student['id'],
-            'google_login'  => true,  // Flag to indicate Google login
-            'google_token'  => $token['access_token'],  // Store token for logout
-    
-            // Optional: For UX use only
-            'email'         => $googleUser->email,
-            'name'          => $googleUser->name,
-            'photo'         => $photoUrl
-        ]);
-    
-        return redirect()->to('/student/dashboard');
+            if (! $student) {
+                return redirect()->to('/auth/login')
+                    ->with('error', 'Student record not found.');
+            }
+        
+            /* ----------------------------------------------------------
+             * 3. SET SESSION FOR STUDENT LOGIN
+             * ---------------------------------------------------------- */
+            // Get photo from user_photos table first, fallback to Google picture if not found
+            $userPhotoModel = new UserPhotoModel();
+            $userPhoto = $userPhotoModel->where('user_id', $user['id'])->first();
+            $photoUrl = null;
+            if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                $photoUrl = base_url($userPhoto['photo_path']);
+            } else {
+                // Use Google picture only if no photo in database
+                $photoUrl = $googleUser->picture ?? null;
+            }
+            
+            session()->set([
+                'isLoggedIn'    => true,
+                'role'          => 'student',
+                'user_id'       => $user['id'],
+                'student_id'    => $student['id'],
+                'google_login'  => true,  // Flag to indicate Google login
+                'google_token'  => $token['access_token'],  // Store token for logout
+        
+                // Optional: For UX use only
+                'email'         => $googleUser->email,
+                'name'          => $googleUser->name,
+                'photo'         => $photoUrl
+            ]);
+        
+            return redirect()->to('/student/dashboard');
+        } elseif ($user['role'] === 'organization') {
+            /* ----------------------------------------------------------
+             * 2. LOAD ORGANIZATION RECORD
+             * ---------------------------------------------------------- */
+            $organization = $organizationModel->where('user_id', $user['id'])->first();
+        
+            if (! $organization) {
+                return redirect()->to('/auth/login')
+                    ->with('error', 'Organization record not found.');
+            }
+        
+            /* ----------------------------------------------------------
+             * 3. SET SESSION FOR ORGANIZATION LOGIN
+             * ---------------------------------------------------------- */
+            // Get photo from user_photos table first, fallback to Google picture if not found
+            $userPhotoModel = new UserPhotoModel();
+            $userPhoto = $userPhotoModel->where('user_id', $user['id'])->first();
+            $photoUrl = null;
+            if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                $photoUrl = base_url($userPhoto['photo_path']);
+            } else {
+                // Use Google picture only if no photo in database
+                $photoUrl = $googleUser->picture ?? null;
+            }
+            
+            session()->set([
+                'isLoggedIn'           => true,
+                'role'                 => 'organization',
+                'user_id'              => $user['id'],
+                'organization_id'      => $organization['id'],
+                'organization_name'    => $organization['organization_name'],
+                'organization_acronym' => $organization['organization_acronym'],
+                'email'                => $googleUser->email,
+                'photo'                => $photoUrl,
+                'google_login'         => true,  // Flag to indicate Google login
+                'google_token'         => $token['access_token']  // Store token for logout
+            ]);
+        
+            return redirect()->to('/organization/dashboard');
+        } else {
+            return redirect()->to('/auth/login')
+                ->with('error', 'This Google account is not registered as a student or organization.');
+        }
     }
     
     /**

@@ -30,3 +30,4 @@ class UserPhotoModel extends Model
     protected $cleanValidationRules = true;
 }
 
+
