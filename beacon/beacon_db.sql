@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 27, 2025 at 09:38 AM
+-- Generation Time: Nov 27, 2025 at 07:48 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -88,7 +88,7 @@ CREATE TABLE `announcements` (
 --
 
 INSERT INTO `announcements` (`announcement_id`, `org_id`, `title`, `content`, `priority`, `views`, `is_pinned`, `created_at`, `updated_at`) VALUES
-(3, 7, 'stress week', 'stress  na si mariel', 'normal', 4, 0, '2025-11-27 08:07:26', '2025-11-27 08:35:42');
+(3, 7, 'stress week', 'stress  na si mariel', 'normal', 38, 0, '2025-11-27 08:07:26', '2025-11-27 13:43:41');
 
 -- --------------------------------------------------------
 
@@ -105,13 +105,64 @@ CREATE TABLE `events` (
   `date` date NOT NULL COMMENT 'Event date',
   `time` time NOT NULL COMMENT 'Event time',
   `venue` varchar(255) NOT NULL COMMENT 'Location/venue where event will be held',
+  `audience_type` enum('all','department','specific_students') NOT NULL DEFAULT 'all',
+  `department_access` enum('ccs','cea','cthbm','chs','ctde','cas','gs') DEFAULT NULL,
+  `student_access` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`student_access`)),
   `max_attendees` int(11) UNSIGNED DEFAULT NULL COMMENT 'Maximum number of attendees (NULL for unlimited)',
   `current_attendees` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Current number of registered attendees',
+  `views` int(11) UNSIGNED NOT NULL DEFAULT 0,
   `image` varchar(255) DEFAULT NULL COMMENT 'Event image filename',
   `status` enum('upcoming','active','completed','cancelled') NOT NULL DEFAULT 'upcoming' COMMENT 'Current status of the event',
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `events`
+--
+
+INSERT INTO `events` (`event_id`, `org_id`, `org_type`, `event_name`, `description`, `date`, `time`, `venue`, `audience_type`, `department_access`, `student_access`, `max_attendees`, `current_attendees`, `views`, `image`, `status`, `created_at`, `updated_at`) VALUES
+(2, 7, 'academic', 'BYCIT', 'JNLJLIKLJHKLJHWQfgvngvngnn', '2025-11-28', '08:00:00', 'hmhmhvmhvmh', 'specific_students', 'ccs', '[\"3\",\"4\"]', 5, 1, 7, '1764232950_b0682b4018a6ca826894.png', 'upcoming', '2025-11-27 08:42:30', '2025-11-27 13:43:40');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `event_attendees`
+--
+
+CREATE TABLE `event_attendees` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `event_id` int(11) UNSIGNED NOT NULL COMMENT 'Foreign key to events table',
+  `student_id` int(11) UNSIGNED NOT NULL COMMENT 'Foreign key to students table',
+  `joined_at` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'When the student joined the event'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `event_attendees`
+--
+
+INSERT INTO `event_attendees` (`id`, `event_id`, `student_id`, `joined_at`) VALUES
+(1, 2, 4, '2025-11-27 11:28:02');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `event_interests`
+--
+
+CREATE TABLE `event_interests` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `event_id` int(11) UNSIGNED NOT NULL COMMENT 'Foreign key to events table',
+  `student_id` int(11) UNSIGNED NOT NULL COMMENT 'Foreign key to students table',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'When the student marked as interested'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `event_interests`
+--
+
+INSERT INTO `event_interests` (`id`, `event_id`, `student_id`, `created_at`) VALUES
+(1, 2, 4, '2025-11-27 12:51:26');
 
 -- --------------------------------------------------------
 
@@ -143,7 +194,7 @@ CREATE TABLE `organizations` (
 --
 
 INSERT INTO `organizations` (`id`, `user_id`, `organization_name`, `organization_acronym`, `organization_type`, `organization_category`, `founding_date`, `mission`, `vision`, `objectives`, `contact_email`, `contact_phone`, `current_members`, `is_active`, `created_at`, `updated_at`) VALUES
-(7, 12, 'Junior Philippine Student Council', 'JPCS', 'academic', 'departmental', '2025-11-27', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'marhernandez@my.cspc.edu.ph', '09512741049', 0, 1, '2025-11-27 15:39:58', '2025-11-27 08:03:23');
+(7, 12, 'Junior Philippine Student Council', 'JPCS', 'academic', 'departmental', '2025-11-27', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'marhernandez@my.cspc.edu.ph', '09512741049', 0, 1, '2025-11-27 15:39:58', '2025-11-27 11:35:12');
 
 -- --------------------------------------------------------
 
@@ -167,7 +218,7 @@ CREATE TABLE `organization_advisors` (
 --
 
 INSERT INTO `organization_advisors` (`id`, `application_id`, `name`, `email`, `phone`, `department`, `created_at`, `updated_at`) VALUES
-(12, 6, 'Irene Espeleta', '', '12345678901', 'ccs', '2025-11-27 15:37:12', '2025-11-27 08:03:23');
+(12, 6, 'Irene Espeleta', '', '12345678901', 'ccs', '2025-11-27 15:37:12', '2025-11-27 11:30:36');
 
 -- --------------------------------------------------------
 
@@ -276,7 +327,7 @@ CREATE TABLE `organization_officers` (
 --
 
 INSERT INTO `organization_officers` (`id`, `application_id`, `position`, `name`, `email`, `phone`, `student_id`, `created_at`, `updated_at`) VALUES
-(6, 6, 'President', 'Deanne Pandes', '', '45453234567', '2310020234', '2025-11-27 15:37:12', '2025-11-27 08:03:23');
+(6, 6, 'President', 'Deanne Pandes', '', '45453234567', '2310020234', '2025-11-27 15:37:12', '2025-11-27 11:30:36');
 
 -- --------------------------------------------------------
 
@@ -324,7 +375,8 @@ CREATE TABLE `post_likes` (
 --
 
 INSERT INTO `post_likes` (`id`, `student_id`, `post_type`, `post_id`, `reaction_type`, `created_at`) VALUES
-(7, 4, 'announcement', 3, 'haha', '2025-11-27 08:35:08');
+(7, 4, 'announcement', 3, 'haha', '2025-11-27 08:35:08'),
+(8, 4, 'event', 2, 'love', '2025-11-27 08:48:26');
 
 -- --------------------------------------------------------
 
@@ -508,6 +560,24 @@ ALTER TABLE `events`
   ADD KEY `idx_date_status` (`date`,`status`);
 
 --
+-- Indexes for table `event_attendees`
+--
+ALTER TABLE `event_attendees`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_event_student` (`event_id`,`student_id`),
+  ADD KEY `idx_event_id` (`event_id`),
+  ADD KEY `idx_student_id` (`student_id`);
+
+--
+-- Indexes for table `event_interests`
+--
+ALTER TABLE `event_interests`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_event_student` (`event_id`,`student_id`),
+  ADD KEY `idx_event_id` (`event_id`),
+  ADD KEY `idx_student_id` (`student_id`);
+
+--
 -- Indexes for table `organizations`
 --
 ALTER TABLE `organizations`
@@ -659,7 +729,19 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `event_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `event_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `event_attendees`
+--
+ALTER TABLE `event_attendees`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `event_interests`
+--
+ALTER TABLE `event_interests`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `organizations`
@@ -707,7 +789,7 @@ ALTER TABLE `post_comments`
 -- AUTO_INCREMENT for table `post_likes`
 --
 ALTER TABLE `post_likes`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -760,6 +842,20 @@ ALTER TABLE `announcements`
 --
 ALTER TABLE `events`
   ADD CONSTRAINT `fk_events_organization` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `event_attendees`
+--
+ALTER TABLE `event_attendees`
+  ADD CONSTRAINT `fk_event_attendees_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_event_attendees_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `event_interests`
+--
+ALTER TABLE `event_interests`
+  ADD CONSTRAINT `fk_event_interests_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_event_interests_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `organizations`
