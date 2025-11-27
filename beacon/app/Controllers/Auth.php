@@ -259,6 +259,43 @@ class Auth extends BaseController
                 return redirect()->to(base_url('auth/register'))->withInput()->with('errors', ['Database error occurred. Please try again.']);
             }
 
+            // Auto-follow organizations in the same department
+            $studentDepartment = $this->request->getPost('department');
+            if ($studentDepartment) {
+                try {
+                    $followModel = new \App\Models\OrganizationFollowModel();
+                    
+                    // Get all approved organizations with the same department
+                    $organizations = $db->table('organization_applications')
+                        ->select('organization_applications.organization_name')
+                        ->join('organizations', 'organizations.organization_name = organization_applications.organization_name', 'inner')
+                        ->where('organization_applications.status', 'approved')
+                        ->where('organization_applications.department', $studentDepartment)
+                        ->where('organizations.is_active', 1)
+                        ->get()
+                        ->getResultArray();
+                    
+                    // Auto-follow each organization
+                    foreach ($organizations as $org) {
+                        $orgRecord = $db->table('organizations')
+                            ->where('organization_name', $org['organization_name'])
+                            ->where('is_active', 1)
+                            ->get()
+                            ->getRowArray();
+                        
+                        if ($orgRecord && !$followModel->isFollowing($studentId, $orgRecord['id'])) {
+                            $followModel->insert([
+                                'student_id' => $studentId,
+                                'org_id' => $orgRecord['id']
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail registration
+                    log_message('error', 'Auto-follow error during registration: ' . $e->getMessage());
+                }
+            }
+
             log_message('info', 'Student registration successful for email: ' . $this->request->getPost('email'));
             return redirect()->to(base_url('auth/login'))->with('success', 'Registration successful! Please login.');
 

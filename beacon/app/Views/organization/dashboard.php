@@ -1272,6 +1272,37 @@
 
                 <div class="settings-grid">
                     <div class="settings-card">
+                        <!-- Organization Logo Upload -->
+                        <div class="form-section-header">
+                            <i class="fas fa-image"></i>
+                            <span>Organization Logo</span>
+                        </div>
+                        <div class="form-group">
+                            <div class="logo-upload">
+                                <div class="current-logo">
+                                    <?php if(!empty($organization['photo'])): ?>
+                                        <img src="<?= $organization['photo'] ?>" alt="Logo" id="orgLogoPreview">
+                                    <?php else: ?>
+                                        <img src="" alt="Logo" id="orgLogoPreview" style="display: none;">
+                                        <div class="logo-placeholder" id="orgLogoPlaceholder">
+                                            <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                                    <button type="button" class="change-photo-btn" onclick="document.getElementById('profilePhotoInput').click()" style="position: absolute; bottom: 10px; right: 10px; background: #007bff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                </div>
+                                <div class="upload-actions">
+                                    <input type="file" id="logoUpload" name="photo" accept="image/*" hidden>
+                                    <button type="button" class="btn btn-outline" onclick="document.getElementById('logoUpload').click()">
+                                        <i class="fas fa-upload"></i> Upload New Logo
+                                    </button>
+                                    <p class="upload-hint">Recommended: 200x200px, PNG or JPG</p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
                         <form id="orgInfoForm" class="settings-form">
                             <div class="form-group">
@@ -1299,6 +1330,24 @@
                             <div class="form-group">
                                 <label>Organization Category</label>
                                 <input type="text" name="category" value="<?= esc($organization['category'] ?? '') ?>" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Department <span class="required">*</span></label>
+                                <div class="select-wrapper">
+                                    <select name="department" id="department" class="form-input" required>
+                                        <option value="">Select department</option>
+                                        <option value="ccs" <?= (isset($organization['department']) && $organization['department'] === 'ccs') ? 'selected' : '' ?>>College of Computer Studies</option>
+                                        <option value="cea" <?= (isset($organization['department']) && $organization['department'] === 'cea') ? 'selected' : '' ?>>College of Engineering and Architecture</option>
+                                        <option value="cthbm" <?= (isset($organization['department']) && $organization['department'] === 'cthbm') ? 'selected' : '' ?>>College of Tourism, Hospitality, and Business Management</option>
+                                        <option value="chs" <?= (isset($organization['department']) && $organization['department'] === 'chs') ? 'selected' : '' ?>>College of Health Sciences</option>
+                                        <option value="ctde" <?= (isset($organization['department']) && $organization['department'] === 'ctde') ? 'selected' : '' ?>>College of Technological and Developmental Education</option>
+                                        <option value="cas" <?= (isset($organization['department']) && $organization['department'] === 'cas') ? 'selected' : '' ?>>College of Arts and Sciences</option>
+                                        <option value="gs" <?= (isset($organization['department']) && $organization['department'] === 'gs') ? 'selected' : '' ?>>Graduate School</option>
+                                    </select>
+                                    <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label>Founding Date</label>
@@ -1333,7 +1382,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Advisor Email</label>
-                                <input type="email" name="advisor_email" value="<?= esc($organization['advisor_email'] ?? '') ?>" class="form-input" disabled>
+                                <input type="email" name="advisor_email" value="<?= esc($organization['advisor_email'] ?? '') ?>" class="form-input" <?= !empty($organization['advisor_email']) ? '' : 'placeholder="No email provided"' ?> disabled>
                                 <small class="form-hint">Email cannot be changed</small>
                             </div>
                             <div class="form-group">
@@ -1360,7 +1409,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Email</label>
-                                <input type="email" name="officer_email" value="<?= esc($organization['officer_email'] ?? '') ?>" class="form-input" disabled>
+                                <input type="email" name="officer_email" value="<?= esc($organization['officer_email'] ?? '') ?>" class="form-input" <?= !empty($organization['officer_email']) ? '' : 'placeholder="No email provided"' ?> disabled>
                                 <small class="form-hint">Email cannot be changed</small>
                             </div>
                             <div class="form-row">
@@ -1371,37 +1420,6 @@
                                 <div class="form-group">
                                     <label>Student ID</label>
                                     <input type="text" name="officer_student_id" value="<?= esc($organization['officer_student_id'] ?? '') ?>" class="form-input">
-                                </div>
-                            </div>
-                            
-                            <!-- Organization Logo Upload -->
-                            <div class="form-section-header">
-                                <i class="fas fa-image"></i>
-                                <span>Organization Logo</span>
-                            </div>
-                            <div class="form-group">
-                                <div class="logo-upload">
-                                    <div class="current-logo">
-                                        <?php if(!empty($organization['photo'])): ?>
-                                            <img src="<?= $organization['photo'] ?>" alt="Logo" id="orgLogoPreview">
-                                        <?php else: ?>
-                                            <img src="" alt="Logo" id="orgLogoPreview" style="display: none;">
-                                            <div class="logo-placeholder" id="orgLogoPlaceholder">
-                                                <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
-                                        <button type="button" class="change-photo-btn" onclick="document.getElementById('profilePhotoInput').click()" style="position: absolute; bottom: 10px; right: 10px; background: #007bff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                                            <i class="fas fa-camera"></i>
-                                        </button>
-                                    </div>
-                                    <div class="upload-actions">
-                                        <input type="file" id="logoUpload" name="photo" accept="image/*" hidden>
-                                        <button type="button" class="btn btn-outline" onclick="document.getElementById('logoUpload').click()">
-                                            <i class="fas fa-upload"></i> Upload New Logo
-                                        </button>
-                                        <p class="upload-hint">Recommended: 200x200px, PNG or JPG</p>
-                                    </div>
                                 </div>
                             </div>
                             
@@ -2824,6 +2842,27 @@
     </script>
 
     <style>
+        /* Select Wrapper Styles - Hide native arrow */
+        .select-wrapper {
+            position: relative;
+        }
+        
+        .select-wrapper select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 2.5rem;
+        }
+        
+        .select-wrapper .select-arrow {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #64748b;
+        }
+        
         /* Post Actions Styles - Matching Student Dashboard */
         .post-actions {
             display: flex;

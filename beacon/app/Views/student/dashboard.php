@@ -372,100 +372,39 @@
                                 </div>
                             </div>
 
-                            <?php if(!$hasJoinedOrg): ?>
-                            <!-- Join Organization Card (shown if student hasn't joined) -->
-                            <div class="feed-post join-org-card" id="joinOrgCard">
-                                <div class="join-org-content">
-                                    <div class="join-org-icon">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div class="join-org-text">
-                                        <h3>Join an Organization</h3>
-                                        <p>Connect with like-minded students and be part of campus activities. Explore available organizations and find your community!</p>
-                                    </div>
-                                    <button class="btn btn-primary" onclick="showAvailableOrganizations()">
-                                        <i class="fas fa-plus"></i> Browse Organizations
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Available Organizations in Feed (hidden by default) -->
-                            <div class="feed-organizations-container" id="availableOrgsContainer" style="display: none;">
-                                <div class="feed-post org-list-header">
-                                    <div class="org-list-header-content">
-                                        <h3><i class="fas fa-users"></i> Available Organizations</h3>
-                                        <p>Select an organization to join and start connecting with your campus community</p>
-                                        <button class="btn btn-outline btn-sm" onclick="hideAvailableOrganizations()">
-                                            <i class="fas fa-arrow-left"></i> Back
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <?php if(!empty($availableOrganizations)): ?>
-                                <div class="org-cards-grid">
-                                    <?php foreach($availableOrganizations as $org): ?>
-                                    <div class="feed-post org-card-feed">
-                                        <div class="org-card-feed-header">
-                                            <div class="org-card-feed-avatar">
-                                                <?= esc(strtoupper(substr($org['acronym'], 0, 2))) ?>
-                                            </div>
-                                            <div class="org-card-feed-info">
-                                                <h4><?= esc($org['name']) ?></h4>
-                                                <span class="org-card-feed-type"><?= esc($org['type']) ?></span>
-                                            </div>
-                                        </div>
-                                        <?php if(!empty($org['description'])): ?>
-                                        <p class="org-card-feed-description"><?= esc($org['description']) ?></p>
-                                        <?php endif; ?>
-                                        <div class="org-card-feed-footer">
-                                            <span class="org-card-feed-members">
-                                                <i class="fas fa-users"></i> <?= number_format($org['members']) ?> members
-                                            </span>
-                                            <button class="btn btn-primary btn-sm" onclick="joinOrg(<?= $org['id'] ?>)">
-                                                <i class="fas fa-plus"></i> Join
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php else: ?>
-                                    <div class="feed-post empty-state">
-                                        <div class="empty-state-content">
-                                            <i class="fas fa-inbox"></i>
-                                            <h3>No Organizations Available</h3>
-                                            <p>There are no organizations available at the moment. Please check back later.</p>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <?php else: ?>
                             <!-- Organization Posts (Announcements and Events) -->
                             <?php 
                             // Combine and sort posts by date
                             $allPosts = [];
                             
                             // Add announcements
-                            foreach($organizationPosts['announcements'] as $announcement) {
-                                $allPosts[] = [
-                                    'type' => 'announcement',
-                                    'data' => $announcement,
-                                    'date' => strtotime($announcement['created_at'])
-                                ];
+                            if (!empty($organizationPosts['announcements'])) {
+                                foreach($organizationPosts['announcements'] as $announcement) {
+                                    $allPosts[] = [
+                                        'type' => 'announcement',
+                                        'data' => $announcement,
+                                        'date' => strtotime($announcement['created_at'])
+                                    ];
+                                }
                             }
                             
                             // Add events
-                            foreach($organizationPosts['events'] as $event) {
-                                $allPosts[] = [
-                                    'type' => 'event',
-                                    'data' => $event,
-                                    'date' => strtotime($event['created_at'] ?? $event['date'])
-                                ];
+                            if (!empty($organizationPosts['events'])) {
+                                foreach($organizationPosts['events'] as $event) {
+                                    $allPosts[] = [
+                                        'type' => 'event',
+                                        'data' => $event,
+                                        'date' => strtotime($event['created_at'] ?? $event['date'])
+                                    ];
+                                }
                             }
                             
                             // Sort by date (newest first)
-                            usort($allPosts, function($a, $b) {
-                                return $b['date'] - $a['date'];
-                            });
+                            if (!empty($allPosts)) {
+                                usort($allPosts, function($a, $b) {
+                                    return $b['date'] - $a['date'];
+                                });
+                            }
                             
                             if(!empty($allPosts)):
                                 foreach($allPosts as $post):
@@ -672,10 +611,9 @@
                                 <div class="empty-feed-content">
                                     <i class="fas fa-inbox"></i>
                                     <h3>No Posts Yet</h3>
-                                    <p>Your organization hasn't posted anything yet. Check back later!</p>
+                                    <p>Your followed organizations haven't posted anything yet. Check back later!</p>
                                 </div>
                             </div>
-                            <?php endif; ?>
                             <?php endif; ?>
                         </div>
 

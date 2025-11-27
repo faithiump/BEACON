@@ -72,6 +72,7 @@ class Organization extends BaseController
                 'acronym' => $this->session->get('organization_acronym') ?? 'ORG',
                 'type' => 'Academic',
                 'category' => 'Departmental',
+                'department' => '',
                 'email' => $this->session->get('email') ?? '',
                 'phone' => '',
                 'photo' => null,
@@ -118,6 +119,7 @@ class Organization extends BaseController
             
             // Get advisor through organization application
             $advisor = $db->table('organization_advisors')
+                ->select('organization_advisors.*')
                 ->join('organization_applications', 'organization_applications.id = organization_advisors.application_id')
                 ->where('organization_applications.organization_name', $organization['organization_name'])
                 ->where('organization_applications.status', 'approved')
@@ -126,6 +128,7 @@ class Organization extends BaseController
             
             // Get primary officer through organization application
             $officer = $db->table('organization_officers')
+                ->select('organization_officers.*')
                 ->join('organization_applications', 'organization_applications.id = organization_officers.application_id')
                 ->where('organization_applications.organization_name', $organization['organization_name'])
                 ->where('organization_applications.status', 'approved')
@@ -136,6 +139,7 @@ class Organization extends BaseController
             // If no President found, get the first officer
             if (!$officer) {
                 $officer = $db->table('organization_officers')
+                    ->select('organization_officers.*')
                     ->join('organization_applications', 'organization_applications.id = organization_officers.application_id')
                     ->where('organization_applications.organization_name', $organization['organization_name'])
                     ->where('organization_applications.status', 'approved')
@@ -144,12 +148,22 @@ class Organization extends BaseController
                     ->getRowArray();
             }
             
+            // Get department from organization_applications
+            $application = $db->table('organization_applications')
+                ->where('organization_name', $organization['organization_name'])
+                ->where('status', 'approved')
+                ->get()
+                ->getRowArray();
+            
+            $department = $application['department'] ?? '';
+            
             return [
                 'id' => $organization['id'],
                 'name' => $organization['organization_name'],
                 'acronym' => $organization['organization_acronym'],
                 'type' => ucfirst(str_replace('_', ' ', $organization['organization_type'] ?? 'academic')),
                 'category' => ucfirst(str_replace('_', ' ', $organization['organization_category'] ?? 'departmental')),
+                'department' => $department,
                 'email' => $user['email'] ?? '',
                 'contact_email' => $user['email'] ?? '',
                 'phone' => $organization['contact_phone'] ?? '',
@@ -988,6 +1002,21 @@ class Organization extends BaseController
             'objectives' => $this->request->getPost('objectives'),
             'current_members' => (int)$this->request->getPost('current_members'),
         ];
+        
+        // Update department in organization_applications table
+        $department = $this->request->getPost('department');
+        if ($department) {
+            $orgModel = new OrganizationModel();
+            $organization = $orgModel->find($orgId);
+            
+            if ($organization) {
+                $db = \Config\Database::connect();
+                $db->table('organization_applications')
+                    ->where('organization_name', $organization['organization_name'])
+                    ->where('status', 'approved')
+                    ->update(['department' => $department]);
+            }
+        }
 
         // Handle photo upload (profile picture)
         $photoUrl = null;
@@ -2036,6 +2065,7 @@ class Organization extends BaseController
             'organization_acronym' => 'required|min_length[2]|max_length[20]',
             'organization_type' => 'required|in_list[academic,non_academic,service,religious,cultural,sports,other]',
             'organization_category' => 'required|in_list[departmental,inter_departmental,university_wide]',
+            'department' => 'required|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
             'mission' => 'required|min_length[50]|max_length[1000]',
             'vision' => 'required|min_length[50]|max_length[1000]',
             'objectives' => 'required|min_length[50]|max_length[2000]',
@@ -2077,6 +2107,7 @@ class Organization extends BaseController
             'organization_acronym' => $this->request->getPost('organization_acronym'),
             'organization_type' => $this->request->getPost('organization_type'),
             'organization_category' => $this->request->getPost('organization_category'),
+            'department' => $this->request->getPost('department'),
             'mission' => $this->request->getPost('mission'),
             'vision' => $this->request->getPost('vision'),
             'objectives' => $this->request->getPost('objectives'),
@@ -2175,6 +2206,7 @@ class Organization extends BaseController
                 'organization_acronym' => $this->request->getPost('organization_acronym'),
                 'organization_type' => $this->request->getPost('organization_type'),
                 'organization_category' => $this->request->getPost('organization_category'),
+                'department' => $this->request->getPost('department'),
                 'founding_date' => $this->request->getPost('founding_date'),
                 'mission' => $this->request->getPost('mission'),
                 'vision' => $this->request->getPost('vision'),
