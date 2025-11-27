@@ -72,6 +72,7 @@ class Organization extends BaseController
                 'acronym' => $this->session->get('organization_acronym') ?? 'ORG',
                 'type' => 'Academic',
                 'category' => 'Departmental',
+                'department' => '',
                 'email' => $this->session->get('email') ?? '',
                 'phone' => '',
                 'photo' => null,
@@ -118,6 +119,7 @@ class Organization extends BaseController
             
             // Get advisor through organization application
             $advisor = $db->table('organization_advisors')
+                ->select('organization_advisors.*')
                 ->join('organization_applications', 'organization_applications.id = organization_advisors.application_id')
                 ->where('organization_applications.organization_name', $organization['organization_name'])
                 ->where('organization_applications.status', 'approved')
@@ -126,6 +128,7 @@ class Organization extends BaseController
             
             // Get primary officer through organization application
             $officer = $db->table('organization_officers')
+                ->select('organization_officers.*')
                 ->join('organization_applications', 'organization_applications.id = organization_officers.application_id')
                 ->where('organization_applications.organization_name', $organization['organization_name'])
                 ->where('organization_applications.status', 'approved')
@@ -136,6 +139,7 @@ class Organization extends BaseController
             // If no President found, get the first officer
             if (!$officer) {
                 $officer = $db->table('organization_officers')
+                    ->select('organization_officers.*')
                     ->join('organization_applications', 'organization_applications.id = organization_officers.application_id')
                     ->where('organization_applications.organization_name', $organization['organization_name'])
                     ->where('organization_applications.status', 'approved')
@@ -144,12 +148,22 @@ class Organization extends BaseController
                     ->getRowArray();
             }
             
+            // Get department from organization_applications
+            $application = $db->table('organization_applications')
+                ->where('organization_name', $organization['organization_name'])
+                ->where('status', 'approved')
+                ->get()
+                ->getRowArray();
+            
+            $department = $application['department'] ?? '';
+            
             return [
                 'id' => $organization['id'],
                 'name' => $organization['organization_name'],
                 'acronym' => $organization['organization_acronym'],
                 'type' => ucfirst(str_replace('_', ' ', $organization['organization_type'] ?? 'academic')),
                 'category' => ucfirst(str_replace('_', ' ', $organization['organization_category'] ?? 'departmental')),
+                'department' => $department,
                 'email' => $user['email'] ?? '',
                 'contact_email' => $user['email'] ?? '',
                 'phone' => $organization['contact_phone'] ?? '',
@@ -326,6 +340,8 @@ class Organization extends BaseController
                     'date' => $event['date'],
                     'time' => $timeFormatted,
                     'location' => $event['venue'] ?? $event['location'],
+                    'audience_type' => $event['audience_type'] ?? 'all',
+                    'department_access' => $event['department_access'] ?? null,
                     'attendees' => $event['current_attendees'] ?? 0,
                     'max_attendees' => $event['max_attendees'],
                     'status' => $event['status'] ?? 'upcoming',
@@ -721,6 +737,57 @@ class Organization extends BaseController
     }
 
     /**
+     * Get event data for editing
+     */
+    public function getEvent($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $eventModel = new EventModel();
+        $event = $eventModel->find($id);
+
+        // Verify event belongs to organization
+        if (!$event || $event['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event not found or unauthorized']);
+        }
+
+        // Format time for input field (HH:MM format)
+        $timeFormatted = $event['time'];
+        if ($timeFormatted && strpos($timeFormatted, ':') !== false) {
+            $timeParts = explode(':', $timeFormatted);
+            $hour = $timeParts[0];
+            $minute = isset($timeParts[1]) ? $timeParts[1] : '00';
+            $timeFormatted = $hour . ':' . $minute;
+        }
+
+        // Format response data
+        $responseData = [
+            'id' => $event['event_id'],
+            'title' => $event['event_name'],
+            'description' => $event['description'],
+            'date' => $event['date'],
+            'time' => $timeFormatted,
+            'location' => $event['venue'],
+            'audience_type' => $event['audience_type'] ?? 'all',
+            'department_access' => $event['department_access'] ?? null,
+            'max_attendees' => $event['max_attendees'],
+            'image' => $event['image'] ?? null,
+        ];
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $responseData
+        ]);
+    }
+
+    /**
      * Create event
      */
     public function createEvent()
@@ -742,6 +809,14 @@ class Organization extends BaseController
         }
 
         // Prepare event data
+        $audienceType = strtolower($this->request->getPost('audience_type') ?? 'all');
+        if (!in_array($audienceType, ['all', 'department', 'students'])) {
+            $audienceType = 'all';
+        }
+        $departmentAccess = $audienceType === 'department'
+            ? strtolower($this->request->getPost('department_access') ?? '')
+            : null;
+
         $eventData = [
             'org_id' => $orgId,
             'org_type' => $organization['organization_type'] ?? 'academic',
@@ -750,6 +825,8 @@ class Organization extends BaseController
             'date' => $this->request->getPost('date'),
             'time' => $this->request->getPost('time'),
             'venue' => $this->request->getPost('location'),
+            'audience_type' => $audienceType,
+            'department_access' => $audienceType === 'department' ? $departmentAccess : null,
             'max_attendees' => $this->request->getPost('max_attendees') ? (int)$this->request->getPost('max_attendees') : null,
             'current_attendees' => 0,
             'status' => 'upcoming',
@@ -804,6 +881,8 @@ class Organization extends BaseController
             'date' => $createdEvent['date'],
             'time' => $timeFormatted,
             'location' => $createdEvent['venue'],
+            'audience_type' => $createdEvent['audience_type'] ?? 'all',
+            'department_access' => $createdEvent['department_access'] ?? null,
             'attendees' => $createdEvent['current_attendees'],
             'max_attendees' => $createdEvent['max_attendees'],
             'status' => $createdEvent['status'],
@@ -858,6 +937,25 @@ class Organization extends BaseController
         }
         if ($this->request->getPost('max_attendees') !== null) {
             $updateData['max_attendees'] = $this->request->getPost('max_attendees') ? (int)$this->request->getPost('max_attendees') : null;
+        }
+        if ($this->request->getPost('audience_type') !== null) {
+            $audienceType = strtolower($this->request->getPost('audience_type'));
+            if (!in_array($audienceType, ['all', 'department', 'students'])) {
+                $audienceType = 'all';
+            }
+            $updateData['audience_type'] = $audienceType;
+            if ($audienceType === 'department') {
+                $departmentAccess = strtolower($this->request->getPost('department_access') ?? '');
+                $updateData['department_access'] = $departmentAccess ?: null;
+            } else {
+                $updateData['department_access'] = null;
+            }
+        } elseif ($this->request->getPost('department_access') !== null) {
+            $departmentAccess = strtolower($this->request->getPost('department_access'));
+            $updateData['department_access'] = $departmentAccess ?: null;
+            if ($departmentAccess) {
+                $updateData['audience_type'] = 'department';
+            }
         }
 
         // Handle image upload
@@ -988,6 +1086,21 @@ class Organization extends BaseController
             'objectives' => $this->request->getPost('objectives'),
             'current_members' => (int)$this->request->getPost('current_members'),
         ];
+        
+        // Update department in organization_applications table
+        $department = $this->request->getPost('department');
+        if ($department) {
+            $orgModel = new OrganizationModel();
+            $organization = $orgModel->find($orgId);
+            
+            if ($organization) {
+                $db = \Config\Database::connect();
+                $db->table('organization_applications')
+                    ->where('organization_name', $organization['organization_name'])
+                    ->where('status', 'approved')
+                    ->update(['department' => $department]);
+            }
+        }
 
         // Handle photo upload (profile picture)
         $photoUrl = null;
@@ -2036,6 +2149,7 @@ class Organization extends BaseController
             'organization_acronym' => 'required|min_length[2]|max_length[20]',
             'organization_type' => 'required|in_list[academic,non_academic,service,religious,cultural,sports,other]',
             'organization_category' => 'required|in_list[departmental,inter_departmental,university_wide]',
+            'department' => 'required|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
             'mission' => 'required|min_length[50]|max_length[1000]',
             'vision' => 'required|min_length[50]|max_length[1000]',
             'objectives' => 'required|min_length[50]|max_length[2000]',
@@ -2077,6 +2191,7 @@ class Organization extends BaseController
             'organization_acronym' => $this->request->getPost('organization_acronym'),
             'organization_type' => $this->request->getPost('organization_type'),
             'organization_category' => $this->request->getPost('organization_category'),
+            'department' => $this->request->getPost('department'),
             'mission' => $this->request->getPost('mission'),
             'vision' => $this->request->getPost('vision'),
             'objectives' => $this->request->getPost('objectives'),
@@ -2175,6 +2290,7 @@ class Organization extends BaseController
                 'organization_acronym' => $this->request->getPost('organization_acronym'),
                 'organization_type' => $this->request->getPost('organization_type'),
                 'organization_category' => $this->request->getPost('organization_category'),
+                'department' => $this->request->getPost('department'),
                 'founding_date' => $this->request->getPost('founding_date'),
                 'mission' => $this->request->getPost('mission'),
                 'vision' => $this->request->getPost('vision'),

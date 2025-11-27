@@ -26,6 +26,7 @@ $routes->get('organization/logout', 'Organization::logout');
 
 // Organization Events
 $routes->get('organization/events', 'Organization::viewEvents');
+$routes->get('organization/events/get/(:num)', 'Organization::getEvent/$1');
 $routes->post('organization/events/create', 'Organization::createEvent');
 $routes->post('organization/events/update/(:num)', 'Organization::updateEvent/$1');
 $routes->post('organization/events/delete/(:num)', 'Organization::deleteEvent/$1');

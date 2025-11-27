@@ -531,6 +531,7 @@ class Login extends BaseController
             }
 
             $orgBuilder->insert($orgData);
+            $orgId = $db->insertID();
             $error = $db->error();
             if (!empty($error['code'])) {
                 throw new \Exception('Failed to create organization record: ' . ($error['message'] ?? 'Unknown error'));
@@ -551,6 +552,33 @@ class Login extends BaseController
 
             if ($db->transStatus() === false) {
                 throw new \Exception('Database transaction failed');
+            }
+
+            // Auto-follow organization for students in the same department
+            $orgDepartment = $application['department'] ?? null;
+            if ($orgDepartment && $orgId) {
+                try {
+                    $followModel = new \App\Models\OrganizationFollowModel();
+                    
+                    // Get all students with the same department
+                    $students = $db->table('students')
+                        ->where('department', $orgDepartment)
+                        ->get()
+                        ->getResultArray();
+                    
+                    // Auto-follow for each student
+                    foreach ($students as $student) {
+                        if (!$followModel->isFollowing($student['id'], $orgId)) {
+                            $followModel->insert([
+                                'student_id' => $student['id'],
+                                'org_id' => $orgId
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail approval
+                    log_message('error', 'Auto-follow error during organization approval: ' . $e->getMessage());
+                }
             }
 
             // Send approval email notification

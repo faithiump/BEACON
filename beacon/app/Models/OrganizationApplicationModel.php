@@ -17,6 +17,7 @@ class OrganizationApplicationModel extends Model
         'organization_acronym',
         'organization_type',
         'organization_category',
+        'department',
         'founding_date',
         'mission',
         'vision',

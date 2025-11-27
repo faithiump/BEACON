@@ -132,6 +132,25 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="department">Department <span class="required">*</span></label>
+                            <div class="select-wrapper">
+                                <select name="department" id="department" class="form-control" required>
+                                    <option value="">Select department</option>
+                                    <option value="ccs">College of Computer Studies</option>
+                                    <option value="cea">College of Engineering and Architecture</option>
+                                    <option value="cthbm">College of Tourism, Hospitality, and Business Management</option>
+                                    <option value="chs">College of Health Sciences</option>
+                                    <option value="ctde">College of Technological and Developmental Education</option>
+                                    <option value="cas">College of Arts and Sciences</option>
+                                    <option value="gs">Graduate School</option>
+                                </select>
+                                <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="founding_date">Founding Date <span class="required">*</span></label>
                             <input type="date" name="founding_date" id="founding_date" class="form-control" required>
                         </div>
