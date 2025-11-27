@@ -326,24 +326,47 @@
             color: var(--gray-500);
         }
         
-        .file-download {
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .file-action {
             display: inline-flex;
             align-items: center;
             gap: 0.375rem;
-            padding: 0.375rem 0.75rem;
-            background: var(--primary-50);
-            color: var(--primary-600);
-            border-radius: 6px;
+            padding: 0.4rem 0.9rem;
             text-decoration: none;
             font-weight: 600;
             font-size: 0.75rem;
-            transition: all 0.2s;
-            margin-top: 0.375rem;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+            border: 1.5px solid rgba(148, 163, 184, 0.4);
+            box-shadow: none;
+            background: #fff;
+            color: #0f172a;
         }
-        
-        .file-download:hover {
-            background: var(--primary-100);
-            transform: translateY(-2px);
+
+        .file-action.view {
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #059669;
+        }
+
+        .file-action.download {
+            border-color: rgba(99, 102, 241, 0.35);
+            color: #4c51bf;
+        }
+
+        .file-action i {
+            font-size: 0.8rem;
+        }
+
+        .file-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+            background: rgba(15, 23, 42, 0.02);
         }
         
         .status-badge {
@@ -434,9 +457,13 @@
                 </a>
                 <div class="back-nav-right">
                     <span class="org-name-nav"><?= esc($organization['organization_name']) ?></span>
-                    <span class="status-badge <?= $organization['is_active'] ? 'approved' : 'inactive' ?>">
-                        <?= $organization['is_active'] ? 'Active' : 'Inactive' ?>
-                    </span>
+                    <?php if (isset($isPending) && $isPending): ?>
+                        <span class="status-badge pending">Pending</span>
+                    <?php else: ?>
+                        <span class="status-badge <?= $organization['is_active'] ? 'approved' : 'inactive' ?>">
+                            <?= $organization['is_active'] ? 'Active' : 'Inactive' ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -640,9 +667,14 @@
                                 <?php if ($file['file_size']): ?>
                                 <div class="file-size"><?= number_format($file['file_size'] / 1024, 2) ?> KB</div>
                                 <?php endif; ?>
-                                <a href="<?= base_url($file['file_path']) ?>" target="_blank" class="file-download">
-                                    <i class="fas fa-download"></i> Download
-                                </a>
+                                <div class="file-actions">
+                                    <a href="<?= base_url('admin/organizations/file/' . $file['id']) ?>" target="_blank" class="file-action view" title="View File">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    <a href="<?= base_url($file['file_path']) ?>" target="_blank" class="file-action download" title="Download File">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </div>
                             </div>
                             <?php endforeach; ?>
                         </div>

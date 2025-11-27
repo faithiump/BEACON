@@ -78,6 +78,7 @@ class Login extends BaseController
         $builder->where('u.role', 'student');
         $builder->where('u.is_active', 1);
         $builder->orderBy('u.created_at', 'DESC');
+        // No limit here - we'll limit in the view
         $students = $builder->get()->getResultArray();
 
         // Format student data for display
@@ -101,6 +102,9 @@ class Login extends BaseController
                 'email' => $student['email'] ?? 'N/A'
             ];
         }
+
+        // Limit initial display to 10 students
+        $totalStudentsCount = count($studentData);
 
         // Fetch all users for User Management section (students and organizations)
         $usersBuilder = $db->table('users u');
@@ -206,6 +210,159 @@ class Login extends BaseController
             ];
         }
 
+        // Fetch recent student comments
+        try {
+            $commentsBuilder = $db->table('post_comments');
+            $commentsBuilder->select('post_comments.id, post_comments.content, post_comments.post_type, post_comments.post_id, post_comments.created_at,
+                                      s.id as student_id, s.user_id,
+                                      up.firstname, up.middlename, up.lastname,
+                                      up_photo.photo_path');
+            $commentsBuilder->join('students s', 's.id = post_comments.student_id', 'inner');
+            $commentsBuilder->join('user_profiles up', 'up.user_id = s.user_id', 'inner');
+            $commentsBuilder->join('user_photos up_photo', 'up_photo.user_id = s.user_id', 'left');
+            // Only get top-level comments (not replies) - check if column exists first
+            // Check if parent_comment_id column exists
+            $columns = $db->getFieldNames('post_comments');
+            if (in_array('parent_comment_id', $columns)) {
+                $commentsBuilder->where('post_comments.parent_comment_id IS NULL');
+            }
+            // Only get student comments (not organization comments)
+            $commentsBuilder->where('post_comments.student_id IS NOT NULL');
+            $commentsBuilder->orderBy('post_comments.created_at', 'DESC');
+            $commentsBuilder->limit(10);
+            $recentComments = $commentsBuilder->get()->getResultArray();
+        } catch (\Exception $e) {
+            // If query fails, set empty array
+            log_message('error', 'Failed to fetch recent comments: ' . $e->getMessage());
+            $recentComments = [];
+        }
+
+        // Format comments for display
+        $commentsData = [];
+        foreach ($recentComments as $comment) {
+            // Get full name
+            $fullName = trim(($comment['firstname'] ?? '') . ' ' . ($comment['middlename'] ?? '') . ' ' . ($comment['lastname'] ?? ''));
+            $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+            
+            // Get post title and organization name based on post_type
+            $postTitle = '';
+            $orgName = 'N/A';
+            
+            if ($comment['post_type'] === 'event') {
+                $event = $db->table('events e')
+                    ->select('e.event_name, o.organization_name')
+                    ->join('organizations o', 'o.id = e.org_id', 'left')
+                    ->where('e.event_id', $comment['post_id'])
+                    ->get()
+                    ->getRowArray();
+                
+                if ($event) {
+                    $postTitle = $event['event_name'] ?? 'Event';
+                    $orgName = $event['organization_name'] ?? 'N/A';
+                }
+            } elseif ($comment['post_type'] === 'announcement') {
+                $announcement = $db->table('announcements a')
+                    ->select('a.title, o.organization_name')
+                    ->join('organizations o', 'o.id = a.org_id', 'left')
+                    ->where('a.announcement_id', $comment['post_id'])
+                    ->get()
+                    ->getRowArray();
+                
+                if ($announcement) {
+                    $postTitle = $announcement['title'] ?? 'Announcement';
+                    $orgName = $announcement['organization_name'] ?? 'N/A';
+                }
+            }
+            
+            // Get profile image
+            $profileImage = '';
+            if (!empty($comment['photo_path']) && file_exists(FCPATH . $comment['photo_path'])) {
+                $profileImage = base_url($comment['photo_path']);
+            }
+            
+            // Calculate time ago
+            $commentDate = new \DateTime($comment['created_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($commentDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->i > 0) {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = 'Just now';
+            }
+            
+            $commentsData[] = [
+                'id' => $comment['id'],
+                'student_name' => $fullName,
+                'content' => $comment['content'],
+                'post_type' => ucfirst($comment['post_type']),
+                'post_title' => $postTitle,
+                'organization_name' => $orgName,
+                'profile_image' => $profileImage,
+                'time_ago' => $timeAgo,
+                'created_at' => $comment['created_at']
+            ];
+        }
+
+        // Fetch student activity data with memberships and comment counts
+        $activityBuilder = $db->table('students s');
+        $activityBuilder->select('s.id as student_id, s.user_id, s.course,
+                                  up.firstname, up.middlename, up.lastname');
+        $activityBuilder->join('user_profiles up', 'up.user_id = s.user_id', 'inner');
+        $activityBuilder->join('users u', 'u.id = s.user_id', 'inner');
+        $activityBuilder->where('u.role', 'student');
+        $activityBuilder->where('u.is_active', 1);
+        $activityBuilder->orderBy('s.id', 'DESC');
+        $activityBuilder->limit(10); // Get top 10 most recent active students
+        $activityStudents = $activityBuilder->get()->getResultArray();
+
+        // Format activity data with memberships and metrics
+        $activityData = [];
+        foreach ($activityStudents as $student) {
+            // Get full name
+            $fullName = trim(($student['firstname'] ?? '') . ' ' . ($student['middlename'] ?? '') . ' ' . ($student['lastname'] ?? ''));
+            $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+            
+            // Get course name
+            $courseName = $this->getCourseName($student['course'] ?? '');
+            
+            // Get organization memberships
+            $memberships = $db->table('student_organization_memberships som')
+                ->select('o.organization_name')
+                ->join('organizations o', 'o.id = som.org_id', 'inner')
+                ->where('som.student_id', $student['student_id'])
+                ->where('som.status', 'active')
+                ->where('o.is_active', 1)
+                ->get()
+                ->getResultArray();
+            
+            $orgNames = array_column($memberships, 'organization_name');
+            
+            // Count comments
+            $commentCount = $db->table('post_comments')
+                ->where('student_id', $student['student_id'])
+                ->countAllResults();
+            
+            // Count event likes (as proxy for events attended/interested)
+            $eventLikesCount = $db->table('post_likes')
+                ->where('student_id', $student['student_id'])
+                ->where('post_type', 'event')
+                ->countAllResults();
+            
+            $activityData[] = [
+                'student_name' => $fullName,
+                'course' => $courseName ?: ($student['course'] ?? 'N/A'),
+                'organizations' => $orgNames,
+                'comment_count' => $commentCount,
+                'event_likes_count' => $eventLikesCount
+            ];
+        }
+
         // Calculate stats
         $activeStudentsCount = count($studentData);
         $totalStudentsCount = $db->table('users')->where('role', 'student')->countAllResults();
@@ -218,9 +375,12 @@ class Login extends BaseController
 
         $data = [
             'students' => $studentData,
+            'total_students_count' => $totalStudentsCount,
             'users' => $userData,
             'pending_organizations' => $pendingOrgsData,
             'approved_organizations' => $approvedOrgsData,
+            'recent_comments' => $commentsData,
+            'student_activity' => $activityData,
             'stats' => [
                 'active_students' => $activeStudentsCount,
                 'approved_organizations' => $approvedOrgsCount,
@@ -558,23 +718,64 @@ class Login extends BaseController
 
         $db = \Config\Database::connect();
 
-        // Fetch organization details
-        $organization = $db->table('organizations')
+        // First, check if this is an application ID (for pending organizations)
+        $application = $db->table('organization_applications')
             ->where('id', $id)
             ->get()
             ->getRowArray();
 
-        if (!$organization) {
-            return redirect()->to('/admin/dashboard')->with('error', 'Organization not found');
-        }
+        $organization = null;
+        $isPending = false;
 
-        // Find related application
-        $application = $db->table('organization_applications')
-            ->where('organization_name', $organization['organization_name'])
-            ->where('status', 'approved')
-            ->orderBy('reviewed_at', 'DESC')
-            ->get()
-            ->getRowArray();
+        if ($application) {
+            // This is a pending application
+            $isPending = true;
+            
+            // Check if organization exists in organizations table
+            $organization = $db->table('organizations')
+                ->where('organization_name', $application['organization_name'])
+                ->get()
+                ->getRowArray();
+            
+            // If organization doesn't exist, create a mock organization object from application data
+            if (!$organization) {
+                $organization = [
+                    'id' => null,
+                    'organization_name' => $application['organization_name'],
+                    'organization_acronym' => $application['organization_acronym'] ?? '',
+                    'organization_type' => $application['organization_type'],
+                    'organization_category' => $application['organization_category'] ?? '',
+                    'mission' => $application['mission'] ?? '',
+                    'vision' => $application['vision'] ?? '',
+                    'objectives' => $application['objectives'] ?? '',
+                    'founding_date' => $application['founding_date'] ?? null,
+                    'contact_email' => $application['contact_email'],
+                    'contact_phone' => $application['contact_phone'],
+                    'is_active' => 0,
+                    'user_id' => null,
+                    'current_members' => $application['current_members'] ?? 0,
+                    'created_at' => $application['submitted_at']
+                ];
+            }
+        } else {
+            // This is an organization ID, fetch organization details
+            $organization = $db->table('organizations')
+                ->where('id', $id)
+                ->get()
+                ->getRowArray();
+
+            if (!$organization) {
+                return redirect()->to('/admin/dashboard')->with('error', 'Organization not found');
+            }
+
+            // Find related application
+            $application = $db->table('organization_applications')
+                ->where('organization_name', $organization['organization_name'])
+                ->where('status', 'approved')
+                ->orderBy('reviewed_at', 'DESC')
+                ->get()
+                ->getRowArray();
+        }
 
         // Get advisor information (from application)
         $advisor = null;
@@ -603,27 +804,34 @@ class Login extends BaseController
                 ->getResultArray();
         }
 
-        // Get organization statistics
-        $eventsCount = $db->table('events')
-            ->where('org_id', $id)
-            ->countAllResults();
+        // Get organization statistics (only if organization exists)
+        $eventsCount = 0;
+        $announcementsCount = 0;
+        $productsCount = 0;
+        $membersCount = 0;
+        
+        if ($organization && $organization['id']) {
+            $eventsCount = $db->table('events')
+                ->where('org_id', $organization['id'])
+                ->countAllResults();
 
-        $announcementsCount = $db->table('announcements')
-            ->where('org_id', $id)
-            ->countAllResults();
+            $announcementsCount = $db->table('announcements')
+                ->where('org_id', $organization['id'])
+                ->countAllResults();
 
-        $productsCount = $db->table('products')
-            ->where('org_id', $id)
-            ->countAllResults();
+            $productsCount = $db->table('products')
+                ->where('org_id', $organization['id'])
+                ->countAllResults();
 
-        $membersCount = $db->table('student_organization_memberships')
-            ->where('org_id', $id)
-            ->where('status', 'active')
-            ->countAllResults();
+            $membersCount = $db->table('student_organization_memberships')
+                ->where('org_id', $organization['id'])
+                ->where('status', 'active')
+                ->countAllResults();
+        }
 
         // Get user account info
         $user = null;
-        if ($organization['user_id']) {
+        if ($organization && isset($organization['user_id']) && $organization['user_id']) {
             $user = $db->table('users')
                 ->where('id', $organization['user_id'])
                 ->get()
@@ -641,6 +849,7 @@ class Login extends BaseController
             'officers' => $officers,
             'files' => $files,
             'user' => $user,
+            'isPending' => $isPending,
             'stats' => [
                 'events' => $eventsCount,
                 'announcements' => $announcementsCount,
@@ -651,6 +860,129 @@ class Login extends BaseController
         ];
 
         return view('admin/organization_details', $data);
+    }
+
+    /**
+     * View organization file
+     */
+    public function viewOrganizationFile($fileId)
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Fetch file details
+        $file = $db->table('organization_files')
+            ->where('id', $fileId)
+            ->get()
+            ->getRowArray();
+
+        if (!$file) {
+            return redirect()->to('/admin/dashboard')->with('error', 'File not found');
+        }
+
+        // Check if file exists - files are stored in WRITEPATH but path in DB is relative to public
+        $filePath = null;
+        if (strpos($file['file_path'], 'uploads/') === 0) {
+            // File path in DB is "uploads/organizations/..." but actual file is in WRITEPATH
+            // Try WRITEPATH first (where files are actually stored)
+            $filePath = WRITEPATH . $file['file_path'];
+            if (!file_exists($filePath)) {
+                // Try public path as fallback
+                $filePath = FCPATH . $file['file_path'];
+            }
+        } else {
+            // If path doesn't start with uploads/, assume it's already a full path
+            $filePath = WRITEPATH . $file['file_path'];
+            if (!file_exists($filePath)) {
+                $filePath = FCPATH . $file['file_path'];
+            }
+        }
+
+        if (!file_exists($filePath)) {
+            return redirect()->to('/admin/dashboard')->with('error', 'File not found on server: ' . $file['file_path']);
+        }
+
+        // Get file extension
+        $extension = strtolower(pathinfo($file['file_name'], PATHINFO_EXTENSION));
+        
+        // For PDF files, serve directly with inline display
+        if ($extension === 'pdf') {
+            $this->response->setHeader('Content-Type', 'application/pdf');
+            $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
+            $this->response->setHeader('Content-Length', filesize($filePath));
+            $this->response->setHeader('Cache-Control', 'private, max-age=3600');
+            return $this->response->sendFile($filePath);
+        }
+
+        // For DOC/DOCX files, try to serve directly first
+        // If browser can't display, user can download
+        $mimeType = $file['mime_type'] ?? mime_content_type($filePath);
+        $this->response->setHeader('Content-Type', $mimeType);
+        $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
+        $this->response->setHeader('Content-Length', filesize($filePath));
+        $this->response->setHeader('Cache-Control', 'private, max-age=3600');
+        
+        // For DOC/DOCX, return view with iframe that tries to display the file
+        // If browser can't display, it will offer download
+        $data = [
+            'file' => $file,
+            'fileUrl' => base_url('admin/organizations/file/' . $fileId . '/download'),
+            'extension' => $extension
+        ];
+        
+        return view('admin/view_file', $data);
+    }
+
+    /**
+     * Download organization file (used for Google Docs Viewer)
+     */
+    public function downloadOrganizationFile($fileId)
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Fetch file details
+        $file = $db->table('organization_files')
+            ->where('id', $fileId)
+            ->get()
+            ->getRowArray();
+
+        if (!$file) {
+            return $this->response->setStatusCode(404)->setBody('File not found');
+        }
+
+        // Check if file exists
+        $filePath = null;
+        if (strpos($file['file_path'], 'uploads/') === 0) {
+            $filePath = WRITEPATH . $file['file_path'];
+            if (!file_exists($filePath)) {
+                $filePath = FCPATH . $file['file_path'];
+            }
+        } else {
+            $filePath = WRITEPATH . $file['file_path'];
+            if (!file_exists($filePath)) {
+                $filePath = FCPATH . $file['file_path'];
+            }
+        }
+
+        if (!file_exists($filePath)) {
+            return $this->response->setStatusCode(404)->setBody('File not found on server');
+        }
+
+        // Serve the file
+        $mimeType = $file['mime_type'] ?? mime_content_type($filePath);
+        $this->response->setHeader('Content-Type', $mimeType);
+        $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
+        $this->response->setHeader('Content-Length', filesize($filePath));
+        $this->response->setHeader('Cache-Control', 'private, max-age=3600');
+        
+        return $this->response->sendFile($filePath);
     }
 
     /**
