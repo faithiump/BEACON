@@ -12,6 +12,7 @@ use App\Models\EventModel;
 use App\Models\AnnouncementModel;
 use App\Models\ProductModel;
 use App\Models\StudentOrganizationMembershipModel;
+use App\Models\ForumPostModel;
 
 class Student extends BaseController
 {
@@ -1087,25 +1088,32 @@ class Student extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Comment cannot be empty']);
         }
 
-        if (!in_array($postType, ['announcement', 'event'])) {
+        if (!in_array($postType, ['announcement', 'event', 'forum_post'])) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid post type']);
         }
 
         $userId = session()->get('user_id');
         $role = session()->get('role');
         
-        // Get student ID - for organizations, we'll need to handle differently
-        $studentId = null;
+        // Get user ID and type
+        $commenterId = null;
+        $userType = null;
+        
         if ($role === 'student') {
             $student = $this->studentModel->where('user_id', $userId)->first();
             if (!$student) {
                 return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
             }
-            $studentId = $student['id'];
+            $commenterId = $student['id'];
+            $userType = 'student';
         } elseif ($role === 'organization') {
-            // Organizations can view comments but cannot comment themselves
-            // For now, return error - organizations viewing their posts will see student comments
-            return $this->response->setJSON(['success' => false, 'message' => 'Organizations cannot comment on posts']);
+            $orgModel = new \App\Models\OrganizationModel();
+            $organization = $orgModel->where('user_id', $userId)->first();
+            if (!$organization) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Organization record not found']);
+            }
+            $commenterId = $organization['id'];
+            $userType = 'organization';
         } else {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid user role']);
         }
@@ -1113,23 +1121,41 @@ class Student extends BaseController
         try {
             $commentModel = new \App\Models\PostCommentModel();
             
-            $commentId = $commentModel->insert([
-                'student_id' => $student['id'],
+            $commentData = [
                 'post_type' => $postType,
                 'post_id' => $postId,
                 'content' => $content,
+                'commenter_type' => $userType,
                 'parent_comment_id' => $parentCommentId ? (int)$parentCommentId : null
-            ]);
+            ];
+            
+            if ($userType === 'student') {
+                $commentData['student_id'] = $commenterId;
+                $commentData['organization_id'] = null;
+            } else {
+                $commentData['organization_id'] = $commenterId;
+                $commentData['student_id'] = null;
+            }
+            
+            $commentId = $commentModel->insert($commentData);
 
             if ($commentId) {
                 // Get the created comment with user info
-                $comment = $commentModel->select('post_comments.*, user_profiles.firstname, user_profiles.lastname, students.student_id')
-                                        ->join('students', 'students.id = post_comments.student_id')
-                                        ->join('user_profiles', 'user_profiles.user_id = students.user_id')
-                                        ->find($commentId);
-
-                $profile = $this->userProfileModel->where('user_id', $userId)->first();
-                $userName = ($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? '');
+                if ($userType === 'student') {
+                    $comment = $commentModel->select('post_comments.*, user_profiles.firstname, user_profiles.lastname, students.student_id')
+                                            ->join('students', 'students.id = post_comments.student_id')
+                                            ->join('user_profiles', 'user_profiles.user_id = students.user_id')
+                                            ->where('post_comments.id', $commentId)
+                                            ->first();
+                    $profile = $this->userProfileModel->where('user_id', $userId)->first();
+                    $userName = ($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? '');
+                } else {
+                    $comment = $commentModel->select('post_comments.*, organizations.name as org_name, organizations.acronym as org_acronym')
+                                            ->join('organizations', 'organizations.id = post_comments.organization_id')
+                                            ->where('post_comments.id', $commentId)
+                                            ->first();
+                    $userName = $comment['org_name'] ?? 'Organization';
+                }
 
                 return $this->response->setJSON([
                     'success' => true, 
@@ -1138,8 +1164,10 @@ class Student extends BaseController
                         'id' => $commentId,
                         'content' => $content,
                         'user_name' => trim($userName),
-                        'student_id' => $comment['student_id'] ?? '',
-                        'created_at' => date('Y-m-d H:i:s')
+                        'student_id' => $comment['student_id'] ?? null,
+                        'organization_id' => $comment['organization_id'] ?? null,
+                        'is_organization' => $userType === 'organization',
+                        'created_at' => $comment['created_at'] ?? date('Y-m-d H:i:s')
                     ]
                 ]);
             }
@@ -1158,11 +1186,11 @@ class Student extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
         }
 
-        $postType = $this->request->getPost('type'); // 'announcement' or 'event'
+        $postType = $this->request->getPost('type'); // 'announcement', 'event', or 'forum_post'
         $postId = $this->request->getPost('post_id');
         $reactionType = $this->request->getPost('reaction_type') ?? 'like'; // Default to 'like'
 
-        if (empty($postType) || !in_array($postType, ['announcement', 'event'])) {
+        if (empty($postType) || !in_array($postType, ['announcement', 'event', 'forum_post'])) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid post type']);
         }
 
@@ -1176,18 +1204,25 @@ class Student extends BaseController
         $userId = session()->get('user_id');
         $role = session()->get('role');
         
-        // Get student ID - for organizations, we'll need to handle differently
-        $studentId = null;
+        // Get user ID and type
+        $reactorId = null;
+        $userType = null;
+        
         if ($role === 'student') {
             $student = $this->studentModel->where('user_id', $userId)->first();
             if (!$student) {
                 return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
             }
-            $studentId = $student['id'];
+            $reactorId = $student['id'];
+            $userType = 'student';
         } elseif ($role === 'organization') {
-            // Organizations can view reactions but cannot react themselves
-            // For now, return error - organizations viewing their posts will see student reactions
-            return $this->response->setJSON(['success' => false, 'message' => 'Organizations cannot react to posts']);
+            $orgModel = new \App\Models\OrganizationModel();
+            $organization = $orgModel->where('user_id', $userId)->first();
+            if (!$organization) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Organization record not found']);
+            }
+            $reactorId = $organization['id'];
+            $userType = 'organization';
         } else {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid user role']);
         }
@@ -1195,13 +1230,13 @@ class Student extends BaseController
         try {
             $likeModel = new \App\Models\PostLikeModel();
             
-            // Validate student ID
-            if (empty($studentId)) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Student ID not found']);
+            // Validate reactor ID
+            if (empty($reactorId)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'User ID not found']);
             }
             
-            // Use setReaction for Facebook-style reactions
-            $result = $likeModel->setReaction($studentId, $postType, $postId, $reactionType);
+            // Use setReaction for Facebook-style reactions (supports both students and organizations)
+            $result = $likeModel->setReaction($reactorId, $postType, $postId, $reactionType, $userType);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -1235,7 +1270,7 @@ class Student extends BaseController
         $postType = $this->request->getGet('post_type') ?? $this->request->getGet('type');
         $postId = $this->request->getGet('post_id');
 
-        if (!in_array($postType, ['announcement', 'event'])) {
+        if (!in_array($postType, ['announcement', 'event', 'forum_post'])) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid post type']);
         }
 
@@ -2335,6 +2370,170 @@ class Student extends BaseController
         
         // Redirect to login page
         return redirect()->to(base_url('auth/login'));
+    }
+
+    /**
+     * Create Forum Post
+     */
+    public function createPost()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        $title = trim($this->request->getPost('title'));
+        $content = trim($this->request->getPost('content'));
+        $category = $this->request->getPost('category') ?? 'general';
+        $tags = trim($this->request->getPost('tags') ?? '');
+
+        // Validation
+        if (empty($title) || strlen($title) < 3) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Title must be at least 3 characters']);
+        }
+
+        if (empty($content) || strlen($content) < 10) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Content must be at least 10 characters']);
+        }
+
+        if (!in_array($category, ['general', 'events', 'academics', 'marketplace', 'help'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid category']);
+        }
+
+        try {
+            $postModel = new ForumPostModel();
+            
+            $postData = [
+                'student_id' => $student['id'],
+                'organization_id' => null,
+                'author_type' => 'student',
+                'title' => $title,
+                'content' => $content,
+                'category' => $category,
+                'tags' => !empty($tags) ? $tags : null
+            ];
+
+            // Handle image upload
+            $image = $this->request->getFile('image');
+            if ($image && $image->isValid() && !$image->hasMoved()) {
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (in_array($image->getMimeType(), $allowedTypes)) {
+                    if ($image->getSize() <= 5 * 1024 * 1024) { // 5MB max
+                        $uploadPath = FCPATH . 'uploads/posts/';
+                        if (!is_dir($uploadPath)) {
+                            mkdir($uploadPath, 0755, true);
+                        }
+
+                        $newName = time() . '_' . $image->getRandomName();
+                        if ($image->move($uploadPath, $newName)) {
+                            $postData['image'] = $newName;
+                        }
+                    }
+                }
+            }
+
+            $postId = $postModel->insert($postData);
+
+            if ($postId) {
+                // Get the created post with student info
+                $createdPost = $postModel->getPostById($postId);
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Post created successfully!',
+                    'post' => $createdPost
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to create post',
+                'errors' => $postModel->errors()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Create post error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while creating post'
+            ]);
+        }
+    }
+
+    /**
+     * Get Forum Posts
+     */
+    public function getPosts()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $category = $this->request->getGet('category') ?? 'all';
+        $limit = $this->request->getGet('limit') ? (int)$this->request->getGet('limit') : 20;
+        $offset = $this->request->getGet('offset') ? (int)$this->request->getGet('offset') : 0;
+
+        try {
+            $postModel = new ForumPostModel();
+            $posts = $postModel->getAllPosts($category, $limit, $offset);
+
+            // Get reaction and comment counts for each post
+            $userId = session()->get('user_id');
+            $student = $this->studentModel->where('user_id', $userId)->first();
+            
+            $likeModel = new \App\Models\PostLikeModel();
+            $commentModel = new \App\Models\PostCommentModel();
+
+            foreach ($posts as &$post) {
+                // Get reaction counts
+                $reactionCounts = $likeModel->getReactionCounts('forum_post', $post['id']);
+                $post['reaction_counts'] = $reactionCounts;
+                
+                // Get user's reaction
+                if ($student) {
+                    $userReaction = $likeModel->getUserReaction($student['id'], 'forum_post', $post['id'], 'student');
+                    $post['user_reaction'] = $userReaction;
+                } else {
+                    $post['user_reaction'] = null;
+                }
+
+                // Get comment count
+                $commentCount = $commentModel->getCommentCount('forum_post', $post['id']);
+                $post['comment_count'] = $commentCount;
+
+                // Format image URL
+                if (!empty($post['image'])) {
+                    $post['image_url'] = base_url('uploads/posts/' . $post['image']);
+                } else {
+                    $post['image_url'] = null;
+                }
+
+                // Format tags
+                if (!empty($post['tags'])) {
+                    $post['tags_array'] = array_map('trim', explode(',', $post['tags']));
+                } else {
+                    $post['tags_array'] = [];
+                }
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'posts' => $posts
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Get posts error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while fetching posts'
+            ]);
+        }
     }
 }
 

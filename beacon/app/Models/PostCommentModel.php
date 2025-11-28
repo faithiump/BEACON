@@ -14,6 +14,8 @@ class PostCommentModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'student_id',
+        'organization_id',
+        'commenter_type',
         'post_type',
         'post_id',
         'parent_comment_id',
@@ -83,14 +85,46 @@ class PostCommentModel extends Model
     }
     
     /**
-     * Format a single comment with user info
+     * Format a single comment with user info (supports both students and organizations)
      */
     private function formatComment($comment)
     {
-        if ($comment['student_id'] !== null && $comment['student_id'] > 0) {
+        $db = \Config\Database::connect();
+        $builder = $db->table('post_comments');
+        
+        // Check if it's an organization comment
+        if (isset($comment['commenter_type']) && $comment['commenter_type'] === 'organization' && 
+            $comment['organization_id'] !== null && $comment['organization_id'] > 0) {
+            // Organization comment
+            // Try to get organization photo from user_photos table via organizations.user_id
+            $builder->select('post_comments.*, organizations.organization_name as org_name, organizations.organization_acronym as org_acronym, organizations.user_id as org_user_id, user_photos.photo_path as org_photo');
+            $builder->join('organizations', 'organizations.id = post_comments.organization_id');
+            $builder->join('user_photos', 'user_photos.user_id = organizations.user_id', 'left');
+            $builder->where('post_comments.id', $comment['id']);
+            $orgComment = $builder->get()->getRowArray();
+            
+            if ($orgComment) {
+                return [
+                    'id' => $orgComment['id'],
+                    'student_id' => null,
+                    'organization_id' => $orgComment['organization_id'],
+                    'commenter_type' => 'organization',
+                    'post_type' => $orgComment['post_type'],
+                    'post_id' => $orgComment['post_id'],
+                    'parent_comment_id' => $orgComment['parent_comment_id'] ?? null,
+                    'content' => $orgComment['content'],
+                    'created_at' => $orgComment['created_at'],
+                    'updated_at' => $orgComment['updated_at'] ?? null,
+                    'firstname' => $orgComment['org_name'] ?? 'Organization',
+                    'lastname' => '',
+                    'is_organization' => true,
+                    'org_name' => $orgComment['org_name'] ?? '',
+                    'org_acronym' => $orgComment['org_acronym'] ?? '',
+                    'org_photo' => !empty($orgComment['org_photo']) ? base_url($orgComment['org_photo']) : null
+                ];
+            }
+        } else if ($comment['student_id'] !== null && $comment['student_id'] > 0) {
             // Student comment
-            $db = \Config\Database::connect();
-            $builder = $db->table('post_comments');
             $builder->select('post_comments.*, user_profiles.firstname, user_profiles.lastname, students.student_id');
             $builder->join('students', 'students.id = post_comments.student_id');
             $builder->join('user_profiles', 'user_profiles.user_id = students.user_id');
@@ -99,50 +133,32 @@ class PostCommentModel extends Model
             
             if ($studentComment) {
                 $studentComment['is_organization'] = false;
+                $studentComment['commenter_type'] = 'student';
                 return $studentComment;
             }
-        } else {
-            // Organization comment (stored with student_id = null)
-            // Content format: "[ORG] Organization Name: comment text"
-            $content = $comment['content'] ?? '';
-            if (strpos($content, '[ORG]') === 0) {
-                $parts = explode(':', $content, 2);
-                $orgName = str_replace('[ORG]', '', $parts[0]);
-                $commentText = isset($parts[1]) ? trim($parts[1]) : $content;
-                return [
-                    'id' => $comment['id'],
-                    'student_id' => null,
-                    'post_type' => $comment['post_type'],
-                    'post_id' => $comment['post_id'],
-                    'parent_comment_id' => $comment['parent_comment_id'] ?? null,
-                    'content' => $commentText,
-                    'created_at' => $comment['created_at'],
-                    'updated_at' => $comment['updated_at'],
-                    'firstname' => trim($orgName),
-                    'lastname' => '',
-                    'is_organization' => true
-                ];
+        }
+        
+        // Fallback: return raw comment if formatting fails
+        $comment['is_organization'] = isset($comment['commenter_type']) && $comment['commenter_type'] === 'organization';
+        
+        // Ensure required fields exist
+        if (!isset($comment['firstname'])) {
+            if ($comment['is_organization']) {
+                $comment['firstname'] = 'Organization';
             } else {
-                // Fallback for comments without [ORG] prefix but with null student_id
-                return [
-                    'id' => $comment['id'],
-                    'student_id' => null,
-                    'post_type' => $comment['post_type'],
-                    'post_id' => $comment['post_id'],
-                    'parent_comment_id' => $comment['parent_comment_id'] ?? null,
-                    'content' => $content,
-                    'created_at' => $comment['created_at'],
-                    'updated_at' => $comment['updated_at'] ?? null,
-                    'firstname' => 'Organization',
-                    'lastname' => '',
-                    'is_organization' => true
-                ];
+                $comment['firstname'] = 'User';
             }
         }
-        // Fallback: return raw comment if formatting fails
-        $comment['is_organization'] = false;
-        $comment['firstname'] = $comment['firstname'] ?? 'User';
         $comment['lastname'] = $comment['lastname'] ?? '';
+        
+        // Ensure all required fields are set
+        $comment['id'] = $comment['id'] ?? 0;
+        $comment['content'] = $comment['content'] ?? '';
+        $comment['created_at'] = $comment['created_at'] ?? date('Y-m-d H:i:s');
+        $comment['student_id'] = $comment['student_id'] ?? null;
+        $comment['organization_id'] = $comment['organization_id'] ?? null;
+        $comment['commenter_type'] = $comment['commenter_type'] ?? 'student';
+        
         return $comment;
     }
 

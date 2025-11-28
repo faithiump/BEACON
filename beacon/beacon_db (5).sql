@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 27, 2025 at 07:48 PM
+-- Generation Time: Nov 28, 2025 at 04:56 AM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -43,7 +43,7 @@ CREATE TABLE `addresses` (
 INSERT INTO `addresses` (`id`, `province`, `city_municipality`, `barangay`, `created_at`, `updated_at`) VALUES
 (1, 'Region 5', 'CMA SUR', 'ICE', '2025-11-25 01:55:10', '2025-11-25 01:55:10'),
 (2, 'Region 5', 'Cam Sur', 'Bato', '2025-11-25 08:06:25', '2025-11-25 08:06:25'),
-(3, 'REG 5', 'BULAAAA', 'EWAN Q', '2025-11-25 16:18:35', '2025-11-25 16:18:35'),
+(3, 'REG 5', 'BULAAAA', 'EWAN Q', '2025-11-25 16:18:35', '2025-11-28 03:20:57'),
 (4, 'Roman', 'geds', 'masoli', '2025-11-26 12:28:42', '2025-11-26 16:55:54');
 
 -- --------------------------------------------------------
@@ -88,7 +88,7 @@ CREATE TABLE `announcements` (
 --
 
 INSERT INTO `announcements` (`announcement_id`, `org_id`, `title`, `content`, `priority`, `views`, `is_pinned`, `created_at`, `updated_at`) VALUES
-(3, 7, 'stress week', 'stress  na si mariel', 'normal', 38, 0, '2025-11-27 08:07:26', '2025-11-27 13:43:41');
+(3, 7, 'stress week', 'stress  na si mariel', 'normal', 76, 0, '2025-11-27 08:07:26', '2025-11-28 03:55:08');
 
 -- --------------------------------------------------------
 
@@ -122,7 +122,7 @@ CREATE TABLE `events` (
 --
 
 INSERT INTO `events` (`event_id`, `org_id`, `org_type`, `event_name`, `description`, `date`, `time`, `venue`, `audience_type`, `department_access`, `student_access`, `max_attendees`, `current_attendees`, `views`, `image`, `status`, `created_at`, `updated_at`) VALUES
-(2, 7, 'academic', 'BYCIT', 'JNLJLIKLJHKLJHWQfgvngvngnn', '2025-11-28', '08:00:00', 'hmhmhvmhvmh', 'specific_students', 'ccs', '[\"3\",\"4\"]', 5, 1, 7, '1764232950_b0682b4018a6ca826894.png', 'upcoming', '2025-11-27 08:42:30', '2025-11-27 13:43:40');
+(2, 7, 'academic', 'BYCIT', 'JNLJLIKLJHKLJHWQfgvngvngnn', '2025-11-28', '08:00:00', 'hmhmhvmhvmh', 'specific_students', 'ccs', '[\"3\",\"4\"]', 5, 2, 45, '1764232950_b0682b4018a6ca826894.png', 'upcoming', '2025-11-27 08:42:30', '2025-11-28 03:55:08');
 
 -- --------------------------------------------------------
 
@@ -142,7 +142,8 @@ CREATE TABLE `event_attendees` (
 --
 
 INSERT INTO `event_attendees` (`id`, `event_id`, `student_id`, `joined_at`) VALUES
-(1, 2, 4, '2025-11-27 11:28:02');
+(1, 2, 4, '2025-11-27 11:28:02'),
+(2, 2, 3, '2025-11-27 19:29:47');
 
 -- --------------------------------------------------------
 
@@ -162,7 +163,42 @@ CREATE TABLE `event_interests` (
 --
 
 INSERT INTO `event_interests` (`id`, `event_id`, `student_id`, `created_at`) VALUES
-(1, 2, 4, '2025-11-27 12:51:26');
+(1, 2, 4, '2025-11-27 12:51:26'),
+(2, 2, 3, '2025-11-28 03:50:35');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `forum_posts`
+--
+
+CREATE TABLE `forum_posts` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `student_id` int(11) UNSIGNED DEFAULT NULL COMMENT 'NULL if created by organization',
+  `organization_id` int(11) UNSIGNED DEFAULT NULL COMMENT 'NULL if created by student',
+  `author_type` enum('student','organization') NOT NULL COMMENT 'Type of author',
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `category` enum('general','events','academics','marketplace','help') NOT NULL DEFAULT 'general',
+  `image` varchar(255) DEFAULT NULL,
+  `tags` varchar(500) DEFAULT NULL COMMENT 'Comma-separated tags',
+  `views` int(11) UNSIGNED NOT NULL DEFAULT 0,
+  `is_pinned` tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `forum_posts`
+--
+
+INSERT INTO `forum_posts` (`id`, `student_id`, `organization_id`, `author_type`, `title`, `content`, `category`, `image`, `tags`, `views`, `is_pinned`, `created_at`, `updated_at`) VALUES
+(1, 3, NULL, 'student', 'fdsss', 'detyjmjhgfdes', 'general', '1764296862_1764296862_429d70ba80aaafa30707.png', 'study', 0, 0, '2025-11-28 02:27:44', '2025-11-28 02:27:44'),
+(2, 3, NULL, 'student', 'tgwwe', 'rewwtwrtfdsfrwsgsrgsgte', 'general', NULL, 'tttt', 0, 0, '2025-11-28 02:32:56', '2025-11-28 02:32:56'),
+(3, 3, NULL, 'student', 'tgwwe', 'rewwtwrtfdsfrwsgsrgsgte', 'general', '1764297184_1764297184_ae47e8a11350d2b93083.png', 'tttt', 0, 0, '2025-11-28 02:33:04', '2025-11-28 02:33:04'),
+(4, 3, NULL, 'student', 'fgjyjrhrh', 'teeyyrtuyio ggreee', 'general', '1764297206_1764297206_30f710c9f56d26b0c96d.png', 'ddff', 0, 0, '2025-11-28 02:33:26', '2025-11-28 02:33:26'),
+(5, 3, NULL, 'student', 'fgjyjrhrh', 'teeyyrtuyio ggreee', 'general', '1764297209_1764297209_4e9c8a822d6ba7be23aa.png', 'ddff', 0, 0, '2025-11-28 02:33:29', '2025-11-28 02:33:29'),
+(6, NULL, 7, 'organization', 'idkkk', 'grerereeyeytyytyy', 'general', NULL, 'yayy', 0, 0, '2025-11-28 03:15:53', '2025-11-28 03:15:53');
 
 -- --------------------------------------------------------
 
@@ -338,7 +374,9 @@ INSERT INTO `organization_officers` (`id`, `application_id`, `position`, `name`,
 CREATE TABLE `post_comments` (
   `id` int(11) UNSIGNED NOT NULL,
   `student_id` int(11) UNSIGNED DEFAULT NULL,
-  `post_type` enum('announcement','event') NOT NULL,
+  `organization_id` int(11) UNSIGNED DEFAULT NULL COMMENT 'NULL if commented by student',
+  `commenter_type` enum('student','organization') NOT NULL DEFAULT 'student' COMMENT 'Type of user who commented',
+  `post_type` enum('announcement','event','forum_post') NOT NULL,
   `post_id` int(11) UNSIGNED NOT NULL,
   `parent_comment_id` int(11) UNSIGNED DEFAULT NULL,
   `content` text NOT NULL,
@@ -350,10 +388,26 @@ CREATE TABLE `post_comments` (
 -- Dumping data for table `post_comments`
 --
 
-INSERT INTO `post_comments` (`id`, `student_id`, `post_type`, `post_id`, `parent_comment_id`, `content`, `created_at`, `updated_at`) VALUES
-(11, 4, 'announcement', 3, NULL, 'yoohhh', '2025-11-27 08:33:33', '2025-11-27 08:33:33'),
-(12, NULL, 'announcement', 3, 11, '[ORG] Junior Philippine Student Council: yeaahhh', '2025-11-27 08:34:23', '2025-11-27 08:34:23'),
-(13, 4, 'announcement', 3, 12, ',m.m,.m,', '2025-11-27 08:35:15', '2025-11-27 08:35:15');
+INSERT INTO `post_comments` (`id`, `student_id`, `organization_id`, `commenter_type`, `post_type`, `post_id`, `parent_comment_id`, `content`, `created_at`, `updated_at`) VALUES
+(11, 4, NULL, 'student', 'announcement', 3, NULL, 'yoohhh', '2025-11-27 08:33:33', '2025-11-27 08:33:33'),
+(12, NULL, 7, 'organization', 'announcement', 3, 11, '[ORG] Junior Philippine Student Council: yeaahhh', '2025-11-27 08:34:23', '2025-11-28 10:17:24'),
+(13, 4, NULL, 'student', 'announcement', 3, 12, ',m.m,.m,', '2025-11-27 08:35:15', '2025-11-27 08:35:15'),
+(14, 3, NULL, 'student', 'event', 2, NULL, 'crzyyyy', '2025-11-27 19:30:07', '2025-11-27 19:30:07'),
+(15, 3, NULL, 'student', 'announcement', 3, NULL, 'ffr', '2025-11-27 19:30:26', '2025-11-27 19:30:26'),
+(16, 3, NULL, 'student', '', 1, NULL, 'awwwww', '2025-11-27 19:42:00', '2025-11-27 19:42:00'),
+(17, 3, NULL, 'student', '', 1, NULL, 'eyyyy', '2025-11-27 19:43:58', '2025-11-27 19:43:58'),
+(18, NULL, 7, 'organization', 'announcement', 3, 15, '[ORG] Junior Philippine Student Council: kawawa man', '2025-11-27 19:50:13', '2025-11-28 10:17:24'),
+(19, 3, NULL, 'student', 'forum_post', 1, NULL, 'haalaaaa', '2025-11-28 02:49:00', '2025-11-28 02:49:00'),
+(20, 3, NULL, 'student', 'forum_post', 1, 19, 'hiii', '2025-11-28 02:49:06', '2025-11-28 02:49:06'),
+(21, NULL, 7, 'organization', 'forum_post', 1, 20, 'kawawa man', '2025-11-28 03:14:30', '2025-11-28 03:14:30'),
+(22, NULL, 7, 'organization', 'forum_post', 6, NULL, 'ngikk', '2025-11-28 03:16:01', '2025-11-28 03:16:01'),
+(23, NULL, 7, 'organization', 'forum_post', 5, NULL, 'hiii', '2025-11-28 03:19:15', '2025-11-28 03:19:15'),
+(24, 3, NULL, 'student', 'forum_post', 6, NULL, 'hi', '2025-11-28 03:21:58', '2025-11-28 03:21:58'),
+(25, NULL, 7, 'organization', 'forum_post', 6, NULL, 'hiii', '2025-11-28 03:22:47', '2025-11-28 03:22:47'),
+(26, NULL, 7, 'organization', 'forum_post', 6, NULL, 'brooo', '2025-11-28 03:29:04', '2025-11-28 03:29:04'),
+(27, NULL, 7, 'organization', 'forum_post', 6, NULL, 'yihh', '2025-11-28 03:32:54', '2025-11-28 03:32:54'),
+(28, NULL, 7, 'organization', 'forum_post', 5, NULL, 'ehh', '2025-11-28 03:33:04', '2025-11-28 03:33:04'),
+(29, NULL, 7, 'organization', 'forum_post', 6, NULL, 'omgg', '2025-11-28 03:36:15', '2025-11-28 03:36:15');
 
 -- --------------------------------------------------------
 
@@ -363,20 +417,31 @@ INSERT INTO `post_comments` (`id`, `student_id`, `post_type`, `post_id`, `parent
 
 CREATE TABLE `post_likes` (
   `id` int(11) UNSIGNED NOT NULL,
-  `student_id` int(11) UNSIGNED NOT NULL,
-  `post_type` enum('announcement','event') NOT NULL,
+  `student_id` int(11) UNSIGNED DEFAULT NULL COMMENT 'NULL if reacted by organization',
+  `organization_id` int(11) UNSIGNED DEFAULT NULL COMMENT 'NULL if reacted by student',
+  `reactor_type` enum('student','organization') NOT NULL DEFAULT 'student' COMMENT 'Type of user who reacted',
+  `post_type` enum('announcement','event','forum_post') NOT NULL,
   `post_id` int(11) UNSIGNED NOT NULL,
   `reaction_type` enum('like','love','care','haha','wow','sad','angry') NOT NULL DEFAULT 'like',
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 --
 -- Dumping data for table `post_likes`
 --
 
-INSERT INTO `post_likes` (`id`, `student_id`, `post_type`, `post_id`, `reaction_type`, `created_at`) VALUES
-(7, 4, 'announcement', 3, 'haha', '2025-11-27 08:35:08'),
-(8, 4, 'event', 2, 'love', '2025-11-27 08:48:26');
+INSERT INTO `post_likes` (`id`, `student_id`, `organization_id`, `reactor_type`, `post_type`, `post_id`, `reaction_type`, `created_at`) VALUES
+(7, 4, NULL, 'student', 'announcement', 3, 'haha', '2025-11-27 08:35:08'),
+(8, 4, NULL, 'student', 'event', 2, 'love', '2025-11-27 08:48:26'),
+(9, 3, NULL, 'student', 'event', 2, 'love', '2025-11-27 19:30:00'),
+(11, 3, NULL, 'student', 'announcement', 3, 'love', '2025-11-27 19:30:46'),
+(12, 3, NULL, 'student', '', 1, 'love', '2025-11-27 19:43:52'),
+(13, 3, NULL, 'student', 'forum_post', 1, 'love', '2025-11-28 02:48:55'),
+(14, 3, NULL, 'student', 'forum_post', 6, 'love', '2025-11-28 03:22:02'),
+(15, NULL, 7, 'organization', 'forum_post', 6, 'love', '2025-11-28 03:32:50'),
+(17, 3, NULL, 'student', 'forum_post', 4, 'love', '2025-11-28 03:37:16'),
+(18, NULL, 7, 'organization', 'forum_post', 5, 'love', '2025-11-28 03:43:03'),
+(20, NULL, 7, 'organization', 'forum_post', 4, 'love', '2025-11-28 03:43:05');
 
 -- --------------------------------------------------------
 
@@ -423,7 +488,7 @@ CREATE TABLE `students` (
 --
 
 INSERT INTO `students` (`id`, `user_id`, `student_id`, `department`, `course`, `year_level`, `in_organization`, `organization_name`, `created_at`, `updated_at`) VALUES
-(3, 7, '23100302020', 'ccs', 'bsit', 3, 'yes', 'Computer Science Society', '2025-11-25 16:18:35', '2025-11-25 17:10:24'),
+(3, 7, '23100302020', 'ccs', 'bsit', 3, 'yes', '', '2025-11-25 16:18:35', '2025-11-28 03:20:57'),
 (4, 8, '231002012', 'ccs', 'bsit', 3, 'no', '', '2025-11-26 12:28:42', '2025-11-26 16:55:54');
 
 -- --------------------------------------------------------
@@ -440,6 +505,13 @@ CREATE TABLE `student_organization_memberships` (
   `joined_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `student_organization_memberships`
+--
+
+INSERT INTO `student_organization_memberships` (`id`, `student_id`, `org_id`, `status`, `joined_at`, `updated_at`) VALUES
+(7, 3, 7, 'pending', '2025-11-28 03:21:43', '2025-11-28 03:21:43');
 
 -- --------------------------------------------------------
 
@@ -487,7 +559,8 @@ CREATE TABLE `user_photos` (
 
 INSERT INTO `user_photos` (`id`, `user_id`, `photo_path`, `created_at`, `updated_at`) VALUES
 (3, 8, 'uploads/profiles/profile_8_1764176152.jpg', '2025-11-26 16:55:52', '2025-11-26 16:55:52'),
-(7, 12, 'uploads/profiles/profile_12_1764229265.jpg', '2025-11-27 07:41:05', '2025-11-27 07:41:05');
+(7, 12, 'uploads/profiles/profile_12_1764229265.jpg', '2025-11-27 07:41:05', '2025-11-27 07:41:05'),
+(8, 7, 'uploads/profiles/profile_7_1764271965.png', '2025-11-27 19:32:45', '2025-11-27 19:32:45');
 
 -- --------------------------------------------------------
 
@@ -514,7 +587,7 @@ CREATE TABLE `user_profiles` (
 --
 
 INSERT INTO `user_profiles` (`id`, `user_id`, `firstname`, `middlename`, `lastname`, `birthday`, `gender`, `phone`, `address_id`, `created_at`, `updated_at`) VALUES
-(3, 7, 'Deanne', 'Faith', 'Pandez', '2025-11-26', 'female', '12345678901', 3, '2025-11-25 16:18:35', '2025-11-25 16:18:35'),
+(3, 7, 'Deanne', 'Faith', 'Pandes', '2025-11-26', 'female', '12345678901', 3, '2025-11-25 16:18:35', '2025-11-28 03:20:57'),
 (4, 8, 'irene', 'buendia', 'espeleta', '2025-11-26', 'female', '09512736322', 4, '2025-11-26 12:28:42', '2025-11-26 16:55:54');
 
 --
@@ -578,6 +651,18 @@ ALTER TABLE `event_interests`
   ADD KEY `idx_student_id` (`student_id`);
 
 --
+-- Indexes for table `forum_posts`
+--
+ALTER TABLE `forum_posts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_student_id` (`student_id`),
+  ADD KEY `idx_organization_id` (`organization_id`),
+  ADD KEY `idx_author_type` (`author_type`),
+  ADD KEY `idx_category` (`category`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_is_pinned` (`is_pinned`);
+
+--
 -- Indexes for table `organizations`
 --
 ALTER TABLE `organizations`
@@ -636,15 +721,19 @@ ALTER TABLE `post_comments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_post` (`post_type`,`post_id`),
   ADD KEY `idx_student` (`student_id`),
-  ADD KEY `idx_parent` (`parent_comment_id`);
+  ADD KEY `idx_parent` (`parent_comment_id`),
+  ADD KEY `idx_organization_id` (`organization_id`),
+  ADD KEY `idx_commenter_type` (`commenter_type`);
 
 --
 -- Indexes for table `post_likes`
 --
 ALTER TABLE `post_likes`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_student_post` (`student_id`,`post_type`,`post_id`),
-  ADD KEY `idx_post` (`post_type`,`post_id`);
+  ADD UNIQUE KEY `unique_reactor_post` (`student_id`,`organization_id`,`post_type`,`post_id`),
+  ADD KEY `idx_post` (`post_type`,`post_id`),
+  ADD KEY `idx_organization_id` (`organization_id`),
+  ADD KEY `idx_reactor_type` (`reactor_type`);
 
 --
 -- Indexes for table `products`
@@ -735,13 +824,19 @@ ALTER TABLE `events`
 -- AUTO_INCREMENT for table `event_attendees`
 --
 ALTER TABLE `event_attendees`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `event_interests`
 --
 ALTER TABLE `event_interests`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `forum_posts`
+--
+ALTER TABLE `forum_posts`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `organizations`
@@ -783,13 +878,13 @@ ALTER TABLE `organization_officers`
 -- AUTO_INCREMENT for table `post_comments`
 --
 ALTER TABLE `post_comments`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `post_likes`
 --
 ALTER TABLE `post_likes`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -807,7 +902,7 @@ ALTER TABLE `students`
 -- AUTO_INCREMENT for table `student_organization_memberships`
 --
 ALTER TABLE `student_organization_memberships`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -819,7 +914,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_photos`
 --
 ALTER TABLE `user_photos`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `user_profiles`
@@ -858,6 +953,13 @@ ALTER TABLE `event_interests`
   ADD CONSTRAINT `fk_event_interests_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `forum_posts`
+--
+ALTER TABLE `forum_posts`
+  ADD CONSTRAINT `fk_forum_posts_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_forum_posts_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `organizations`
 --
 ALTER TABLE `organizations`
@@ -893,13 +995,7 @@ ALTER TABLE `organization_officers`
 --
 ALTER TABLE `post_comments`
   ADD CONSTRAINT `fk_comments_parent` FOREIGN KEY (`parent_comment_id`) REFERENCES `post_comments` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_comments_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `post_likes`
---
-ALTER TABLE `post_likes`
-  ADD CONSTRAINT `fk_likes_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_post_comments_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `products`
