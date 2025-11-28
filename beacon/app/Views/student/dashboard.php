@@ -1166,14 +1166,11 @@
 
                 <!-- Forum Section -->
                 <section class="content-section" id="forum">
-                    <div class="section-header">
+                    <div class="section-header" style="text-align: center; justify-content: center;">
                         <div>
                             <h1 class="section-title">Community Forum</h1>
                             <p class="section-subtitle">Discuss with fellow students and organizations</p>
                         </div>
-                        <button class="btn-primary" onclick="openCreatePostModal()">
-                            <i class="fas fa-plus"></i> New Post
-                        </button>
                     </div>
 
                     <div class="forum-layout">
@@ -1239,14 +1236,28 @@
                             <!-- Create Post Box -->
                             <div class="forum-create-box">
                                 <div class="create-box-avatar">
-                                    <?php if(session()->get('photo')): ?>
-                                        <img src="<?= esc(session()->get('photo')) ?>" alt="Profile">
+                                    <?php 
+                                    $userPhoto = null;
+                                    if (session()->get('photo')) {
+                                        $userPhoto = session()->get('photo');
+                                    } else {
+                                        // Get photo from database if not in session
+                                        $userPhotoModel = new \App\Models\UserPhotoModel();
+                                        $photoRecord = $userPhotoModel->where('user_id', session()->get('user_id'))->first();
+                                        if ($photoRecord && !empty($photoRecord['photo_path'])) {
+                                            $userPhoto = base_url($photoRecord['photo_path']);
+                                        }
+                                    }
+                                    ?>
+                                    <?php if($userPhoto): ?>
+                                        <img src="<?= esc($userPhoto) ?>" alt="Profile" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="avatar-placeholder-sm" style="display: none;"><?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1)) ?></div>
                                     <?php else: ?>
                                         <div class="avatar-placeholder-sm"><?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1)) ?></div>
                                     <?php endif; ?>
                                 </div>
                                 <input type="text" class="create-box-input" placeholder="What's on your mind, <?= esc($profile['firstname'] ?? 'Student') ?>?" onclick="openCreatePostModal()">
-                                <button class="create-box-btn" onclick="openCreatePostModal()">
+                                <button class="create-box-btn" onclick="openCreatePostModal()" title="Create New Post">
                                     <i class="fas fa-paper-plane"></i>
                                 </button>
                             </div>
@@ -1271,208 +1282,8 @@
                             </div>
 
                             <!-- Forum Posts -->
-                            <div class="forum-posts-list">
-                                <!-- Post 1 -->
-                                <article class="forum-post">
-                                    <div class="post-vote">
-                                        <button class="vote-btn upvote" onclick="votePost(1, 'up')">
-                                            <i class="fas fa-chevron-up"></i>
-                                        </button>
-                                        <span class="vote-count">42</span>
-                                        <button class="vote-btn downvote" onclick="votePost(1, 'down')">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </div>
-                                    <div class="post-content">
-                                        <div class="post-header">
-                                            <img src="https://ui-avatars.com/api/?name=Tech+Society&background=6366f1&color=fff" alt="Tech Society" class="post-author-img">
-                                            <div class="post-meta">
-                                                <div class="post-author">
-                                                    <span class="author-name">Tech Society</span>
-                                                    <span class="author-badge org">Organization</span>
-                                                </div>
-                                                <span class="post-time">2 hours ago • <span class="post-category">Events & Activities</span></span>
-                                            </div>
-                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
-                                        </div>
-                                        <h3 class="post-title">🚀 Hackathon 2025 Registration Now Open!</h3>
-                                        <p class="post-body">
-                                            Join us for the biggest coding event of the year! This 48-hour hackathon will challenge you to build innovative solutions. 
-                                            Great prizes await including ₱50,000 for the winning team! Registration ends Nov 30.
-                                        </p>
-                                        <div class="post-tags">
-                                            <span class="post-tag">hackathon</span>
-                                            <span class="post-tag">coding</span>
-                                            <span class="post-tag">competition</span>
-                                        </div>
-                                        <div class="post-footer">
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-comment"></i>
-                                                <span>15 Comments</span>
-                                            </button>
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-share"></i>
-                                                <span>Share</span>
-                                            </button>
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-bookmark"></i>
-                                                <span>Save</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </article>
-
-                                <!-- Post 2 -->
-                                <article class="forum-post">
-                                    <div class="post-vote">
-                                        <button class="vote-btn upvote active" onclick="votePost(2, 'up')">
-                                            <i class="fas fa-chevron-up"></i>
-                                        </button>
-                                        <span class="vote-count">28</span>
-                                        <button class="vote-btn downvote" onclick="votePost(2, 'down')">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </div>
-                                    <div class="post-content">
-                                        <div class="post-header">
-                                            <img src="https://ui-avatars.com/api/?name=Juan+Cruz&background=10b981&color=fff" alt="Juan Cruz" class="post-author-img">
-                                            <div class="post-meta">
-                                                <div class="post-author">
-                                                    <span class="author-name">Juan Cruz</span>
-                                                    <span class="author-badge student">Student</span>
-                                                </div>
-                                                <span class="post-time">5 hours ago • <span class="post-category">General Discussion</span></span>
-                                            </div>
-                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
-                                        </div>
-                                        <h3 class="post-title">Best study spots on campus?</h3>
-                                        <p class="post-body">
-                                            Hey everyone! I'm looking for quiet places to study on campus. The library is always full during exam season. 
-                                            Any recommendations? I prefer places with good WiFi and outlets for charging.
-                                        </p>
-                                        <div class="post-tags">
-                                            <span class="post-tag">study</span>
-                                            <span class="post-tag">campus</span>
-                                        </div>
-                                        <div class="post-footer">
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-comment"></i>
-                                                <span>23 Comments</span>
-                                            </button>
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-share"></i>
-                                                <span>Share</span>
-                                            </button>
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-bookmark"></i>
-                                                <span>Save</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </article>
-
-                                <!-- Post 3 -->
-                                <article class="forum-post">
-                                    <div class="post-vote">
-                                        <button class="vote-btn upvote" onclick="votePost(3, 'up')">
-                                            <i class="fas fa-chevron-up"></i>
-                                        </button>
-                                        <span class="vote-count">19</span>
-                                        <button class="vote-btn downvote" onclick="votePost(3, 'down')">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </div>
-                                    <div class="post-content">
-                                        <div class="post-header">
-                                            <img src="https://ui-avatars.com/api/?name=Arts+Club&background=f59e0b&color=fff" alt="Arts Club" class="post-author-img">
-                                            <div class="post-meta">
-                                                <div class="post-author">
-                                                    <span class="author-name">Arts & Culture Club</span>
-                                                    <span class="author-badge org">Organization</span>
-                                                </div>
-                                                <span class="post-time">Yesterday • <span class="post-category">Events & Activities</span></span>
-                                            </div>
-                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
-                                        </div>
-                                        <h3 class="post-title">🎨 Art Exhibition: "Expressions" - Free Entry!</h3>
-                                        <p class="post-body">
-                                            We're excited to announce our annual art exhibition featuring works from talented student artists! 
-                                            The exhibition runs from Dec 1-5 at the University Gallery. Free admission for all students.
-                                        </p>
-                                        <div class="post-image">
-                                            <img src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600" alt="Art Exhibition">
-                                        </div>
-                                        <div class="post-tags">
-                                            <span class="post-tag">art</span>
-                                            <span class="post-tag">exhibition</span>
-                                            <span class="post-tag">free</span>
-                                        </div>
-                                        <div class="post-footer">
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-comment"></i>
-                                                <span>8 Comments</span>
-                                            </button>
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-share"></i>
-                                                <span>Share</span>
-                                            </button>
-                                            <button class="post-action-btn saved">
-                                                <i class="fas fa-bookmark"></i>
-                                                <span>Saved</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </article>
-
-                                <!-- Post 4 -->
-                                <article class="forum-post">
-                                    <div class="post-vote">
-                                        <button class="vote-btn upvote" onclick="votePost(4, 'up')">
-                                            <i class="fas fa-chevron-up"></i>
-                                        </button>
-                                        <span class="vote-count">12</span>
-                                        <button class="vote-btn downvote" onclick="votePost(4, 'down')">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </div>
-                                    <div class="post-content">
-                                        <div class="post-header">
-                                            <img src="https://ui-avatars.com/api/?name=Maria+Santos&background=ec4899&color=fff" alt="Maria Santos" class="post-author-img">
-                                            <div class="post-meta">
-                                                <div class="post-author">
-                                                    <span class="author-name">Maria Santos</span>
-                                                    <span class="author-badge student">Student</span>
-                                                </div>
-                                                <span class="post-time">Yesterday • <span class="post-category">Buy & Sell</span></span>
-                                            </div>
-                                            <button class="post-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
-                                        </div>
-                                        <h3 class="post-title">Selling: Calculus Textbook (10th Edition) - ₱500</h3>
-                                        <p class="post-body">
-                                            Selling my calculus textbook, barely used! Still in great condition with no highlights or markings. 
-                                            Perfect for Math 101 students. Meet up at the library. DM me if interested!
-                                        </p>
-                                        <div class="post-tags">
-                                            <span class="post-tag">selling</span>
-                                            <span class="post-tag">textbook</span>
-                                            <span class="post-tag">math</span>
-                                        </div>
-                                        <div class="post-footer">
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-comment"></i>
-                                                <span>5 Comments</span>
-                                            </button>
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-share"></i>
-                                                <span>Share</span>
-                                            </button>
-                                            <button class="post-action-btn">
-                                                <i class="fas fa-bookmark"></i>
-                                                <span>Save</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </article>
+                            <div class="forum-posts-list" id="forumPostsList">
+                                <!-- Posts will be loaded dynamically here -->
                             </div>
 
                             <!-- Load More -->
@@ -1484,6 +1295,58 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Create Post Modal -->
+                <div class="modal-overlay" id="createPostModal" style="display: none;">
+                    <div class="modal" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h2>Create New Post</h2>
+                            <button class="modal-close" onclick="closeCreatePostModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="createPostForm">
+                                <div class="form-group">
+                                    <label for="postTitle">Title <span class="required">*</span></label>
+                                    <input type="text" id="postTitle" name="title" class="form-control" placeholder="Enter post title..." required minlength="3" maxlength="255">
+                                </div>
+                                <div class="form-group">
+                                    <label for="postContent">Content <span class="required">*</span></label>
+                                    <textarea id="postContent" name="content" class="form-control" rows="6" placeholder="What's on your mind?" required minlength="10"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="postCategory">Category <span class="required">*</span></label>
+                                    <select id="postCategory" name="category" class="form-control" required>
+                                        <option value="general">General Discussion</option>
+                                        <option value="events">Events & Activities</option>
+                                        <option value="academics">Academics</option>
+                                        <option value="marketplace">Buy & Sell</option>
+                                        <option value="help">Help & Support</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="postTags">Tags (comma-separated)</label>
+                                    <input type="text" id="postTags" name="tags" class="form-control" placeholder="e.g., study, campus, tips">
+                                </div>
+                                <div class="form-group">
+                                    <label for="postImage">Image (optional)</label>
+                                    <input type="file" id="postImage" name="image" class="form-control" accept="image/*">
+                                    <small class="form-text">Max size: 5MB. Supported formats: JPG, PNG, GIF, WebP</small>
+                                    <div id="postImagePreview" style="margin-top: 1rem; display: none;">
+                                        <img id="postImagePreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" onclick="closeCreatePostModal()">Cancel</button>
+                                    <button type="submit" class="btn-primary">
+                                        <i class="fas fa-paper-plane"></i> Post
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Profile Section -->
                 <section class="content-section" id="profile">
@@ -2097,6 +1960,13 @@
                     announcementsMobileNavBadge.style.display = 'none';
                     localStorage.setItem('announcementsBadgeViewed', 'true');
                 }
+            }
+            
+            // Load forum posts when forum section is activated
+            if (sectionId === 'forum') {
+                setTimeout(() => {
+                    loadForumPosts('all');
+                }, 200);
             }
             
             // Scroll to top
@@ -3103,18 +2973,14 @@
                     showToast(data.message, 'success');
                     input.value = '';
                     loadComments(postId, postType);
-                    // Update comment count
-                    const commentBtn = document.querySelector(`.comment-btn[onclick*="${postId}"]`);
+                    // Update comment count in the button
+                    const commentBtn = document.querySelector(`button[onclick*="toggleComments(${postId}, '${postType}')"]`);
                     if (commentBtn) {
-                        const countSpan = commentBtn.querySelector('.comment-count');
-                        const currentCount = countSpan ? parseInt(countSpan.textContent) || 0 : 0;
+                        const countSpan = commentBtn.querySelector('span');
                         if (countSpan) {
-                            countSpan.textContent = currentCount + 1;
-                        } else {
-                            const newCount = document.createElement('span');
-                            newCount.className = 'comment-count';
-                            newCount.textContent = currentCount + 1;
-                            commentBtn.appendChild(newCount);
+                            const currentText = countSpan.textContent.trim();
+                            const currentCount = parseInt(currentText) || 0;
+                            countSpan.textContent = `${currentCount + 1} ${currentCount === 0 ? 'Comment' : 'Comments'}`;
                         }
                     }
                 } else {
@@ -3240,10 +3106,15 @@
                         if (reactionCount) {
                             reactionCount.textContent = totalCount;
                         } else {
-                            const newCount = document.createElement('span');
-                            newCount.className = 'reaction-count';
-                            newCount.textContent = totalCount;
-                            button.appendChild(newCount);
+                            // Find the reaction icon and add count after it
+                            const reactionIcon = button.querySelector('.reaction-icon');
+                            if (reactionIcon) {
+                                const newCount = document.createElement('span');
+                                newCount.className = 'reaction-count';
+                                newCount.textContent = totalCount;
+                                newCount.style.cssText = 'margin-left: 0.25rem; color: #64748b; font-size: 0.875rem;';
+                                reactionIcon.parentNode.insertBefore(newCount, reactionIcon.nextSibling);
+                            }
                         }
                     } else {
                         if (reactionCount) {
@@ -3416,11 +3287,294 @@
             }
         }
 
-        // Initialize
+        // =====================================================
+        // FORUM FUNCTIONS - Clean Implementation
+        // =====================================================
+
+        // Open Create Post Modal
+        function openCreatePostModal() {
+            const modal = document.getElementById('createPostModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                setTimeout(() => modal.classList.add('active'), 10);
+            }
+        }
+
+        // Close Create Post Modal
+        function closeCreatePostModal() {
+            const modal = document.getElementById('createPostModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    const form = document.getElementById('createPostForm');
+                    if (form) form.reset();
+                    const preview = document.getElementById('postImagePreview');
+                    if (preview) preview.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        // Close modal on overlay click
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('createPostModal');
+            if (e.target === modal) closeCreatePostModal();
+        });
+
+        // Image preview handler
+        document.getElementById('postImage')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('postImagePreview');
+                    const previewImg = document.getElementById('postImagePreviewImg');
+                    if (preview && previewImg) {
+                        previewImg.src = event.target.result;
+                        preview.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Create Post Form Handler
+        document.getElementById('createPostForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+            
+            if (title.length < 3) {
+                showToast('Title must be at least 3 characters', 'error');
+                return;
+            }
+            
+            if (content.length < 10) {
+                showToast('Content must be at least 10 characters', 'error');
+                return;
+            }
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+            submitBtn.disabled = true;
+            
+            fetch(baseUrl + 'student/createPost', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Post created successfully!', 'success');
+                    closeCreatePostModal();
+                    const activeCategory = document.querySelector('.forum-category-item.active');
+                    const category = activeCategory ? activeCategory.getAttribute('data-category') : 'all';
+                    setTimeout(() => loadForumPosts(category), 300);
+                } else {
+                    showToast(data.message || 'Failed to create post', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+
+        // Load Forum Posts
+        function loadForumPosts(category = 'all') {
+            const postsList = document.getElementById('forumPostsList');
+            if (!postsList) {
+                console.error('forumPostsList element not found');
+                return;
+            }
+            
+            console.log('Loading forum posts for category:', category);
+            postsList.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading posts...</div>';
+            
+            fetch(baseUrl + 'student/getPosts?category=' + encodeURIComponent(category))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP error! status: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Posts response:', data);
+                    console.log('Number of posts:', data.posts ? data.posts.length : 0);
+                    if (data.success && data.posts && data.posts.length > 0) {
+                        console.log('Displaying posts...');
+                        displayForumPosts(data.posts);
+                    } else {
+                        console.log('No posts found');
+                        postsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i><p>No posts found. Be the first to post!</p><button class="btn-primary" onclick="openCreatePostModal()" style="margin-top: 1rem;"><i class="fas fa-plus"></i> Create Post</button></div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading posts:', error);
+                    postsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-circle"></i><p>Error loading posts: ' + error.message + '</p><button onclick="loadForumPosts(\'' + category + '\')" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button></div>';
+                });
+        }
+
+        // Display Forum Posts
+        function displayForumPosts(posts) {
+            console.log('displayForumPosts called with', posts.length, 'posts');
+            const postsList = document.getElementById('forumPostsList');
+            if (!postsList) {
+                console.error('forumPostsList not found');
+                return;
+            }
+            if (!posts || !posts.length) {
+                console.log('No posts to display');
+                postsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><i class="fas fa-inbox"></i><p>No posts found.</p></div>';
+                return;
+            }
+            
+            const categoryLabels = {
+                'general': 'General Discussion',
+                'events': 'Events & Activities',
+                'academics': 'Academics',
+                'marketplace': 'Buy & Sell',
+                'help': 'Help & Support'
+            };
+            
+            postsList.innerHTML = posts.map(post => {
+                // Get author info
+                let authorName = '';
+                let authorPhoto = '';
+                let authorBadge = 'student';
+                
+                if (post.author_type === 'organization') {
+                    authorName = post.org_name || post.author_name || 'Organization';
+                    authorPhoto = post.org_photo || post.author_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=8b5cf6&color=fff`;
+                    authorBadge = 'organization';
+                } else {
+                    authorName = post.author_name || ((post.firstname || '') + ' ' + (post.lastname || '')).trim();
+                    authorPhoto = post.author_photo || (post.photo_path ? baseUrl + post.photo_path.replace(/^\//, '') : null) || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=6366f1&color=fff`;
+                    authorBadge = 'student';
+                }
+                
+                const timeAgo = getTimeAgo(post.created_at);
+                const categoryLabel = categoryLabels[post.category] || post.category;
+                const tags = post.tags_array || [];
+                const reactionCounts = post.reaction_counts || { total: 0 };
+                const commentCount = post.comment_count || 0;
+                const userReaction = post.user_reaction || null;
+                
+                const reactionIcons = {
+                    'like': '👍', 'love': '❤️', 'care': '🥰', 'haha': '😂',
+                    'wow': '😮', 'sad': '😢', 'angry': '😠'
+                };
+                const reactionIcon = userReaction ? (reactionIcons[userReaction] || '👍') : '👍';
+                
+                return `
+                    <article class="forum-post">
+                        <div class="post-content">
+                            <div class="post-header">
+                                <img src="${authorPhoto}" alt="${authorName}" class="post-author-img" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=${authorBadge === 'organization' ? '8b5cf6' : '6366f1'}&color=fff'">
+                                <div class="post-meta">
+                                    <div class="post-author">
+                                        <span class="author-name">${escapeHtml(authorName)}</span>
+                                        <span class="author-badge ${authorBadge}">${authorBadge === 'organization' ? 'Organization' : 'Student'}</span>
+                                    </div>
+                                    <span class="post-time">${timeAgo} • <span class="post-category">${categoryLabel}</span></span>
+                                </div>
+                            </div>
+                            <h3 class="post-title">${escapeHtml(post.title)}</h3>
+                            <p class="post-body">${escapeHtml(post.content)}</p>
+                            ${post.image_url ? `<div class="post-image"><img src="${post.image_url}" alt="Post image" style="width: 100%; border-radius: 8px; margin-top: 1rem;"></div>` : ''}
+                            ${tags.length > 0 ? `<div class="post-tags">${tags.map(tag => `<span class="post-tag">${escapeHtml(tag.trim())}</span>`).join('')}</div>` : ''}
+                            <div class="post-footer">
+                                <div class="reaction-wrapper" data-post-type="forum_post" data-post-id="${post.id}">
+                                    <button class="post-action-btn reaction-btn ${userReaction ? 'reacted reaction-' + userReaction : ''}" 
+                                            onmouseenter="showReactionPicker(this)" 
+                                            onmouseleave="hideReactionPicker(this)"
+                                            onclick="quickReact('forum_post', ${post.id}, this, '${userReaction || ''}')">
+                                        <span class="reaction-icon">${reactionIcon}</span>
+                                        ${reactionCounts.total > 0 ? `<span class="reaction-count">${reactionCounts.total}</span>` : ''}
+                                    </button>
+                                    <div class="reaction-picker" style="display: none;">
+                                        <div class="reaction-option" data-reaction="like" onclick="setReaction('forum_post', ${post.id}, 'like', this)">👍</div>
+                                        <div class="reaction-option" data-reaction="love" onclick="setReaction('forum_post', ${post.id}, 'love', this)">❤️</div>
+                                        <div class="reaction-option" data-reaction="care" onclick="setReaction('forum_post', ${post.id}, 'care', this)">🥰</div>
+                                        <div class="reaction-option" data-reaction="haha" onclick="setReaction('forum_post', ${post.id}, 'haha', this)">😂</div>
+                                        <div class="reaction-option" data-reaction="wow" onclick="setReaction('forum_post', ${post.id}, 'wow', this)">😮</div>
+                                        <div class="reaction-option" data-reaction="sad" onclick="setReaction('forum_post', ${post.id}, 'sad', this)">😢</div>
+                                        <div class="reaction-option" data-reaction="angry" onclick="setReaction('forum_post', ${post.id}, 'angry', this)">😠</div>
+                                    </div>
+                                </div>
+                                <button class="post-action-btn" onclick="toggleComments(${post.id}, 'forum_post')">
+                                    <i class="fas fa-comment"></i>
+                                    <span>${commentCount} ${commentCount === 1 ? 'Comment' : 'Comments'}</span>
+                                </button>
+                            </div>
+                            <div class="comments-section" id="comments-forum_post-${post.id}" style="display: none;">
+                                <div class="comments-list" id="comments-list-forum_post-${post.id}"></div>
+                                <div class="comment-input-wrapper">
+                                    <input type="text" class="comment-input" id="comment-input-forum_post-${post.id}" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') postComment(${post.id}, 'forum_post')">
+                                    <button class="btn-send" onclick="postComment(${post.id}, 'forum_post')"><i class="fas fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        // Helper Functions
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getTimeAgo(dateString) {
+            if (!dateString) return 'Just now';
+            const now = new Date();
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Just now';
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + ' minutes ago';
+            if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + ' hours ago';
+            if (diffInSeconds < 604800) return Math.floor(diffInSeconds / 86400) + ' days ago';
+            
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+        }
+
+        // Category Filter
+        document.querySelectorAll('.forum-category-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.forum-category-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                const category = this.getAttribute('data-category');
+                loadForumPosts(category);
+            });
+        });
+
+        // Initialize Forum on Page Load
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
             loadCartItems();
             updateCombinedBadge();
+            
+            // Load forum posts if forum section is active
+            const forumSection = document.getElementById('forum');
+            if (forumSection && forumSection.classList.contains('active')) {
+                setTimeout(() => loadForumPosts('all'), 300);
+            }
         });
     </script>
 
@@ -3632,6 +3786,198 @@
 
         .reaction-option:hover span:first-child {
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+        }
+
+        /* Create Post Modal Form Styles */
+        .modal.modal-lg {
+            max-width: 600px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-group .required {
+            color: #ef4444;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-text {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .form-actions .btn-primary,
+        .form-actions .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-actions .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .form-actions .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+        }
+
+        .form-actions .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-actions .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .form-actions .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        /* Modal Styles for Create Post */
+        #createPostModal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 9999 !important;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        #createPostModal.active {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        #createPostModal .modal {
+            background: white !important;
+            border-radius: 16px !important;
+            width: 90% !important;
+            max-width: 600px !important;
+            max-height: 90vh !important;
+            overflow: hidden !important;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+            position: relative !important;
+        }
+
+        #createPostModal.active .modal {
+            transform: scale(1) !important;
+        }
+
+        #createPostModal .modal-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 1.5rem !important;
+            border-bottom: 1px solid #e5e7eb !important;
+        }
+
+        #createPostModal .modal-header h2 {
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            color: #111827 !important;
+            margin: 0 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        #createPostModal .modal-close {
+            width: 36px !important;
+            height: 36px !important;
+            border: none !important;
+            background: #f3f4f6 !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            color: #6b7280 !important;
+            transition: all 0.2s !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.125rem !important;
+        }
+
+        #createPostModal .modal-close:hover {
+            background: #e5e7eb !important;
+            color: #374151 !important;
+        }
+
+        #createPostModal .modal-body {
+            padding: 1.5rem !important;
+            max-height: calc(90vh - 140px) !important;
+            overflow-y: auto !important;
+        }
+
+        /* Center Forum Section Header */
+        #forum .section-header {
+            text-align: center !important;
+            justify-content: center !important;
+        }
+
+        #forum .section-header > div {
+            width: 100%;
+        }
+
+        #forum .section-title,
+        #forum .section-subtitle {
+            text-align: center;
         }
     </style>
 </body>

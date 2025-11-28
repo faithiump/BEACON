@@ -46,6 +46,8 @@ $routes->post('organization/trackView', 'Organization::trackView');
 $routes->post('organization/likePost', 'Organization::likePost');
 $routes->post('organization/comment', 'Organization::comment');
 $routes->get('organization/getComments', 'Organization::getComments');
+$routes->get('organization/getPosts', 'Organization::getPosts');
+$routes->post('organization/createPost', 'Organization::createPost');
 
 // Organization Members
 $routes->get('organization/members', 'Organization::viewMembers');
@@ -122,4 +124,6 @@ $routes->get('student/search', 'Student::search');
 $routes->get('student/notifications', 'Student::getNotifications');
 $routes->post('student/notifications/read', 'Student::markNotificationRead');
 $routes->post('student/notifications/dismiss', 'Student::dismissNotification');
+$routes->post('student/createPost', 'Student::createPost');
+$routes->get('student/getPosts', 'Student::getPosts');
 $routes->get('student/logout', 'Student::logout');

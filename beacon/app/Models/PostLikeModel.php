@@ -14,6 +14,8 @@ class PostLikeModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'student_id',
+        'organization_id',
+        'reactor_type',
         'post_type',
         'post_id',
         'reaction_type',
@@ -34,30 +36,46 @@ class PostLikeModel extends Model
     protected $cleanValidationRules = true;
 
     /**
-     * Check if student has reacted to a post
+     * Check if user (student or organization) has reacted to a post
      */
-    public function hasLiked($studentId, $postType, $postId)
+    public function hasLiked($userId, $postType, $postId, $userType = 'student')
     {
-        // Ensure values are properly typed
-        $studentId = (int)$studentId;
+        $userId = (int)$userId;
         $postId = (int)$postId;
-        return $this->where('student_id', $studentId)
-                    ->where('post_type', $postType)
-                    ->where('post_id', $postId)
-                    ->first() !== null;
+        
+        if ($userType === 'student') {
+            return $this->where('student_id', $userId)
+                        ->where('post_type', $postType)
+                        ->where('post_id', $postId)
+                        ->first() !== null;
+        } else {
+            return $this->where('organization_id', $userId)
+                        ->where('post_type', $postType)
+                        ->where('post_id', $postId)
+                        ->first() !== null;
+        }
     }
 
     /**
-     * Get user's reaction to a post
+     * Get user's reaction to a post (supports both students and organizations)
      */
-    public function getUserReaction($studentId, $postType, $postId)
+    public function getUserReaction($userId, $postType, $postId, $userType = 'student')
     {
-        $studentId = (int)$studentId;
+        $userId = (int)$userId;
         $postId = (int)$postId;
-        $reaction = $this->where('student_id', $studentId)
-                        ->where('post_type', $postType)
-                        ->where('post_id', $postId)
-                        ->first();
+        
+        if ($userType === 'student') {
+            $reaction = $this->where('student_id', $userId)
+                            ->where('post_type', $postType)
+                            ->where('post_id', $postId)
+                            ->first();
+        } else {
+            $reaction = $this->where('organization_id', $userId)
+                            ->where('post_type', $postType)
+                            ->where('post_id', $postId)
+                            ->first();
+        }
+        
         return $reaction ? $reaction['reaction_type'] : null;
     }
 
@@ -126,17 +144,25 @@ class PostLikeModel extends Model
 
     /**
      * Toggle like (like if not liked, unlike if liked)
+     * Supports both students and organizations
      */
-    public function toggleLike($studentId, $postType, $postId)
+    public function toggleLike($userId, $postType, $postId, $userType = 'student')
     {
         // Ensure values are properly typed
-        $studentId = (int)$studentId;
+        $userId = (int)$userId;
         $postId = (int)$postId;
         
-        $existing = $this->where('student_id', $studentId)
-                         ->where('post_type', $postType)
-                         ->where('post_id', $postId)
-                         ->first();
+        if ($userType === 'student') {
+            $existing = $this->where('student_id', $userId)
+                             ->where('post_type', $postType)
+                             ->where('post_id', $postId)
+                             ->first();
+        } else {
+            $existing = $this->where('organization_id', $userId)
+                             ->where('post_type', $postType)
+                             ->where('post_id', $postId)
+                             ->first();
+        }
         
         if ($existing) {
             // Unlike
@@ -150,12 +176,20 @@ class PostLikeModel extends Model
             $db = \Config\Database::connect();
             
             $data = [
-                'student_id' => $studentId,
                 'post_type' => $postType,
                 'post_id' => $postId,
                 'reaction_type' => 'like',
+                'reactor_type' => $userType,
                 'created_at' => date('Y-m-d H:i:s')
             ];
+            
+            if ($userType === 'student') {
+                $data['student_id'] = $userId;
+                $data['organization_id'] = null;
+            } else {
+                $data['organization_id'] = $userId;
+                $data['student_id'] = null;
+            }
             
             $db->table($this->table)->insert($data);
             
@@ -169,11 +203,12 @@ class PostLikeModel extends Model
 
     /**
      * Set reaction (like, love, care, haha, wow, sad, angry)
+     * Supports both students and organizations
      */
-    public function setReaction($studentId, $postType, $postId, $reactionType = 'like')
+    public function setReaction($userId, $postType, $postId, $reactionType = 'like', $userType = 'student')
     {
         // Ensure values are properly typed
-        $studentId = (int)$studentId;
+        $userId = (int)$userId;
         $postId = (int)$postId;
         
         // Validate reaction type
@@ -182,10 +217,18 @@ class PostLikeModel extends Model
             throw new \InvalidArgumentException('Invalid reaction type: ' . $reactionType);
         }
         
-        $existing = $this->where('student_id', $studentId)
-                         ->where('post_type', $postType)
-                         ->where('post_id', $postId)
-                         ->first();
+        // Find existing reaction
+        if ($userType === 'student') {
+            $existing = $this->where('student_id', $userId)
+                             ->where('post_type', $postType)
+                             ->where('post_id', $postId)
+                             ->first();
+        } else {
+            $existing = $this->where('organization_id', $userId)
+                             ->where('post_type', $postType)
+                             ->where('post_id', $postId)
+                             ->first();
+        }
         
         $db = \Config\Database::connect();
         
@@ -216,12 +259,20 @@ class PostLikeModel extends Model
         } else {
             // Add new reaction
             $data = [
-                'student_id' => $studentId,
                 'post_type' => $postType,
                 'post_id' => $postId,
                 'reaction_type' => $reactionType,
+                'reactor_type' => $userType,
                 'created_at' => date('Y-m-d H:i:s')
             ];
+            
+            if ($userType === 'student') {
+                $data['student_id'] = $userId;
+                $data['organization_id'] = null;
+            } else {
+                $data['organization_id'] = $userId;
+                $data['student_id'] = null;
+            }
             
             $db->table($this->table)->insert($data);
             

@@ -13,6 +13,7 @@ use App\Models\ProductModel;
 use App\Models\StudentModel;
 use App\Models\StudentOrganizationMembershipModel;
 use App\Models\UserPhotoModel;
+use App\Models\ForumPostModel;
 
 class Organization extends BaseController
 {
@@ -2117,7 +2118,7 @@ class Organization extends BaseController
     }
 
     /**
-     * Like/React to a post (for organizations)
+     * Like/React to a post (for organizations - now enabled)
      */
     public function likePost()
     {
@@ -2133,17 +2134,31 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
         }
 
-        // Organizations can't like posts, but they can view reactions
-        // This endpoint is kept for consistency but will return view-only data
-        $likeModel = new \App\Models\PostLikeModel();
-        $reactionCounts = $likeModel->getReactionCounts($postType, $postId);
-        
-        return $this->response->setJSON([
-            'success' => true,
-            'reacted' => false,
-            'reaction_type' => null,
-            'counts' => $reactionCounts
-        ]);
+        // Get organization ID
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        try {
+            $likeModel = new \App\Models\PostLikeModel();
+            $result = $likeModel->setReaction($orgId, $postType, $postId, $reactionType, 'organization');
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'reacted' => $result['reacted'],
+                'reaction_type' => $result['reaction_type'],
+                'counts' => $result['counts'],
+                'message' => $result['reacted'] ? 'Reaction added!' : 'Reaction removed!'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Organization like error: ' . $e->getMessage());
+            log_message('error', 'Organization like error trace: ' . $e->getTraceAsString());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while reacting to post: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -2169,28 +2184,35 @@ class Organization extends BaseController
             // Format comments for display
             $formattedComments = [];
             foreach ($comments as $comment) {
+                if (!$comment || !isset($comment['id'])) {
+                    continue; // Skip invalid comments
+                }
+                
                 $userName = '';
                 if (isset($comment['is_organization']) && $comment['is_organization']) {
-                    $userName = $comment['firstname'] ?? 'Organization';
+                    $userName = $comment['firstname'] ?? $comment['org_name'] ?? 'Organization';
                 } else {
-                    $userName = ($comment['firstname'] ?? '') . ' ' . ($comment['lastname'] ?? '');
+                    $userName = trim(($comment['firstname'] ?? '') . ' ' . ($comment['lastname'] ?? ''));
+                    if (empty($userName)) {
+                        $userName = 'User';
+                    }
                 }
                 
                 $formattedComment = [
-                    'id' => $comment['id'],
-                    'content' => $comment['content'],
-                    'created_at' => $comment['created_at'], // Send raw datetime for JavaScript formatting
-                    'user_name' => trim($userName),
-                    'firstname' => $comment['firstname'] ?? '',
+                    'id' => $comment['id'] ?? 0,
+                    'content' => $comment['content'] ?? '',
+                    'created_at' => $comment['created_at'] ?? date('Y-m-d H:i:s'),
+                    'user_name' => $userName,
+                    'firstname' => $comment['firstname'] ?? $comment['org_name'] ?? '',
                     'lastname' => $comment['lastname'] ?? '',
-                    'student_id' => $comment['student_id'] ?? '',
+                    'student_id' => $comment['student_id'] ?? null,
                     'is_organization' => $comment['is_organization'] ?? false,
                     'parent_comment_id' => $comment['parent_comment_id'] ?? null,
                     'replies' => []
                 ];
                 
                 // Format replies recursively if they exist
-                if (isset($comment['replies']) && is_array($comment['replies'])) {
+                if (isset($comment['replies']) && is_array($comment['replies']) && !empty($comment['replies'])) {
                     $formattedComment['replies'] = $this->formatRepliesRecursive($comment['replies']);
                 }
                 
@@ -2203,7 +2225,11 @@ class Organization extends BaseController
             ]);
         } catch (\Exception $e) {
             log_message('error', 'Get comments error: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Error loading comments']);
+            log_message('error', 'Get comments trace: ' . $e->getTraceAsString());
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'Error loading comments: ' . $e->getMessage()
+            ]);
         }
     }
     
@@ -2214,21 +2240,28 @@ class Organization extends BaseController
     {
         $formattedReplies = [];
         foreach ($replies as $reply) {
+            if (!$reply || !isset($reply['id'])) {
+                continue; // Skip invalid replies
+            }
+            
             $replyUserName = '';
             if (isset($reply['is_organization']) && $reply['is_organization']) {
-                $replyUserName = $reply['firstname'] ?? 'Organization';
+                $replyUserName = $reply['firstname'] ?? $reply['org_name'] ?? 'Organization';
             } else {
-                $replyUserName = ($reply['firstname'] ?? '') . ' ' . ($reply['lastname'] ?? '');
+                $replyUserName = trim(($reply['firstname'] ?? '') . ' ' . ($reply['lastname'] ?? ''));
+                if (empty($replyUserName)) {
+                    $replyUserName = 'User';
+                }
             }
             
             $formattedReply = [
-                'id' => $reply['id'],
-                'content' => $reply['content'],
-                'created_at' => $reply['created_at'],
-                'user_name' => trim($replyUserName),
-                'firstname' => $reply['firstname'] ?? '',
+                'id' => $reply['id'] ?? 0,
+                'content' => $reply['content'] ?? '',
+                'created_at' => $reply['created_at'] ?? date('Y-m-d H:i:s'),
+                'user_name' => $replyUserName,
+                'firstname' => $reply['firstname'] ?? $reply['org_name'] ?? '',
                 'lastname' => $reply['lastname'] ?? '',
-                'student_id' => $reply['student_id'] ?? '',
+                'student_id' => $reply['student_id'] ?? null,
                 'is_organization' => $reply['is_organization'] ?? false,
                 'parent_comment_id' => $reply['parent_comment_id'] ?? null,
                 'replies' => []
@@ -2272,18 +2305,18 @@ class Organization extends BaseController
                 return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
             }
 
-            // Store organization comment with special format
-            $orgName = $organization['organization_name'] ?? 'Organization';
-            $commentContent = "[ORG] " . $orgName . ": " . trim($content);
+            $orgName = $organization['name'] ?? $organization['organization_name'] ?? 'Organization';
             
             $commentModel = new \App\Models\PostCommentModel();
             
-            // Insert comment with student_id = NULL to indicate organization comment
+            // Insert comment with proper organization support
             $data = [
-                'student_id' => null, // NULL indicates organization comment
+                'organization_id' => $orgId,
+                'student_id' => null,
+                'commenter_type' => 'organization',
                 'post_type' => $postType,
                 'post_id' => $postId,
-                'content' => $commentContent
+                'content' => trim($content)
             ];
             
             // Only add parent_comment_id if it's provided and not empty
@@ -2312,6 +2345,10 @@ class Organization extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Post comment error: ' . $e->getMessage());
             log_message('error', 'Post comment trace: ' . $e->getTraceAsString());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while posting comment: ' . $e->getMessage()
+            ]);
             $errorMessage = 'Error posting comment: ' . $e->getMessage();
             // Check if it's a column doesn't exist error
             if (strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'Unknown column') !== false) {
@@ -2645,6 +2682,168 @@ class Organization extends BaseController
             }
             
             return redirect()->back()->withInput()->with('errors', [$displayError]);
+        }
+    }
+
+    /**
+     * Get Forum Posts (for organizations to view student forum posts)
+     */
+    public function getPosts()
+    {
+        // Check if organization is logged in
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $category = $this->request->getGet('category') ?? 'all';
+        $limit = $this->request->getGet('limit') ? (int)$this->request->getGet('limit') : 20;
+        $offset = $this->request->getGet('offset') ? (int)$this->request->getGet('offset') : 0;
+
+        try {
+            $postModel = new ForumPostModel();
+            $posts = $postModel->getAllPosts($category, $limit, $offset);
+
+            // Get reaction and comment counts for each post
+            $likeModel = new \App\Models\PostLikeModel();
+            $commentModel = new \App\Models\PostCommentModel();
+
+            // Get organization ID for reactions
+            $orgId = $this->session->get('organization_id');
+            
+            foreach ($posts as &$post) {
+                // Get reaction counts
+                $reactionCounts = $likeModel->getReactionCounts('forum_post', $post['id']);
+                $post['reaction_counts'] = $reactionCounts;
+
+                // Get organization's reaction if logged in
+                if ($orgId) {
+                    $userReaction = $likeModel->getUserReaction($orgId, 'forum_post', $post['id'], 'organization');
+                    $post['user_reaction'] = $userReaction;
+                } else {
+                    $post['user_reaction'] = null;
+                }
+
+                // Get comment count
+                $commentCount = $commentModel->getCommentCount('forum_post', $post['id']);
+                $post['comment_count'] = $commentCount;
+
+                // Format image URL
+                if (!empty($post['image'])) {
+                    $post['image_url'] = base_url('uploads/posts/' . $post['image']);
+                } else {
+                    $post['image_url'] = null;
+                }
+
+                // Format tags
+                if (!empty($post['tags'])) {
+                    $post['tags_array'] = array_map('trim', explode(',', $post['tags']));
+                } else {
+                    $post['tags_array'] = [];
+                }
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'posts' => $posts
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Get forum posts error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while fetching posts'
+            ]);
+        }
+    }
+
+    /**
+     * Create Forum Post (for organizations)
+     */
+    public function createPost()
+    {
+        // Check if organization is logged in
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        $title = trim($this->request->getPost('title'));
+        $content = trim($this->request->getPost('content'));
+        $category = $this->request->getPost('category') ?? 'general';
+        $tags = trim($this->request->getPost('tags') ?? '');
+
+        // Validation
+        if (empty($title) || strlen($title) < 3) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Title must be at least 3 characters']);
+        }
+
+        if (empty($content) || strlen($content) < 10) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Content must be at least 10 characters']);
+        }
+
+        if (!in_array($category, ['general', 'events', 'academics', 'marketplace', 'help'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid category']);
+        }
+
+        try {
+            $postModel = new ForumPostModel();
+            
+            $postData = [
+                'organization_id' => $orgId,
+                'student_id' => null,
+                'author_type' => 'organization',
+                'title' => $title,
+                'content' => $content,
+                'category' => $category,
+                'tags' => !empty($tags) ? $tags : null
+            ];
+
+            // Handle image upload
+            $image = $this->request->getFile('image');
+            if ($image && $image->isValid() && !$image->hasMoved()) {
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (in_array($image->getMimeType(), $allowedTypes)) {
+                    if ($image->getSize() <= 5 * 1024 * 1024) { // 5MB max
+                        $uploadPath = FCPATH . 'uploads/posts/';
+                        if (!is_dir($uploadPath)) {
+                            mkdir($uploadPath, 0755, true);
+                        }
+
+                        $newName = time() . '_' . $image->getRandomName();
+                        if ($image->move($uploadPath, $newName)) {
+                            $postData['image'] = $newName;
+                        }
+                    }
+                }
+            }
+
+            $postId = $postModel->insert($postData);
+
+            if ($postId) {
+                // Get the created post with organization info
+                $createdPost = $postModel->getPostById($postId);
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Post created successfully!',
+                    'post' => $createdPost
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to create post',
+                'errors' => $postModel->errors()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Create post error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while creating post'
+            ]);
         }
     }
 }
