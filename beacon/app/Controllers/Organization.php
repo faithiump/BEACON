@@ -792,6 +792,15 @@ class Organization extends BaseController
             }
         }
 
+        // Format end time for input field (HH:MM format)
+        $endTimeFormatted = $event['end_time'] ?? null;
+        if ($endTimeFormatted && strpos($endTimeFormatted, ':') !== false) {
+            $timeParts = explode(':', $endTimeFormatted);
+            $hour = $timeParts[0];
+            $minute = isset($timeParts[1]) ? $timeParts[1] : '00';
+            $endTimeFormatted = $hour . ':' . $minute;
+        }
+
         // Format response data
         $responseData = [
             'id' => $event['event_id'],
@@ -799,6 +808,8 @@ class Organization extends BaseController
             'description' => $event['description'],
             'date' => $event['date'],
             'time' => $timeFormatted,
+            'end_date' => $event['end_date'] ?? null,
+            'end_time' => $endTimeFormatted,
             'location' => $event['venue'],
             'audience_type' => $event['audience_type'] ?? 'all',
             'department_access' => $event['department_access'] ?? null,
@@ -873,6 +884,8 @@ class Organization extends BaseController
             'description' => $this->request->getPost('description'),
             'date' => $this->request->getPost('date'),
             'time' => $this->request->getPost('time'),
+            'end_date' => $this->request->getPost('end_date') ?: null,
+            'end_time' => $this->request->getPost('end_time') ?: null,
             'venue' => $this->request->getPost('location'),
             'audience_type' => $audienceType,
             'department_access' => $audienceType === 'department' ? $departmentAccess : null,
@@ -982,6 +995,12 @@ class Organization extends BaseController
         }
         if ($this->request->getPost('time')) {
             $updateData['time'] = $this->request->getPost('time');
+        }
+        if ($this->request->getPost('end_date') !== null) {
+            $updateData['end_date'] = $this->request->getPost('end_date') ?: null;
+        }
+        if ($this->request->getPost('end_time') !== null) {
+            $updateData['end_time'] = $this->request->getPost('end_time') ?: null;
         }
         if ($this->request->getPost('location')) {
             $updateData['venue'] = $this->request->getPost('location');

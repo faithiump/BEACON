@@ -332,6 +332,32 @@ class Student extends BaseController
                             ->where('event_id', $eventId)
                             ->countAllResults();
                         
+                        // Check if event is ongoing (date and time have arrived)
+                        $isOngoing = false;
+                        $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+                        $eventTimestamp = strtotime($eventDateTime);
+                        $now = time();
+                        
+                        // Determine end time
+                        $endDateTime = null;
+                        if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                            $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+                        } elseif (!empty($event['end_time'])) {
+                            // If only end_time is set, use same date
+                            $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+                        } elseif (!empty($event['end_date'])) {
+                            // If only end_date is set, use end of that day
+                            $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+                        } else {
+                            // Default: end of start date
+                            $endDateTime = strtotime($event['date'] . ' 23:59:59');
+                        }
+                        
+                        // Event is ongoing if current time is between start and end time
+                        if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                            $isOngoing = true;
+                        }
+                        
                         $eventData = [
                             'id' => $eventId,
                             'title' => $event['event_name'] ?? $event['title'],
@@ -339,6 +365,8 @@ class Student extends BaseController
                             'date' => $event['date'],
                             'date_formatted' => $eventDate,
                             'time' => $timeFormatted,
+                            'end_date' => $event['end_date'] ?? null,
+                            'end_time' => $event['end_time'] ?? null,
                             'location' => $event['venue'] ?? $event['location'],
                             'audience_type' => $audienceType,
                             'department_access' => $departmentAccess,
@@ -347,6 +375,7 @@ class Student extends BaseController
                             'has_joined' => $hasJoined,
                             'is_interested' => $isInterested,
                             'interest_count' => $interestCount,
+                            'is_ongoing' => $isOngoing,
                             'attendees' => $event['current_attendees'] ?? 0,
                             'max_attendees' => $event['max_attendees'],
                             'status' => $event['status'] ?? 'upcoming',
@@ -477,6 +506,32 @@ class Student extends BaseController
                                     ->where('event_id', $eventId)
                                     ->countAllResults();
                                 
+                                // Check if event is ongoing (date and time have arrived)
+                                $isOngoing = false;
+                                $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+                                $eventTimestamp = strtotime($eventDateTime);
+                                $now = time();
+                                
+                                // Determine end time
+                                $endDateTime = null;
+                                if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                                    $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+                                } elseif (!empty($event['end_time'])) {
+                                    // If only end_time is set, use same date
+                                    $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+                                } elseif (!empty($event['end_date'])) {
+                                    // If only end_date is set, use end of that day
+                                    $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+                                } else {
+                                    // Default: end of start date
+                                    $endDateTime = strtotime($event['date'] . ' 23:59:59');
+                                }
+                                
+                                // Event is ongoing if current time is between start and end time
+                                if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                                    $isOngoing = true;
+                                }
+                                
                                 $eventData = [
                                     'id' => $eventId,
                                     'title' => $event['event_name'] ?? $event['title'],
@@ -484,6 +539,8 @@ class Student extends BaseController
                                     'date' => $event['date'],
                                     'date_formatted' => $eventDate,
                                     'time' => $timeFormatted,
+                                    'end_date' => $event['end_date'] ?? null,
+                                    'end_time' => $event['end_time'] ?? null,
                                     'location' => $event['venue'] ?? $event['location'],
                                     'audience_type' => $audienceType,
                                     'department_access' => strtolower($event['department_access'] ?? ''),
@@ -492,6 +549,7 @@ class Student extends BaseController
                                     'has_joined' => $hasJoined,
                                     'is_interested' => $isInterested,
                                     'interest_count' => $interestCount,
+                                    'is_ongoing' => $isOngoing,
                                     'attendees' => $event['current_attendees'] ?? 0,
                                     'max_attendees' => $event['max_attendees'],
                                     'status' => $event['status'] ?? 'upcoming',
@@ -1542,6 +1600,32 @@ class Student extends BaseController
             $eventImage = base_url('uploads/events/' . $event['image']);
         }
 
+        // Check if event is ongoing (date and time have arrived)
+        $isOngoing = false;
+        $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+        $eventTimestamp = strtotime($eventDateTime);
+        $now = time();
+        
+        // Determine end time
+        $endDateTime = null;
+        if (!empty($event['end_date']) && !empty($event['end_time'])) {
+            $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+        } elseif (!empty($event['end_time'])) {
+            // If only end_time is set, use same date
+            $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+        } elseif (!empty($event['end_date'])) {
+            // If only end_date is set, use end of that day
+            $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+        } else {
+            // Default: end of start date
+            $endDateTime = strtotime($event['date'] . ' 23:59:59');
+        }
+        
+        // Event is ongoing if current time is between start and end time
+        if ($now >= $eventTimestamp && $now <= $endDateTime) {
+            $isOngoing = true;
+        }
+
         return $this->response->setJSON([
             'success' => true,
             'data' => [
@@ -1551,6 +1635,8 @@ class Student extends BaseController
                 'date' => $event['date'],
                 'date_formatted' => $eventDate,
                 'time' => $timeFormatted,
+                'end_date' => $event['end_date'] ?? null,
+                'end_time' => $event['end_time'] ?? null,
                 'location' => $event['venue'] ?? $event['location'],
                 'image' => $eventImage,
                 'max_attendees' => $event['max_attendees'] ?? null,
@@ -1564,6 +1650,7 @@ class Student extends BaseController
                 'org_photo' => $orgPhoto,
                 'can_join' => $canJoin,
                 'has_joined' => $hasJoined,
+                'is_ongoing' => $isOngoing,
                 'is_interested' => $isInterested,
                 'interest_count' => $interestCount,
                 'created_at' => $event['created_at'] ?? $event['date']
@@ -2445,71 +2532,210 @@ class Student extends BaseController
     }
 
     /**
-     * Get Notifications
+     * Get Notifications for Student
      */
     public function getNotifications()
     {
         $authCheck = $this->checkAuth();
         if ($authCheck !== true) {
-            return $authCheck;
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
         }
 
-        // Mock notifications data - replace with actual database queries
-        $notifications = [
-            [
-                'id' => 1,
-                'type' => 'event',
-                'title' => 'New Event: Tech Innovation Summit',
-                'message' => 'Computer Science Society posted a new event. Registration is now open!',
-                'time' => '2 hours ago',
-                'read' => false,
-                'link' => '#events'
-            ],
-            [
-                'id' => 2,
-                'type' => 'payment',
-                'title' => 'Payment Reminder',
-                'message' => 'Your payment for CSS T-Shirt is due on December 1, 2025.',
-                'time' => '5 hours ago',
-                'read' => false,
-                'link' => '#payments'
-            ],
-            [
-                'id' => 3,
-                'type' => 'announcement',
-                'title' => 'Important: Enrollment Extended',
-                'message' => 'The enrollment period has been extended until December 15, 2025.',
-                'time' => '1 day ago',
-                'read' => false,
-                'link' => '#announcements'
-            ],
-            [
-                'id' => 4,
-                'type' => 'organization',
-                'title' => 'Membership Approved',
-                'message' => 'Your membership request to Tech Innovation Hub has been approved!',
-                'time' => '2 days ago',
-                'read' => true,
-                'link' => '#organizations'
-            ],
-            [
-                'id' => 5,
-                'type' => 'comment',
-                'title' => 'New Reply to Your Comment',
-                'message' => 'John Doe replied to your comment on "Business Plan Competition".',
-                'time' => '3 days ago',
-                'read' => true,
-                'link' => '#events'
-            ]
-        ];
+        $userId = session()->get('user_id');
+        $studentId = session()->get('student_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
 
-        $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+        }
+
+        $notifications = [];
+
+        // 1. Upcoming Events (events happening within 2 days)
+        $eventModel = new EventModel();
+        $eventAttendeesModel = new \App\Models\EventAttendeesModel();
+        
+        // Get events the student has joined
+        $joinedEvents = $eventAttendeesModel->where('student_id', $student['id'])->findAll();
+        $joinedEventIds = array_column($joinedEvents, 'event_id');
+        
+        if (!empty($joinedEventIds)) {
+            $upcomingEvents = $eventModel
+                ->whereIn('event_id', $joinedEventIds)
+                ->where('date >=', date('Y-m-d'))
+                ->where('date <=', date('Y-m-d', strtotime('+2 days')))
+                ->findAll();
+            
+            foreach ($upcomingEvents as $event) {
+                $eventDate = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+                $eventDateTime = strtotime($eventDate);
+                $hoursUntil = round(($eventDateTime - time()) / 3600);
+                
+                if ($hoursUntil <= 24 && $hoursUntil > 0) {
+                    $notifications[] = [
+                        'id' => 'event_' . $event['event_id'],
+                        'type' => 'event',
+                        'icon' => 'event',
+                        'title' => 'Event Reminder: ' . $event['title'],
+                        'text' => $event['title'] . ' is happening in ' . ($hoursUntil < 1 ? 'less than an hour' : ($hoursUntil == 1 ? '1 hour' : $hoursUntil . ' hours')),
+                        'time' => $this->formatTimeAgo($eventDate),
+                        'created_at' => $eventDate,
+                        'unread' => true
+                    ];
+                } elseif ($hoursUntil <= 48 && $hoursUntil > 24) {
+                    $daysUntil = round($hoursUntil / 24);
+                    $notifications[] = [
+                        'id' => 'event_' . $event['event_id'],
+                        'type' => 'event',
+                        'icon' => 'event',
+                        'title' => 'Upcoming Event: ' . $event['title'],
+                        'text' => $event['title'] . ' is happening in ' . ($daysUntil == 1 ? '1 day' : $daysUntil . ' days'),
+                        'time' => $this->formatTimeAgo($eventDate),
+                        'created_at' => $eventDate,
+                        'unread' => true
+                    ];
+                }
+            }
+        }
+
+        // 2. New Announcements (posted in last 7 days)
+        $announcementModel = new AnnouncementModel();
+        $membershipModel = new StudentOrganizationMembershipModel();
+        $orgFollowModel = new \App\Models\OrganizationFollowModel();
+        
+        // Get organizations student follows or is a member of
+        $memberships = $membershipModel->getStudentOrganizations($student['id']);
+        $followedOrgs = $orgFollowModel->where('student_id', $student['id'])->findAll();
+        
+        $orgIds = array_column($memberships, 'organization_id');
+        $followedOrgIds = array_column($followedOrgs, 'organization_id');
+        $allOrgIds = array_unique(array_merge($orgIds, $followedOrgIds));
+        
+        if (!empty($allOrgIds)) {
+            $recentAnnouncements = $announcementModel
+                ->whereIn('org_id', $allOrgIds)
+                ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                ->orderBy('created_at', 'DESC')
+                ->limit(10)
+                ->findAll();
+            
+            foreach ($recentAnnouncements as $announcement) {
+                $orgModel = new OrganizationModel();
+                $org = $orgModel->find($announcement['org_id']);
+                $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                
+                $notifications[] = [
+                    'id' => 'announcement_' . $announcement['id'],
+                    'type' => 'announcement',
+                    'icon' => 'announcement',
+                    'title' => $announcement['priority'] === 'high' ? 'Important: ' . $announcement['title'] : 'New Announcement: ' . $announcement['title'],
+                    'text' => $orgName . ' posted: ' . (strlen($announcement['content']) > 50 ? substr($announcement['content'], 0, 50) . '...' : $announcement['content']),
+                    'time' => $this->formatTimeAgo($announcement['created_at']),
+                    'created_at' => $announcement['created_at'],
+                    'unread' => true
+                ];
+            }
+        }
+
+        // 3. Membership Approvals
+        $pendingMemberships = $membershipModel
+            ->where('student_id', $student['id'])
+            ->where('status', 'active')
+            ->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-30 days')))
+            ->findAll();
+        
+        foreach ($pendingMemberships as $membership) {
+            $orgModel = new OrganizationModel();
+            $org = $orgModel->find($membership['organization_id']);
+            if ($org) {
+                $orgName = $org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization';
+                $daysAgo = round((time() - strtotime($membership['updated_at'])) / 86400);
+                
+                if ($daysAgo <= 7) {
+                    $notifications[] = [
+                        'id' => 'membership_' . $membership['id'],
+                        'type' => 'org',
+                        'icon' => 'org',
+                        'title' => 'Membership Approved',
+                        'text' => $orgName . ' membership approved!',
+                        'time' => $this->formatTimeAgo($membership['updated_at']),
+                        'created_at' => $membership['updated_at'],
+                        'unread' => $daysAgo <= 3
+                    ];
+                }
+            }
+        }
+
+        // 4. New Comments/Replies on student's comments
+        $commentModel = new \App\Models\PostCommentModel();
+        $studentComments = $commentModel->where('user_id', $userId)->findAll();
+        $studentCommentIds = array_column($studentComments, 'id');
+        
+        if (!empty($studentCommentIds)) {
+            // Get replies to student's comments (last 7 days)
+            $replies = $commentModel
+                ->whereIn('parent_comment_id', $studentCommentIds)
+                ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                ->where('user_id !=', $userId)
+                ->orderBy('created_at', 'DESC')
+                ->limit(5)
+                ->findAll();
+            
+            foreach ($replies as $reply) {
+                $userModel = new UserModel();
+                $replyUser = $userModel->find($reply['user_id']);
+                $replyUserName = $replyUser ? ($replyUser['name'] ?? 'Someone') : 'Someone';
+                
+                $notifications[] = [
+                    'id' => 'comment_' . $reply['id'],
+                    'type' => 'comment',
+                    'icon' => 'comment',
+                    'title' => 'New Reply to Your Comment',
+                    'text' => $replyUserName . ' replied to your comment.',
+                    'time' => $this->formatTimeAgo($reply['created_at']),
+                    'created_at' => $reply['created_at'],
+                    'unread' => true
+                ];
+            }
+        }
+
+        // Sort notifications by date (newest first)
+        usort($notifications, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
+        // Limit to 20 most recent
+        $notifications = array_slice($notifications, 0, 20);
 
         return $this->response->setJSON([
             'success' => true,
             'notifications' => $notifications,
-            'unread_count' => $unreadCount
+            'unread_count' => count(array_filter($notifications, function($n) { return $n['unread']; }))
         ]);
+    }
+
+    /**
+     * Format time ago
+     */
+    private function formatTimeAgo($datetime)
+    {
+        $timestamp = strtotime($datetime);
+        $diff = time() - $timestamp;
+        
+        if ($diff < 60) {
+            return 'Just now';
+        } elseif ($diff < 3600) {
+            $mins = round($diff / 60);
+            return $mins . ' minute' . ($mins > 1 ? 's' : '') . ' ago';
+        } elseif ($diff < 86400) {
+            $hours = round($diff / 3600);
+            return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+        } elseif ($diff < 604800) {
+            $days = round($diff / 86400);
+            return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+        } else {
+            return date('M d, Y', $timestamp);
+        }
     }
 
     /**
@@ -2584,5 +2810,6 @@ class Student extends BaseController
         // Redirect to login page
         return redirect()->to(base_url('auth/login'));
     }
+
 }
 

@@ -1620,12 +1620,22 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Date *</label>
+                        <label>Start Date *</label>
                         <input type="date" name="date" id="event_date" class="form-input" required>
                     </div>
                     <div class="form-group">
-                        <label>Time *</label>
+                        <label>Start Time *</label>
                         <input type="time" name="time" id="event_time" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" name="end_date" id="event_end_date" class="form-input" placeholder="Leave empty if same day">
+                    </div>
+                    <div class="form-group">
+                        <label>End Time</label>
+                        <input type="time" name="end_time" id="event_end_time" class="form-input" placeholder="Leave empty if same day">
                     </div>
                 </div>
                 <div class="form-row">
@@ -2183,6 +2193,23 @@
                             }
                         }
                         document.getElementById('event_time').value = timeValue;
+                        
+                        // Set end date and end time
+                        document.getElementById('event_end_date').value = event.end_date || '';
+                        let endTimeValue = event.end_time || '';
+                        if (endTimeValue && (endTimeValue.includes('AM') || endTimeValue.includes('PM'))) {
+                            const timeParts = endTimeValue.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                            let hour = parseInt(timeParts[0]);
+                            const minute = parseInt(timeParts[1] || 0);
+                            const period = endTimeValue.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                            
+                            if (period === 'PM' && hour !== 12) hour += 12;
+                            if (period === 'AM' && hour === 12) hour = 0;
+                            
+                            endTimeValue = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                        }
+                        document.getElementById('event_end_time').value = endTimeValue;
+                        
                         document.getElementById('event_location').value = event.location || '';
                         document.getElementById('event_max_attendees').value = event.max_attendees || '';
                         document.getElementById('audience_type').value = event.audience_type || 'all';

@@ -520,6 +520,11 @@ body {
     pointer-events: auto;
 }
 
+.quick-actions-dropdown.show-notifications .quick-actions-header,
+.quick-actions-dropdown.show-notifications .quick-actions-grid {
+    display: none;
+}
+
 .panel-header {
     display: flex;
     align-items: center;

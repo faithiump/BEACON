@@ -19,6 +19,8 @@ class EventModel extends Model
         'description',
         'date',
         'time',
+        'end_date',
+        'end_time',
         'venue',
         'audience_type',
         'department_access',

@@ -119,55 +119,9 @@
                                     <button class="notif-tab" data-type="unread">Unread</button>
                                 </div>
                                 <div class="notification-list" id="notificationList">
-                                    <div class="notification-item unread" data-id="1">
-                                        <div class="notif-icon event">
-                                            <i class="fas fa-calendar-alt"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">New Event: Tech Innovation Summit</p>
-                                            <p class="notif-text">Computer Science Society posted a new event.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 2 hours ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item unread" data-id="2">
-                                        <div class="notif-icon payment">
-                                            <i class="fas fa-credit-card"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">Payment Reminder</p>
-                                            <p class="notif-text">Your payment for CSS T-Shirt is due Dec 1.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 5 hours ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item unread" data-id="3">
-                                        <div class="notif-icon announcement">
-                                            <i class="fas fa-bullhorn"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">Important: Enrollment Extended</p>
-                                            <p class="notif-text">Extended until December 15, 2025.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 1 day ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item" data-id="4">
-                                        <div class="notif-icon org">
-                                            <i class="fas fa-users"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">Membership Approved</p>
-                                            <p class="notif-text">Tech Innovation Hub membership approved!</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 2 days ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item" data-id="5">
-                                        <div class="notif-icon comment">
-                                            <i class="fas fa-comment"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">New Reply to Your Comment</p>
-                                            <p class="notif-text">John Doe replied to your comment.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 3 days ago</span>
-                                        </div>
+                                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                                        <p>Loading notifications...</p>
                                     </div>
                                 </div>
                             </div>
@@ -547,7 +501,11 @@
                                         <p><i class="fas fa-users"></i> <?= $event['attendees'] ?> going</p>
                                         <div class="event-preview-actions">
                                             <?php if(isset($event['can_join']) && $event['can_join']): ?>
-                                                <?php if(isset($event['has_joined']) && $event['has_joined']): ?>
+                                                <?php if(isset($event['is_ongoing']) && $event['is_ongoing']): ?>
+                                                    <button class="btn btn-warning btn-sm" style="background-color: #f59e0b; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2); cursor: default;" disabled>
+                                                        <i class="fas fa-circle"></i> <span>Ongoing</span>
+                                                    </button>
+                                                <?php elseif(isset($event['has_joined']) && $event['has_joined']): ?>
                                                     <button class="btn btn-success btn-sm" onclick="joinEvent(<?= $event['id'] ?>)" style="background-color: #10b981; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
                                                         <i class="fas fa-check"></i> <span>Joined</span>
                                                     </button>
@@ -1883,6 +1841,7 @@
             dropdownMenu.classList.remove('active');
             // Reset to main view when opening
             notificationPanel.classList.remove('active');
+            quickActionsDropdown.classList.remove('show-notifications');
         });
         
         // Cart action - opens cart sidebar
@@ -1893,8 +1852,10 @@
         });
         
         // Notification action - shows notification panel
-        notificationActionBtn.addEventListener('click', () => {
+        notificationActionBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             notificationPanel.classList.add('active');
+            quickActionsDropdown.classList.add('show-notifications');
         });
         
         // Payments action - navigates to payments section
@@ -1910,8 +1871,10 @@
         });
         
         // Back button in notification panel
-        backToActions.addEventListener('click', () => {
+        backToActions.addEventListener('click', (e) => {
+            e.stopPropagation();
             notificationPanel.classList.remove('active');
+            quickActionsDropdown.classList.remove('show-notifications');
         });
         
         // Notification tabs
@@ -1923,6 +1886,68 @@
             });
         });
         
+        // Load notifications from API
+        function loadNotifications() {
+            const notificationList = document.getElementById('notificationList');
+            if (!notificationList) return;
+            
+            fetch(baseUrl + 'student/notifications', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.notifications) {
+                    renderNotifications(data.notifications);
+                    updateNotificationCount(data.notifications);
+                } else {
+                    notificationList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><p>No notifications yet.</p></div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                notificationList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><p>Failed to load notifications.</p></div>';
+            });
+        }
+
+        function renderNotifications(notifications) {
+            const notificationList = document.getElementById('notificationList');
+            if (!notificationList) return;
+            
+            if (notifications.length === 0) {
+                notificationList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><p>No notifications yet.</p></div>';
+                return;
+            }
+            
+            const iconMap = {
+                'event': { class: 'event', icon: 'fa-calendar-alt' },
+                'announcement': { class: 'announcement', icon: 'fa-bullhorn' },
+                'org': { class: 'org', icon: 'fa-users' },
+                'comment': { class: 'comment', icon: 'fa-comment' },
+                'payment': { class: 'payment', icon: 'fa-credit-card' }
+            };
+            
+            notificationList.innerHTML = notifications.map(notif => {
+                const iconInfo = iconMap[notif.icon] || { class: 'event', icon: 'fa-bell' };
+                const unreadClass = notif.unread ? 'unread' : '';
+                
+                return `
+                    <div class="notification-item ${unreadClass}" data-id="${notif.id}">
+                        <div class="notif-icon ${iconInfo.class}">
+                            <i class="fas ${iconInfo.icon}"></i>
+                        </div>
+                        <div class="notif-content">
+                            <p class="notif-title">${notif.title}</p>
+                            <p class="notif-text">${notif.text}</p>
+                            <span class="notif-time"><i class="fas fa-clock"></i> ${notif.time}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function filterNotifications(type) {
             const items = document.querySelectorAll('.notification-item');
             items.forEach(item => {
@@ -1938,24 +1963,53 @@
             document.querySelectorAll('.notification-item.unread').forEach(item => {
                 item.classList.remove('unread');
             });
-            updateNotificationCount();
+            updateNotificationCountFromDOM();
             showToast('All notifications marked as read', 'success');
         });
         
-        function updateNotificationCount() {
+        function updateNotificationCount(notifications) {
+            const unreadCount = notifications.filter(n => n.unread).length;
+            const notifBadge = document.getElementById('notificationCount');
+            const combinedBadge = document.getElementById('combinedBadge');
+            const cartCount = parseInt(document.getElementById('cartCount').textContent) || 0;
+            
+            if (notifBadge) {
+                notifBadge.textContent = unreadCount;
+                notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            }
+            
+            if (combinedBadge) {
+                const totalCount = unreadCount + cartCount;
+                combinedBadge.textContent = totalCount;
+                combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function updateNotificationCountFromDOM() {
             const unreadCount = document.querySelectorAll('.notification-item.unread').length;
             const notifBadge = document.getElementById('notificationCount');
             const combinedBadge = document.getElementById('combinedBadge');
             const cartCount = parseInt(document.getElementById('cartCount').textContent) || 0;
             
-            notifBadge.textContent = unreadCount;
-            notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            if (notifBadge) {
+                notifBadge.textContent = unreadCount;
+                notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            }
             
-            // Update combined badge
-            const totalCount = unreadCount + cartCount;
-            combinedBadge.textContent = totalCount;
-            combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
+            if (combinedBadge) {
+                const totalCount = unreadCount + cartCount;
+                combinedBadge.textContent = totalCount;
+                combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
+            }
         }
+
+        // Load notifications when notification panel is opened
+        notificationActionBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notificationPanel.classList.add('active');
+            quickActionsDropdown.classList.add('show-notifications');
+            loadNotifications();
+        });
         
         function updateCombinedBadge() {
             const unreadCount = document.querySelectorAll('.notification-item.unread').length;
@@ -2527,7 +2581,11 @@
                         html += `
                             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                                 ${event.can_join ? (
-                                    event.has_joined ? `
+                                    event.is_ongoing ? `
+                                        <button class="btn-primary" disabled style="background-color: #f59e0b; border-color: #f59e0b; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
+                                            <i class="fas fa-circle" style="margin-right: 0.5rem;"></i> Ongoing
+                                        </button>
+                                    ` : event.has_joined ? `
                                         <button class="btn-primary" disabled style="background-color: #10b981; border-color: #10b981; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
                                             <i class="fas fa-check" style="margin-right: 0.5rem;"></i> Joined
                                         </button>
