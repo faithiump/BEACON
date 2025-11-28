@@ -98,6 +98,7 @@ $routes->get('locations/barangays', 'Locations::getBarangays');
 // Student routes
 $routes->get('student/dashboard', 'Student::dashboard');
 $routes->get('student/events', 'Student::viewEvents');
+$routes->get('student/events/get/(:num)', 'Student::getEventDetails/$1');
 $routes->post('student/events/join', 'Student::joinEvent');
 $routes->post('student/events/interested', 'Student::toggleEventInterest');
 $routes->get('student/announcements', 'Student::viewAnnouncements');

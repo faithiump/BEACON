@@ -1461,6 +1461,152 @@ class Student extends BaseController
     }
 
     /**
+     * Get event details
+     */
+    public function getEventDetails($id = null)
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $authCheck;
+        }
+
+        $eventId = $id ?? $this->request->getGet('event_id');
+        if (empty($eventId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event ID is required']);
+        }
+
+        // Get student data
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student record not found']);
+        }
+
+        // Get event data
+        $eventModel = new EventModel();
+        $event = $eventModel->find($eventId);
+        
+        if (!$event) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Event not found']);
+        }
+
+        // Get organization data
+        $db = \Config\Database::connect();
+        $org = $db->table('organizations')
+            ->where('id', $event['org_id'])
+            ->get()
+            ->getRowArray();
+        
+        if (!$org) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        // Get organization photo
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        $orgPhoto = null;
+        if (!empty($org['user_id'])) {
+            $orgUserPhoto = $userPhotoModel->where('user_id', $org['user_id'])->first();
+            if ($orgUserPhoto && !empty($orgUserPhoto['photo_path'])) {
+                $orgPhoto = base_url($orgUserPhoto['photo_path']);
+            }
+        }
+
+        // Format time
+        $timeFormatted = $event['time'];
+        if (strpos($timeFormatted, ':') !== false) {
+            $timeParts = explode(':', $timeFormatted);
+            $hour = (int)$timeParts[0];
+            $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+            $period = $hour >= 12 ? 'PM' : 'AM';
+            $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+            $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+        }
+
+        // Format date
+        $eventDate = date('F j, Y', strtotime($event['date']));
+
+        // Check if student has joined
+        $hasJoined = false;
+        $attendeeCheck = $db->table('event_attendees')
+            ->where('event_id', $eventId)
+            ->where('student_id', $student['id'])
+            ->get()
+            ->getRowArray();
+        if ($attendeeCheck) {
+            $hasJoined = true;
+        }
+
+        // Check if student is interested
+        $isInterested = false;
+        $likeModel = new \App\Models\PostLikeModel();
+        $userReaction = $likeModel->getUserReaction($student['id'], 'event', $eventId);
+        if ($userReaction) {
+            $isInterested = true;
+        }
+
+        // Get reaction counts
+        $reactionCounts = $likeModel->getReactionCounts('event', $eventId);
+        $interestCount = $reactionCounts['total'] ?? 0;
+
+        // Check audience type and access
+        $audienceType = $event['audience_type'] ?? 'all';
+        $canJoin = true;
+        if ($audienceType === 'specific_students') {
+            $studentAccessList = [];
+            if (!empty($event['student_access'])) {
+                $decodedStudents = is_array($event['student_access']) ? $event['student_access'] : json_decode($event['student_access'], true);
+                if (is_array($decodedStudents)) {
+                    $studentAccessList = array_map('intval', $decodedStudents);
+                }
+            }
+            if (empty($studentAccessList) || !in_array((int)$student['id'], $studentAccessList, true)) {
+                $canJoin = false;
+            }
+        } elseif ($audienceType === 'department') {
+            $studentDept = strtolower($student['department'] ?? '');
+            $departmentAccess = strtolower($event['department_access'] ?? '');
+            if ($departmentAccess && $studentDept !== $departmentAccess) {
+                $canJoin = false;
+            }
+        }
+
+        // Format event image URL
+        $eventImage = null;
+        if (!empty($event['image'])) {
+            $eventImage = base_url('uploads/events/' . $event['image']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'id' => $eventId,
+                'title' => $event['event_name'] ?? $event['title'],
+                'description' => $event['description'] ?? '',
+                'date' => $event['date'],
+                'date_formatted' => $eventDate,
+                'time' => $timeFormatted,
+                'location' => $event['venue'] ?? $event['location'],
+                'image' => $eventImage,
+                'max_attendees' => $event['max_attendees'] ?? null,
+                'current_attendees' => $event['current_attendees'] ?? 0,
+                'audience_type' => $audienceType,
+                'department_access' => $event['department_access'] ?? '',
+                'org_id' => $org['id'],
+                'org_name' => $org['organization_name'] ?? '',
+                'org_acronym' => $org['organization_acronym'] ?? '',
+                'org_type' => ucfirst(str_replace('_', ' ', $event['org_type'] ?? 'academic')),
+                'org_photo' => $orgPhoto,
+                'can_join' => $canJoin,
+                'has_joined' => $hasJoined,
+                'is_interested' => $isInterested,
+                'interest_count' => $interestCount,
+                'created_at' => $event['created_at'] ?? $event['date']
+            ]
+        ]);
+    }
+
+    /**
      * Toggle interest in an event
      */
     public function toggleEventInterest()
@@ -1756,8 +1902,22 @@ class Student extends BaseController
         $announcements = $announcementModel->getAnnouncementsByOrg($orgId);
         $formattedAnnouncements = [];
         foreach ($announcements as $announcement) {
+            $announcementId = $announcement['announcement_id'] ?? $announcement['id'];
+            
+            // Get reaction counts and user's reaction
+            $likeModel = new \App\Models\PostLikeModel();
+            $reactionCounts = $likeModel->getReactionCounts('announcement', $announcementId);
+            $userReaction = null;
+            if ($student) {
+                $userReaction = $likeModel->getUserReaction($student['id'], 'announcement', $announcementId);
+            }
+            
+            // Get comment count
+            $commentModel = new \App\Models\PostCommentModel();
+            $commentCount = $commentModel->getCommentCount('announcement', $announcementId);
+            
             $formattedAnnouncements[] = [
-                'id' => $announcement['announcement_id'] ?? $announcement['id'],
+                'id' => $announcementId,
                 'title' => $announcement['title'],
                 'content' => $announcement['content'],
                 'priority' => $announcement['priority'] ?? 'normal',
@@ -1766,7 +1926,12 @@ class Student extends BaseController
                 'org_id' => $orgId,
                 'org_name' => $organization['organization_name'],
                 'org_acronym' => $organization['organization_acronym'],
-                'org_photo' => $orgPhoto
+                'org_photo' => $orgPhoto,
+                'reaction_counts' => $reactionCounts,
+                'user_reaction' => $userReaction,
+                'like_count' => $reactionCounts['total'],
+                'is_liked' => $userReaction !== null,
+                'comment_count' => $commentCount
             ];
         }
 
@@ -1780,6 +1945,8 @@ class Student extends BaseController
         $events = $eventModel->getEventsByOrg($orgId);
         $formattedEvents = [];
         foreach ($events as $event) {
+            $eventId = $event['event_id'] ?? $event['id'];
+            
             // Format time
             $timeFormatted = $event['time'];
             if (strpos($timeFormatted, ':') !== false) {
@@ -1794,14 +1961,89 @@ class Student extends BaseController
             // Format date for display
             $eventDate = date('F j, Y', strtotime($event['date']));
             
+            // Check audience type and permissions
+            $audienceType = $event['audience_type'] ?? 'all';
+            $departmentAccess = strtolower($event['department_access'] ?? '');
+            $studentAccessList = [];
+            if (!empty($event['student_access'])) {
+                $decodedStudents = is_array($event['student_access']) ? $event['student_access'] : json_decode($event['student_access'], true);
+                if (is_array($decodedStudents)) {
+                    $studentAccessList = array_map('intval', $decodedStudents);
+                }
+            }
+            
+            $canView = true;
+            $canJoin = true;
+            if ($audienceType === 'department') {
+                $studentDept = strtolower($student['department'] ?? '');
+                if ($departmentAccess && $studentDept !== $departmentAccess) {
+                    $canView = false;
+                }
+            } elseif ($audienceType === 'specific_students') {
+                // All students can see the event, but only specific students can join
+                $canView = true;
+                if (!empty($studentAccessList)) {
+                    $canJoin = in_array((int)$student['id'], $studentAccessList, true);
+                } else {
+                    $canJoin = false;
+                }
+            }
+            
+            // Get reaction counts and user's reaction
+            $likeModel = new \App\Models\PostLikeModel();
+            $reactionCounts = $likeModel->getReactionCounts('event', $eventId);
+            $userReaction = null;
+            if ($student) {
+                $userReaction = $likeModel->getUserReaction($student['id'], 'event', $eventId);
+            }
+            
+            // Get comment count
+            $commentModel = new \App\Models\PostCommentModel();
+            $commentCount = $commentModel->getCommentCount('event', $eventId);
+            
+            // Check if student has joined this event
+            $hasJoined = false;
+            $db = \Config\Database::connect();
+            $attendeeCheck = $db->table('event_attendees')
+                ->where('event_id', $eventId)
+                ->where('student_id', $student['id'])
+                ->get()
+                ->getRowArray();
+            if ($attendeeCheck) {
+                $hasJoined = true;
+            }
+            
+            // Check if student is interested in this event
+            $isInterested = false;
+            $interestCheck = $db->table('event_interests')
+                ->where('event_id', $eventId)
+                ->where('student_id', $student['id'])
+                ->get()
+                ->getRowArray();
+            if ($interestCheck) {
+                $isInterested = true;
+            }
+            
+            // Get interest count
+            $interestCount = $db->table('event_interests')
+                ->where('event_id', $eventId)
+                ->countAllResults();
+            
             $formattedEvents[] = [
-                'id' => $event['event_id'] ?? $event['id'],
+                'id' => $eventId,
                 'title' => $event['event_name'] ?? $event['title'],
                 'description' => $event['description'],
                 'date' => $event['date'],
                 'date_formatted' => $eventDate,
                 'time' => $timeFormatted,
                 'location' => $event['venue'] ?? $event['location'],
+                'audience_type' => $audienceType,
+                'department_access' => $departmentAccess,
+                'student_access' => $studentAccessList,
+                'can_join' => $canJoin,
+                'has_joined' => $hasJoined,
+                'is_interested' => $isInterested,
+                'interest_count' => $interestCount,
                 'attendees' => $event['current_attendees'] ?? 0,
                 'max_attendees' => $event['max_attendees'],
                 'status' => $event['status'] ?? 'upcoming',
@@ -1810,7 +2052,13 @@ class Student extends BaseController
                 'org_id' => $orgId,
                 'org_name' => $organization['organization_name'],
                 'org_acronym' => $organization['organization_acronym'],
-                'org_photo' => $orgPhoto
+                'org_type' => ucfirst(str_replace('_', ' ', $organization['organization_type'] ?? 'academic')),
+                'org_photo' => $orgPhoto,
+                'reaction_counts' => $reactionCounts,
+                'user_reaction' => $userReaction,
+                'like_count' => $reactionCounts['total'],
+                'is_liked' => $userReaction !== null,
+                'comment_count' => $commentCount
             ];
         }
 

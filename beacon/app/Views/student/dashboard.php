@@ -30,11 +30,16 @@
                     <a href="#events" class="nav-link" data-section="events">
                         <i class="fas fa-calendar-alt"></i>
                         <span>Events</span>
-                        <span class="nav-badge">3</span>
+                        <?php if(!empty($allEvents) && count($allEvents) > 0): ?>
+                            <span class="nav-badge" id="eventsNavBadge"><?= count($allEvents) ?></span>
+                        <?php endif; ?>
                     </a>
                     <a href="#announcements" class="nav-link" data-section="announcements">
                         <i class="fas fa-bullhorn"></i>
                         <span>Announcements</span>
+                        <?php if(!empty($allAnnouncements) && count($allAnnouncements) > 0): ?>
+                            <span class="nav-badge" id="announcementsNavBadge"><?= count($allAnnouncements) ?></span>
+                        <?php endif; ?>
                     </a>
                     <a href="#organizations" class="nav-link" data-section="organizations">
                         <i class="fas fa-users"></i>
@@ -214,10 +219,15 @@
                 </a>
                 <a href="#events" class="mobile-nav-link" data-section="events">
                     <i class="fas fa-calendar-alt"></i> Events
-                    <span class="nav-badge">3</span>
+                    <?php if(!empty($allEvents) && count($allEvents) > 0): ?>
+                        <span class="nav-badge" id="eventsMobileNavBadge"><?= count($allEvents) ?></span>
+                    <?php endif; ?>
                 </a>
                 <a href="#announcements" class="mobile-nav-link" data-section="announcements">
                     <i class="fas fa-bullhorn"></i> Announcements
+                    <?php if(!empty($allAnnouncements) && count($allAnnouncements) > 0): ?>
+                        <span class="nav-badge" id="announcementsMobileNavBadge"><?= count($allAnnouncements) ?></span>
+                    <?php endif; ?>
                 </a>
                 <a href="#organizations" class="mobile-nav-link" data-section="organizations">
                     <i class="fas fa-users"></i> Organizations
@@ -748,14 +758,13 @@
                                 <option value="all">All Events</option>
                                 <option value="upcoming">Upcoming</option>
                                 <option value="joined">Joined</option>
-                                <option value="free">Free Events</option>
                             </select>
                         </div>
                     </div>
                     <div class="events-grid" id="eventsGrid">
                         <?php if(!empty($allEvents)): ?>
                             <?php foreach($allEvents as $event): ?>
-                            <div class="event-card">
+                            <div class="event-card" data-event-id="<?= $event['id'] ?>" data-has-joined="<?= isset($event['has_joined']) && $event['has_joined'] ? 'true' : 'false' ?>" data-event-date="<?= $event['date'] ?>">
                                 <div class="event-card-header">
                                     <span class="event-tag"><?= esc($event['org_type']) ?></span>
                                     <span class="event-fee free">Free</span>
@@ -831,11 +840,19 @@
                             <h1 class="section-title">Announcements</h1>
                             <p class="section-subtitle">Stay updated with the latest news and updates</p>
                         </div>
+                        <div class="filter-group">
+                            <select class="filter-select" id="announcementFilter">
+                                <option value="recent">Recent Announcements</option>
+                                <option value="all">All Announcements</option>
+                                <option value="important">Important</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="announcements-list-full">
+                    <div class="announcements-list-full" id="announcementsList">
                         <?php if(!empty($allAnnouncements)): ?>
                             <?php foreach($allAnnouncements as $announcement): ?>
-                            <div class="announcement-card <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>">
+                            <div class="announcement-card <?= $announcement['priority'] === 'high' ? 'priority-high' : '' ?>" data-announcement-id="<?= $announcement['id'] ?>" data-priority="<?= $announcement['priority'] ?? 'normal' ?>" data-created-at="<?= $announcement['created_at'] ?>">
                                 <div class="announcement-card-header">
                                     <?php if($announcement['priority'] === 'high'): ?>
                                     <span class="priority-badge high"><i class="fas fa-exclamation-circle"></i> Important</span>
@@ -976,9 +993,6 @@
                                             <i class="fas fa-eye"></i> View Details
                                         </button>
                                     <?php else: ?>
-                                        <button class="btn-primary" onclick="joinOrg(<?= $org['id'] ?>)">
-                                            <i class="fas fa-plus"></i> Join Organization
-                                        </button>
                                         <?php if($org['is_following'] ?? false): ?>
                                             <button class="btn-secondary" id="followBtn_<?= $org['id'] ?>" onclick="unfollowOrg(<?= $org['id'] ?>)">
                                                 <i class="fas fa-check"></i> Following
@@ -1591,8 +1605,58 @@
         </div>
     </div>
 
+    <!-- Event Details Modal -->
+    <div class="modal-overlay" id="eventDetailsModal" style="display: none;">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3 id="eventDetailsTitle"><i class="fas fa-calendar"></i> Event Details</h3>
+                <button class="modal-close" onclick="closeEventDetailsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="eventDetailsContent">
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                        <p style="margin-top: 1rem; color: #64748b;">Loading event details...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         const baseUrl = '<?= base_url() ?>';
+        
+        // Hide badges if user has already viewed the sections
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide events badge if already viewed
+            const eventsBadgeViewed = localStorage.getItem('eventsBadgeViewed');
+            if (eventsBadgeViewed === 'true') {
+                const eventsNavBadge = document.getElementById('eventsNavBadge');
+                const eventsMobileNavBadge = document.getElementById('eventsMobileNavBadge');
+                if (eventsNavBadge) {
+                    eventsNavBadge.style.display = 'none';
+                }
+                if (eventsMobileNavBadge) {
+                    eventsMobileNavBadge.style.display = 'none';
+                }
+            }
+            
+            // Hide announcements badge if already viewed
+            const announcementsBadgeViewed = localStorage.getItem('announcementsBadgeViewed');
+            if (announcementsBadgeViewed === 'true') {
+                const announcementsNavBadge = document.getElementById('announcementsNavBadge');
+                const announcementsMobileNavBadge = document.getElementById('announcementsMobileNavBadge');
+                if (announcementsNavBadge) {
+                    announcementsNavBadge.style.display = 'none';
+                }
+                if (announcementsMobileNavBadge) {
+                    announcementsMobileNavBadge.style.display = 'none';
+                }
+            }
+        });
         
         // Logout Confirmation
         function confirmLogout(event) {
@@ -1803,6 +1867,47 @@
             sections.forEach(section => section.classList.remove('active'));
             document.getElementById(sectionId)?.classList.add('active');
             
+            // Hide events badge when events section is viewed
+            if (sectionId === 'events') {
+                const eventsNavBadge = document.getElementById('eventsNavBadge');
+                const eventsMobileNavBadge = document.getElementById('eventsMobileNavBadge');
+                
+                if (eventsNavBadge) {
+                    eventsNavBadge.style.display = 'none';
+                    localStorage.setItem('eventsBadgeViewed', 'true');
+                }
+                if (eventsMobileNavBadge) {
+                    eventsMobileNavBadge.style.display = 'none';
+                    localStorage.setItem('eventsBadgeViewed', 'true');
+                }
+                
+                setTimeout(() => {
+                    initializeEventFilter();
+                }, 100);
+            }
+            
+            // Initialize announcement filter if switching to announcements section
+            if (sectionId === 'announcements') {
+                setTimeout(() => {
+                    initializeAnnouncementFilter();
+                }, 100);
+            }
+            
+            // Hide announcements badge when announcements section is viewed
+            if (sectionId === 'announcements') {
+                const announcementsNavBadge = document.getElementById('announcementsNavBadge');
+                const announcementsMobileNavBadge = document.getElementById('announcementsMobileNavBadge');
+                
+                if (announcementsNavBadge) {
+                    announcementsNavBadge.style.display = 'none';
+                    localStorage.setItem('announcementsBadgeViewed', 'true');
+                }
+                if (announcementsMobileNavBadge) {
+                    announcementsMobileNavBadge.style.display = 'none';
+                    localStorage.setItem('announcementsBadgeViewed', 'true');
+                }
+            }
+            
             // Load forum posts when forum section is activated
             if (sectionId === 'forum') {
                 setTimeout(() => {
@@ -1911,6 +2016,195 @@
             document.getElementById('cartTotal').textContent = `₱${total.toFixed(2)}`;
         }
 
+        // Event Filter Functions
+        const eventFilter = document.getElementById('eventFilter');
+        if (eventFilter) {
+            eventFilter.addEventListener('change', function() {
+                filterEvents(this.value);
+            });
+        }
+
+        function filterEvents(filterType) {
+            const eventCards = document.querySelectorAll('.event-card');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            let visibleCount = 0;
+            
+            eventCards.forEach(card => {
+                const hasJoined = card.getAttribute('data-has-joined') === 'true';
+                const eventDateStr = card.getAttribute('data-event-date');
+                const eventDate = new Date(eventDateStr);
+                eventDate.setHours(0, 0, 0, 0);
+                
+                let shouldShow = false;
+                
+                switch(filterType) {
+                    case 'all':
+                        shouldShow = true;
+                        break;
+                    case 'upcoming':
+                        // Show events where date is today or in the future
+                        shouldShow = eventDate >= today;
+                        break;
+                    case 'joined':
+                        // Show only events the student has joined
+                        shouldShow = hasJoined;
+                        break;
+                    default:
+                        shouldShow = true;
+                }
+                
+                if (shouldShow) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show empty state if no events match the filter
+            const eventsGrid = document.getElementById('eventsGrid');
+            const emptyState = eventsGrid.querySelector('.empty-events-state');
+            
+            if (visibleCount === 0) {
+                if (!emptyState) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-events-state';
+                    emptyDiv.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem;';
+                    emptyDiv.innerHTML = `
+                        <div style="color: var(--gray-500);">
+                            <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">No Events Found</h3>
+                            <p>No events match the selected filter.</p>
+                        </div>
+                    `;
+                    eventsGrid.appendChild(emptyDiv);
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } else {
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize event filter when events section is loaded
+        function initializeEventFilter() {
+            const eventFilter = document.getElementById('eventFilter');
+            if (eventFilter) {
+                // Apply initial filter (defaults to 'all')
+                filterEvents(eventFilter.value || 'all');
+            }
+        }
+
+        // Announcement Filter Functions
+        const announcementFilter = document.getElementById('announcementFilter');
+        if (announcementFilter) {
+            announcementFilter.addEventListener('change', function() {
+                filterAnnouncements(this.value);
+            });
+        }
+
+        function filterAnnouncements(filterType) {
+            const announcementCards = document.querySelectorAll('.announcement-card');
+            
+            let visibleCount = 0;
+            const cardsArray = Array.from(announcementCards);
+            
+            // Sort cards based on filter
+            if (filterType === 'oldest') {
+                // Sort by date ascending (oldest first)
+                cardsArray.sort((a, b) => {
+                    const dateA = new Date(a.getAttribute('data-created-at'));
+                    const dateB = new Date(b.getAttribute('data-created-at'));
+                    return dateA - dateB;
+                });
+            } else {
+                // Sort by date descending (newest first) for recent and all
+                cardsArray.sort((a, b) => {
+                    const dateA = new Date(a.getAttribute('data-created-at'));
+                    const dateB = new Date(b.getAttribute('data-created-at'));
+                    return dateB - dateA;
+                });
+            }
+            
+            // Reorder cards in DOM
+            const announcementsList = document.getElementById('announcementsList');
+            if (announcementsList) {
+                cardsArray.forEach(card => {
+                    announcementsList.appendChild(card);
+                });
+            }
+            
+            // Filter and show/hide cards
+            cardsArray.forEach(card => {
+                const priority = card.getAttribute('data-priority');
+                
+                let shouldShow = false;
+                
+                switch(filterType) {
+                    case 'all':
+                    case 'oldest':
+                        shouldShow = true;
+                        break;
+                    case 'recent':
+                        // Show all, but sorted by newest first (already sorted above)
+                        shouldShow = true;
+                        break;
+                    case 'important':
+                        // Show only high priority announcements
+                        shouldShow = priority === 'high';
+                        break;
+                    default:
+                        shouldShow = true;
+                }
+                
+                if (shouldShow) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show empty state if no announcements match the filter
+            const announcementsListContainer = document.getElementById('announcementsList');
+            let emptyState = announcementsListContainer.querySelector('.empty-announcements-state');
+            
+            if (visibleCount === 0) {
+                if (!emptyState) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-announcements-state';
+                    emptyDiv.style.cssText = 'text-align: center; padding: 3rem;';
+                    emptyDiv.innerHTML = `
+                        <div style="color: var(--gray-500);">
+                            <i class="fas fa-bullhorn" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">No Announcements Found</h3>
+                            <p>No announcements match the selected filter.</p>
+                        </div>
+                    `;
+                    announcementsListContainer.appendChild(emptyDiv);
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } else {
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize announcement filter when announcements section is loaded
+        function initializeAnnouncementFilter() {
+            const announcementFilter = document.getElementById('announcementFilter');
+            if (announcementFilter) {
+                // Apply initial filter (defaults to 'recent')
+                filterAnnouncements(announcementFilter.value || 'recent');
+            }
+        }
+
         // Event Functions
         function joinEvent(eventId) {
             const button = event.target.closest('button');
@@ -1953,6 +2247,18 @@
                             attendeesElement.textContent = `${data.attendees} going`;
                         }
                     }
+                    
+                    // Update the event card's data attribute
+                    const eventCard = document.querySelector(`[data-event-id="${eventId}"]`);
+                    if (eventCard) {
+                        eventCard.setAttribute('data-has-joined', 'true');
+                    }
+                    
+                    // Refresh filter if active
+                    const eventFilter = document.getElementById('eventFilter');
+                    if (eventFilter && eventFilter.value) {
+                        filterEvents(eventFilter.value);
+                    }
                 } else {
                     button.disabled = false;
                     button.innerHTML = originalHtml;
@@ -1968,8 +2274,180 @@
         }
 
         function viewEventDetails(eventId) {
-            showToast('Event details coming soon!', 'info');
+            const modal = document.getElementById('eventDetailsModal');
+            const content = document.getElementById('eventDetailsContent');
+            const title = document.getElementById('eventDetailsTitle');
+            
+            // Show modal with loading state
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+            content.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                    <p style="margin-top: 1rem; color: #64748b;">Loading event details...</p>
+                </div>
+            `;
+            
+            // Fetch event details
+            fetch(baseUrl + 'student/events/get/' + eventId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const event = data.data;
+                        
+                        // Update modal title
+                        title.innerHTML = `<i class="fas fa-calendar"></i> ${event.title || 'Event Details'}`;
+                        
+                        // Build event details HTML
+                        let html = '';
+                        
+                        // Event image if available
+                        if (event.image) {
+                            html += `
+                                <div style="margin-bottom: 1.5rem;">
+                                    <img src="${event.image}" alt="${event.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px;" onerror="this.style.display='none';">
+                                </div>
+                            `;
+                        }
+                        
+                        // Event description
+                        if (event.description) {
+                            html += `
+                                <div style="margin-bottom: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem; color: #1e293b; font-size: 1rem; font-weight: 600;">Description</h4>
+                                    <p style="color: #64748b; line-height: 1.6; white-space: pre-wrap;">${event.description}</p>
+                                </div>
+                            `;
+                        }
+                        
+                        // Event details grid
+                        html += `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-calendar" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Date</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.date_formatted || 'N/A'}</p>
+                                </div>
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-clock" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Time</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.time || 'N/A'}</p>
+                                </div>
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-map-marker-alt" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Location</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.location || 'N/A'}</p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Attendees info
+                        if (event.max_attendees) {
+                            html += `
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1.5rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-users" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Attendees</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.current_attendees || 0} / ${event.max_attendees} registered</p>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1.5rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-users" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Attendees</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.current_attendees || 0} registered</p>
+                                </div>
+                            `;
+                        }
+                        
+                        // Organization info
+                        html += `
+                            <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                    <i class="fas fa-building" style="color: #06b6d4;"></i>
+                                    <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Organized by</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    ${event.org_photo ? `
+                                        <img src="${event.org_photo}" alt="${event.org_name}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
+                                    ` : `
+                                        <div style="width: 40px; height: 40px; border-radius: 6px; background: #06b6d4; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                                            ${(event.org_acronym || 'ORG').substring(0, 2).toUpperCase()}
+                                        </div>
+                                    `}
+                                    <div>
+                                        <p style="margin: 0; font-weight: 600; color: #1e293b; font-size: 0.875rem;">${event.org_name || 'N/A'}</p>
+                                        <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.75rem;">${event.org_type || 'Organization'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Action buttons (view only - no functionality)
+                        html += `
+                            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                                ${event.can_join ? (
+                                    event.has_joined ? `
+                                        <button class="btn-primary" disabled style="background-color: #10b981; border-color: #10b981; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
+                                            <i class="fas fa-check" style="margin-right: 0.5rem;"></i> Joined
+                                        </button>
+                                    ` : `
+                                        <button class="btn-primary" disabled style="flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); opacity: 0.8;">
+                                            <i class="fas fa-plus" style="margin-right: 0.5rem;"></i> Join Event
+                                        </button>
+                                    `
+                                ) : `
+                                    <button class="btn-secondary" disabled style="flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; opacity: 0.6; cursor: not-allowed; background: #e2e8f0; color: #64748b; border: none;">
+                                        <i class="fas fa-lock" style="margin-right: 0.5rem;"></i> Invitation Only
+                                    </button>
+                                `}
+                            </div>
+                        `;
+                        
+                        content.innerHTML = html;
+                    } else {
+                        content.innerHTML = `
+                            <div style="text-align: center; padding: 2rem;">
+                                <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                                <p style="color: #64748b;">${data.message || 'Failed to load event details. Please try again.'}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    content.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                            <p style="color: #64748b;">An error occurred while loading event details. Please try again.</p>
+                        </div>
+                    `;
+                });
         }
+
+        function closeEventDetailsModal() {
+            const modal = document.getElementById('eventDetailsModal');
+            modal.style.display = 'none';
+            modal.classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('eventDetailsModal');
+            if (e.target === modal) {
+                closeEventDetailsModal();
+            }
+        });
 
         function toggleInterested(eventId) {
             const button = event.target.closest('.interested-btn');
@@ -2184,7 +2662,8 @@
         }
 
         function viewOrgDetails(orgId) {
-            showToast('Organization details coming soon!', 'info');
+            // Navigate to organization details page
+            window.location.href = baseUrl + 'student/organization/' + orgId;
         }
 
         // Payment Functions
