@@ -46,6 +46,7 @@ $routes->post('organization/trackView', 'Organization::trackView');
 $routes->post('organization/likePost', 'Organization::likePost');
 $routes->post('organization/comment', 'Organization::comment');
 $routes->get('organization/getComments', 'Organization::getComments');
+$routes->get('organization/getCategoryCounts', 'Organization::getCategoryCounts');
 $routes->get('organization/getPosts', 'Organization::getPosts');
 $routes->post('organization/createPost', 'Organization::createPost');
 
@@ -126,4 +127,5 @@ $routes->post('student/notifications/read', 'Student::markNotificationRead');
 $routes->post('student/notifications/dismiss', 'Student::dismissNotification');
 $routes->post('student/createPost', 'Student::createPost');
 $routes->get('student/getPosts', 'Student::getPosts');
+$routes->get('student/getCategoryCounts', 'Student::getCategoryCounts');
 $routes->get('student/logout', 'Student::logout');
