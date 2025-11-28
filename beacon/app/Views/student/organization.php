@@ -269,10 +269,6 @@
                             <span class="member-badge" style="background: rgba(255,255,255,0.2); color: white; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 500;"><i class="fas fa-check"></i> Member</span>
                         <?php elseif($organization['is_pending']): ?>
                             <span class="pending-badge" style="background: rgba(255,255,255,0.2); color: white; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 500;"><i class="fas fa-clock"></i> Pending</span>
-                        <?php else: ?>
-                            <button class="btn-primary" onclick="joinOrg(<?= $organization['id'] ?>)" style="background: white; color: #667eea; border: none; padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                                <i class="fas fa-plus"></i> Join Organization
-                            </button>
                         <?php endif; ?>
                         <?php if($organization['is_following']): ?>
                             <button class="btn-secondary" id="followBtn_<?= $organization['id'] ?>" onclick="unfollowOrg(<?= $organization['id'] ?>)" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid rgba(255,255,255,0.3); padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s;">

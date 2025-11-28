@@ -993,9 +993,6 @@
                                             <i class="fas fa-eye"></i> View Details
                                         </button>
                                     <?php else: ?>
-                                        <button class="btn-primary" onclick="joinOrg(<?= $org['id'] ?>)">
-                                            <i class="fas fa-plus"></i> Join Organization
-                                        </button>
                                         <?php if($org['is_following'] ?? false): ?>
                                             <button class="btn-secondary" id="followBtn_<?= $org['id'] ?>" onclick="unfollowOrg(<?= $org['id'] ?>)">
                                                 <i class="fas fa-check"></i> Following
