@@ -150,7 +150,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4rem 1rem;
+    padding: 1rem 1rem;
     position: relative;
     z-index: 1;
     margin-top: 0;
@@ -162,12 +162,11 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     min-height: calc(100vh - 8rem);
 }
 
 .auth-branding {
-    margin-bottom: 3rem;
+    margin-bottom: 1rem;
     text-align: center;
 }
 
@@ -175,7 +174,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1rem;
 }
 
 .admin-main-logo {
@@ -227,7 +226,7 @@ body {
     justify-content: center;
     align-items: center;
     gap: 2rem;
-    margin-top: 3rem;
+    margin-top: 1rem;
     padding-top: 2rem;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
@@ -320,10 +319,9 @@ body {
     width: 50%;
     max-width: none;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     padding: 2rem 2rem 2rem 2rem;
-    padding-top: 1rem;
     background: #ffffff;
     min-height: 100vh;
     position: relative;
@@ -339,15 +337,6 @@ body {
     padding: 4rem;
     box-shadow: none;
     backdrop-filter: none;
-}
-
-.admin-card .logo-text {
-    color: #ffffff;
-}
-
-.auth-header {
-    margin-bottom: 2rem;
-    text-align: center;
 }
 
 .logo-placeholder {
@@ -367,14 +356,6 @@ body {
     color: #ffffff;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-}
-
-.logo-subtitle {
-    font-size: 0.875rem;
-    color: #64748b;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    line-height: 1.5;
 }
 
 .auth-title {
@@ -400,7 +381,7 @@ body {
 }
 
 .auth-form {
-    margin-bottom: 1.75rem;
+    margin-bottom: 0;
 }
 
 .form-group {

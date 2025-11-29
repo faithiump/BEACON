@@ -50,7 +50,7 @@
                     <div class="admin-logo-container">
                         <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="admin-main-logo">
                     </div>
-                    <h1 class="auth-welcome-title">Welcome back<br>BEACON ADMIN</h1>
+                    <h1 class="auth-welcome-title">WELCOME BACK<br>BEACON ADMIN</h1>
                     <p class="auth-welcome-text">Manage campus organizations, events, and student engagement from one centralized platform.</p>
                 </div>
                 
@@ -64,13 +64,6 @@
         <!-- Right Side - Admin Login Form -->
         <div class="auth-form-container">
             <div class="auth-form-card admin-card">
-                <div class="auth-header">
-                    <div class="logo-placeholder">
-                        <span class="logo-text">BEACONS <strong>ADMIN</strong></span>
-                    </div>
-                    <p class="logo-subtitle">Administrator Portal</p>
-                </div>
-
                 <?php if (session()->getFlashdata('error')): ?>
                     <div class="alert alert-error"><?= session()->getFlashdata('error') ?></div>
                 <?php endif; ?>
