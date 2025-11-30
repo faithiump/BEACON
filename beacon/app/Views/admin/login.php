@@ -50,7 +50,7 @@
                     <div class="admin-logo-container">
                         <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="admin-main-logo">
                     </div>
-                    <h1 class="auth-welcome-title">WELCOME BACK<br>BEACON ADMIN</h1>
+                    <h1 class="auth-welcome-title">Welcome back,<br>BEACON Admin!</h1>
                     <p class="auth-welcome-text">Manage campus organizations, events, and student engagement from one centralized platform.</p>
                 </div>
                 
