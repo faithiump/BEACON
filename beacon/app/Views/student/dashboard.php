@@ -944,7 +944,7 @@
                     <div class="orgs-grid">
                         <?php if(!empty($availableOrganizations)): ?>
                             <?php foreach($availableOrganizations as $org): ?>
-                            <div class="org-card">
+                            <div class="org-card" data-org-type="<?= strtolower(esc($org['type'])) ?>">
                                 <div class="org-card-header">
                                     <?php if(!empty($org['photo'])): ?>
                                         <img src="<?= esc($org['photo']) ?>" alt="<?= esc($org['name']) ?>" class="org-avatar large" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover;">
@@ -2118,6 +2118,13 @@
                 }, 100);
             }
             
+            // Initialize organization filter if switching to organizations section
+            if (sectionId === 'organizations') {
+                setTimeout(() => {
+                    initializeOrgFilter();
+                }, 100);
+            }
+            
             // Hide announcements badge when announcements section is viewed
             if (sectionId === 'announcements') {
                 const announcementsNavBadge = document.getElementById('announcementsNavBadge');
@@ -2611,6 +2618,82 @@
                 // Apply initial filter (defaults to 'recent')
                 filterAnnouncements(announcementFilter.value || 'recent');
             }
+        }
+
+        // Organization Filter Functions
+        function filterOrganizations(filterType) {
+            const orgCards = document.querySelectorAll('.org-card');
+            let visibleCount = 0;
+            
+            orgCards.forEach(card => {
+                const orgType = card.getAttribute('data-org-type') || '';
+                let shouldShow = false;
+                
+                switch(filterType) {
+                    case 'all':
+                        shouldShow = true;
+                        break;
+                    case 'academic':
+                        shouldShow = orgType === 'academic';
+                        break;
+                    case 'sports':
+                        shouldShow = orgType === 'sports';
+                        break;
+                    case 'cultural':
+                        shouldShow = orgType === 'cultural';
+                        break;
+                    case 'service':
+                        shouldShow = orgType === 'service';
+                        break;
+                    default:
+                        shouldShow = true;
+                }
+                
+                if (shouldShow) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show/hide empty state
+            const orgsGrid = document.querySelector('.orgs-grid');
+            const emptyState = orgsGrid ? orgsGrid.querySelector('.empty-state') : null;
+            
+            if (visibleCount === 0) {
+                if (!emptyState) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-state';
+                    emptyDiv.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyDiv.innerHTML = '<i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No organizations found for this filter.</p>';
+                    if (orgsGrid) {
+                        orgsGrid.appendChild(emptyDiv);
+                    }
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } else {
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            }
+        }
+
+        function initializeOrgFilter() {
+            const orgFilter = document.getElementById('orgFilter');
+            if (orgFilter) {
+                // Apply initial filter (defaults to 'all')
+                filterOrganizations(orgFilter.value || 'all');
+                
+                // Add event listener if not already added
+                orgFilter.removeEventListener('change', orgFilterChangeHandler);
+                orgFilter.addEventListener('change', orgFilterChangeHandler);
+            }
+        }
+
+        function orgFilterChangeHandler() {
+            filterOrganizations(this.value);
         }
 
         // Event Functions
