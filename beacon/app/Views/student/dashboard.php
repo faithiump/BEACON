@@ -30,15 +30,19 @@
                     <a href="#events" class="nav-link" data-section="events">
                         <i class="fas fa-calendar-alt"></i>
                         <span>Events</span>
-                        <?php if(!empty($allEvents) && count($allEvents) > 0): ?>
-                            <span class="nav-badge" id="eventsNavBadge"><?= count($allEvents) ?></span>
+                        <?php if(isset($newEventsCount) && $newEventsCount > 0): ?>
+                            <span class="nav-badge" id="eventsNavBadge" style="display: flex;"><?= $newEventsCount ?></span>
+                        <?php else: ?>
+                            <span class="nav-badge" id="eventsNavBadge" style="display: none;">0</span>
                         <?php endif; ?>
                     </a>
                     <a href="#announcements" class="nav-link" data-section="announcements">
                         <i class="fas fa-bullhorn"></i>
                         <span>Announcements</span>
-                        <?php if(!empty($allAnnouncements) && count($allAnnouncements) > 0): ?>
-                            <span class="nav-badge" id="announcementsNavBadge"><?= count($allAnnouncements) ?></span>
+                        <?php if(isset($newAnnouncementsCount) && $newAnnouncementsCount > 0): ?>
+                            <span class="nav-badge" id="announcementsNavBadge" style="display: flex;"><?= $newAnnouncementsCount ?></span>
+                        <?php else: ?>
+                            <span class="nav-badge" id="announcementsNavBadge" style="display: none;">0</span>
                         <?php endif; ?>
                     </a>
                     <a href="#organizations" class="nav-link" data-section="organizations">
@@ -88,7 +92,7 @@
                                 <div class="quick-action-item" id="notificationActionBtn">
                                     <div class="quick-action-icon notification">
                                         <i class="fas fa-bell"></i>
-                                        <span class="item-badge" id="notificationCount">5</span>
+                                        <span class="item-badge" id="notificationCount" style="display: none;">0</span>
                                     </div>
                                     <span class="quick-action-label">Notifications</span>
                                     <span class="quick-action-desc">Updates & alerts</span>
@@ -173,14 +177,18 @@
                 </a>
                 <a href="#events" class="mobile-nav-link" data-section="events">
                     <i class="fas fa-calendar-alt"></i> Events
-                    <?php if(!empty($allEvents) && count($allEvents) > 0): ?>
-                        <span class="nav-badge" id="eventsMobileNavBadge"><?= count($allEvents) ?></span>
+                    <?php if(isset($newEventsCount) && $newEventsCount > 0): ?>
+                        <span class="nav-badge" id="eventsMobileNavBadge" style="display: flex;"><?= $newEventsCount ?></span>
+                    <?php else: ?>
+                        <span class="nav-badge" id="eventsMobileNavBadge" style="display: none;">0</span>
                     <?php endif; ?>
                 </a>
                 <a href="#announcements" class="mobile-nav-link" data-section="announcements">
                     <i class="fas fa-bullhorn"></i> Announcements
-                    <?php if(!empty($allAnnouncements) && count($allAnnouncements) > 0): ?>
-                        <span class="nav-badge" id="announcementsMobileNavBadge"><?= count($allAnnouncements) ?></span>
+                    <?php if(isset($newAnnouncementsCount) && $newAnnouncementsCount > 0): ?>
+                        <span class="nav-badge" id="announcementsMobileNavBadge" style="display: flex;"><?= $newAnnouncementsCount ?></span>
+                    <?php else: ?>
+                        <span class="nav-badge" id="announcementsMobileNavBadge" style="display: none;">0</span>
                     <?php endif; ?>
                 </a>
                 <a href="#organizations" class="mobile-nav-link" data-section="organizations">
@@ -437,7 +445,7 @@
                                             <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠</div>
                                         </div>
                                     </div>
-                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')">
+                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement', this)">
                                         <i class="far fa-comment"></i> Comment
                                         <?php if(($announcement['comment_count'] ?? 0) > 0): ?>
                                         <span class="comment-count"><?= $announcement['comment_count'] ?></span>
@@ -838,18 +846,22 @@
                                             <button class="btn-comment reaction-btn <?= ($announcement['user_reaction'] ?? null) ? 'reacted reaction-' . ($announcement['user_reaction'] ?? '') : '' ?>" 
                                                     onmouseenter="showReactionPicker(this)" 
                                                     onmouseleave="hideReactionPicker(this)"
-                                                    onclick="quickReact('announcement', <?= $announcement['id'] ?>, this, '<?= $announcement['user_reaction'] ?? '' ?>')"
+                                                    onclick="toggleReactionBreakdown(this); quickReact('announcement', <?= $announcement['id'] ?>, this, '<?= $announcement['user_reaction'] ?? '' ?>')"
                                                     style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
                                                 <span class="reaction-icon">
                                                     <?php 
-                                                    $userReaction = $announcement['user_reaction'] ?? null;
                                                     $reactionCounts = $announcement['reaction_counts'] ?? ['total' => 0];
-                                                    if ($userReaction):
-                                                        $icons = ['like' => '👍', 'love' => '❤️', 'care' => '🥰', 'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😠'];
-                                                        echo $icons[$userReaction] ?? '👍';
-                                                    else:
-                                                        echo '👍';
-                                                    endif;
+                                                    $reactionIcons = ['like' => '👍', 'love' => '❤️', 'care' => '🥰', 'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😠'];
+                                                    // Find the most common reaction
+                                                    $topReaction = 'like';
+                                                    $topCount = 0;
+                                                    foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType) {
+                                                        if (($reactionCounts[$reactionType] ?? 0) > $topCount) {
+                                                            $topCount = $reactionCounts[$reactionType];
+                                                            $topReaction = $reactionType;
+                                                        }
+                                                    }
+                                                    echo $reactionIcons[$topReaction] ?? '👍';
                                                     ?>
                                                 </span>
                                                 <?php if($reactionCounts['total'] > 0): ?>
@@ -865,8 +877,21 @@
                                                 <div class="reaction-option" data-reaction="sad" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'sad', this)">😢</div>
                                                 <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠</div>
                                             </div>
+                                            <?php if(($reactionCounts['total'] ?? 0) > 0): ?>
+                                            <div class="reaction-breakdown" style="display: none; position: absolute; bottom: 100%; left: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; margin-bottom: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; min-width: 200px;">
+                                                <?php foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType): ?>
+                                                    <?php if(($reactionCounts[$reactionType] ?? 0) > 0): ?>
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;">
+                                                        <span><?= $reactionIcons[$reactionType] ?></span>
+                                                        <span style="text-transform: capitalize;"><?= $reactionType ?></span>
+                                                        <span style="margin-left: auto; font-weight: 600;"><?= $reactionCounts[$reactionType] ?></span>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <?php endif; ?>
                                         </div>
-                                        <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                                        <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement', this)" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
                                             <i class="fas fa-comment"></i> Comment
                                             <?php if(($announcement['comment_count'] ?? 0) > 0): ?>
                                             <span class="comment-count"><?= $announcement['comment_count'] ?></span>
@@ -877,7 +902,7 @@
                                 <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
                                     <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
+                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') postComment(<?= $announcement['id'] ?>, 'announcement')">
                                         <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
@@ -1599,6 +1624,23 @@
         
         // Hide badges if user has already viewed the sections
         document.addEventListener('DOMContentLoaded', function() {
+            // Load initial notification count
+            fetch(baseUrl + 'student/notifications', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.notifications) {
+                    updateNotificationCount(data.notifications);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notification count:', error);
+            });
+            
             // Hide events badge if already viewed
             const eventsBadgeViewed = localStorage.getItem('eventsBadgeViewed');
             if (eventsBadgeViewed === 'true') {
@@ -1806,8 +1848,23 @@
                 const iconInfo = iconMap[notif.icon] || { class: 'event', icon: 'fa-bell' };
                 const unreadClass = notif.unread ? 'unread' : '';
                 
+                // Determine navigation based on notification type
+                let clickHandler = '';
+                if (notif.type === 'event' && notif.id && notif.id.startsWith('event_')) {
+                    const eventId = notif.id.replace('event_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'event', ${eventId})"`;
+                } else if (notif.type === 'announcement' && notif.id && notif.id.startsWith('announcement_')) {
+                    const announcementId = notif.id.replace('announcement_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'announcement', ${announcementId})"`;
+                } else if (notif.type === 'org' && notif.id && notif.id.startsWith('org_')) {
+                    const orgId = notif.id.replace('org_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'org', ${orgId})"`;
+                } else {
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', '${notif.type}', null)"`;
+                }
+                
                 return `
-                    <div class="notification-item ${unreadClass}" data-id="${notif.id}">
+                    <div class="notification-item ${unreadClass}" data-id="${notif.id}" data-type="${notif.type}" style="cursor: pointer;" ${clickHandler}>
                         <div class="notif-icon ${iconInfo.class}">
                             <i class="fas ${iconInfo.icon}"></i>
                         </div>
@@ -1820,9 +1877,82 @@
                 `;
             }).join('');
         }
+        
+        // Handle notification click
+        function handleNotificationClick(notificationId, type, itemId) {
+            // Mark as read
+            markNotificationAsRead(notificationId);
+            
+            // Navigate based on type
+            if (type === 'event' && itemId) {
+                // Navigate to events section
+                switchSection('events');
+                // Optionally scroll to specific event or show event details
+                setTimeout(() => {
+                    showToast('Event notification clicked', 'info');
+                }, 100);
+            } else if (type === 'announcement' && itemId) {
+                // Navigate to announcements section
+                switchSection('announcements');
+                setTimeout(() => {
+                    showToast('Announcement notification clicked', 'info');
+                }, 100);
+            } else if (type === 'org' && itemId) {
+                // Navigate to organizations section
+                switchSection('organizations');
+                setTimeout(() => {
+                    showToast('Organization notification clicked', 'info');
+                }, 100);
+            } else {
+                // Default navigation
+                switchSection('overview');
+            }
+            
+            // Close notification panel
+            notificationPanel.classList.remove('active');
+            quickActionsDropdown.classList.remove('show-notifications');
+        }
+        
+        // Mark notification as read
+        function markNotificationAsRead(notificationId) {
+            fetch(baseUrl + 'student/notifications/read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `notification_id=${notificationId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove unread class from notification item
+                    const notifItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                    if (notifItem) {
+                        notifItem.classList.remove('unread');
+                        updateNotificationCountFromDOM();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
 
         function filterNotifications(type) {
             const items = document.querySelectorAll('.notification-item');
+            const tabs = document.querySelectorAll('.notif-tab');
+            
+            // Update tab active state
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-type') === type) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Filter items
             items.forEach(item => {
                 if (type === 'all') {
                     item.style.display = 'flex';
@@ -1833,11 +1963,34 @@
         }
         
         document.getElementById('markAllRead').addEventListener('click', () => {
-            document.querySelectorAll('.notification-item.unread').forEach(item => {
-                item.classList.remove('unread');
+            // Call API to mark all as read
+            fetch(baseUrl + 'student/notifications/read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'mark_all=true'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+                    });
+                    updateNotificationCountFromDOM();
+                    showToast('All notifications marked as read', 'success');
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+                // Still update UI even if API call fails
+                document.querySelectorAll('.notification-item.unread').forEach(item => {
+                    item.classList.remove('unread');
+                });
+                updateNotificationCountFromDOM();
+                showToast('All notifications marked as read', 'success');
             });
-            updateNotificationCountFromDOM();
-            showToast('All notifications marked as read', 'success');
         });
         
         function updateNotificationCount(notifications) {
@@ -1882,6 +2035,14 @@
             notificationPanel.classList.add('active');
             quickActionsDropdown.classList.add('show-notifications');
             loadNotifications();
+        });
+        
+        // Add click handlers to notification tabs
+        document.querySelectorAll('.notif-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const type = this.getAttribute('data-type');
+                filterNotifications(type);
+            });
         });
         
         function updateCombinedBadge() {
@@ -2992,21 +3153,75 @@
         }
 
         // Comment Functions
-        function toggleComments(postId, postType) {
-            const commentsSection = document.getElementById(`comments-${postType}-${postId}`);
-            const commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+        function toggleComments(postId, postType, buttonElement) {
+            console.log('toggleComments called:', postId, postType);
             
-            if (commentsSection.style.display === 'none' || !commentsSection.style.display) {
-                commentsSection.style.display = 'block';
-                loadComments(postId, postType);
+            // Find the comments section relative to the clicked button to avoid duplicate ID issues
+            let commentsSection;
+            let commentsList;
+            
+            if (buttonElement) {
+                // Find the parent container (announcement-card or feed-post)
+                const parentCard = buttonElement.closest('.announcement-card, .feed-post');
+                if (parentCard) {
+                    // Find comments section within this specific card
+                    commentsSection = parentCard.querySelector(`#comments-${postType}-${postId}`);
+                    commentsList = parentCard.querySelector(`#comments-list-${postType}-${postId}`);
+                }
+            }
+            
+            // Fallback to getElementById if not found via parent
+            if (!commentsSection) {
+                commentsSection = document.getElementById(`comments-${postType}-${postId}`);
+                commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+            }
+            
+            console.log('Comments section element:', commentsSection);
+            console.log('Comments list element:', commentsList);
+            
+            if (!commentsSection) {
+                console.error('Comments section not found:', `comments-${postType}-${postId}`);
+                return;
+            }
+            
+            // Check current display state - check if it has 'open' class or if display is none
+            const isHidden = commentsSection.style.display === 'none' || 
+                            !commentsSection.classList.contains('open') ||
+                            (window.getComputedStyle(commentsSection).display === 'none');
+            
+            if (isHidden) {
+                // Show comments section - remove inline display style and add open class
+                commentsSection.style.removeProperty('display');
+                commentsSection.style.visibility = 'visible';
+                commentsSection.classList.add('open');
+                loadComments(postId, postType, commentsList);
             } else {
+                // Hide comments section - add inline display none and remove open class
                 commentsSection.style.display = 'none';
+                commentsSection.classList.remove('open');
             }
         }
 
-        function loadComments(postId, postType) {
-            const commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
-            if (!commentsList) return;
+        function loadComments(postId, postType, commentsListElement) {
+            console.log('loadComments called:', postId, postType);
+            let commentsList = commentsListElement;
+            
+            // If commentsListElement not provided, try to find it
+            if (!commentsList) {
+                commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+            }
+            
+            console.log('Comments list element:', commentsList);
+            
+            if (!commentsList) {
+                console.error('Comments list not found:', `comments-list-${postType}-${postId}`);
+                return;
+            }
+            
+            // Show loading state
+            commentsList.innerHTML = '<div style="text-align: center; padding: 1rem; color: #64748b;"><i class="fas fa-spinner fa-spin"></i> Loading comments...</div>';
+            
+            console.log('Fetching comments from:', baseUrl + `student/getComments?type=${postType}&post_id=${postId}`);
             
             fetch(baseUrl + `student/getComments?type=${postType}&post_id=${postId}`, {
                 method: 'GET',
@@ -3014,45 +3229,34 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Comments response:', data);
                 if (data.success) {
                     commentsList.innerHTML = '';
                     if (data.comments.length === 0) {
                         commentsList.innerHTML = '<p style="padding: 1rem; color: #64748b; text-align: center; font-size: 0.875rem;">No comments yet. Be the first to comment!</p>';
                     } else {
-                        // Show first 2 comments, hide the rest
-                        const totalComments = data.comments.length;
-                        const visibleComments = totalComments > 2 ? data.comments.slice(0, 2) : data.comments;
-                        const hiddenComments = totalComments > 2 ? data.comments.slice(2) : [];
-                        
-                        visibleComments.forEach(comment => {
+                        // Show ALL comments immediately (like organization dashboard)
+                        data.comments.forEach(comment => {
                             const commentDiv = createCommentElement(comment, postType, postId);
                             commentsList.appendChild(commentDiv);
                         });
-                        
-                        // Add "See more" button if there are more than 2 comments
-                        if (totalComments > 2) {
-                            const seeMoreBtn = document.createElement('button');
-                            seeMoreBtn.className = 'see-more-comments';
-                            seeMoreBtn.textContent = `See more comments (${hiddenComments.length} more)`;
-                            seeMoreBtn.style.cssText = 'width: 100%; padding: 0.75rem; margin-top: 0.5rem; background: transparent; border: 1px solid #e2e8f0; border-radius: 8px; color: #3b82f6; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s;';
-                            seeMoreBtn.onmouseenter = function() { this.style.backgroundColor = '#f1f5f9'; };
-                            seeMoreBtn.onmouseleave = function() { this.style.backgroundColor = 'transparent'; };
-                            seeMoreBtn.onclick = function() {
-                                hiddenComments.forEach(comment => {
-                                    const commentDiv = createCommentElement(comment, postType, postId);
-                                    commentsList.insertBefore(commentDiv, seeMoreBtn);
-                                });
-                                seeMoreBtn.remove();
-                            };
-                            commentsList.appendChild(seeMoreBtn);
-                        }
                     }
+                } else {
+                    console.error('Failed to load comments:', data.message);
+                    commentsList.innerHTML = '<p style="padding: 1rem; color: #ef4444; text-align: center; font-size: 0.875rem;">Error loading comments: ' + (data.message || 'Unknown error') + '</p>';
                 }
             })
             .catch(error => {
                 console.error('Error loading comments:', error);
+                console.error('Error details:', error.message, error.stack);
+                commentsList.innerHTML = '<p style="padding: 1rem; color: #ef4444; text-align: center; font-size: 0.875rem;">Error loading comments: ' + (error.message || 'Unknown error') + '</p>';
             });
         }
 
@@ -3091,7 +3295,7 @@
         function renderReplies(replies, postType, postId) {
             let html = '';
             replies.forEach(reply => {
-                const replyUserName = reply.user_name || 'User';
+                const replyUserName = reply.user_name || (reply.firstname && reply.lastname ? (reply.firstname + ' ' + reply.lastname) : 'User') || 'User';
                 const replyId = reply.id;
                 const hasNestedReplies = reply.replies && reply.replies.length > 0;
                 
@@ -3127,7 +3331,7 @@
             const commentDiv = document.createElement('div');
             commentDiv.className = 'comment-item';
             commentDiv.style.cssText = 'padding: 0.75rem; border-bottom: 1px solid #e2e8f0;';
-            const userName = comment.user_name || 'User';
+            const userName = comment.user_name || (comment.firstname && comment.lastname ? (comment.firstname + ' ' + comment.lastname) : 'User') || 'User';
             const commentId = comment.id;
             const hasReplies = comment.replies && comment.replies.length > 0;
             
@@ -3232,15 +3436,21 @@
                     input.value = '';
                     loadComments(postId, postType);
                     // Update comment count in the button
-                    const commentBtn = document.querySelector(`button[onclick*="toggleComments(${postId}, '${postType}')"]`);
-                    if (commentBtn) {
-                        const countSpan = commentBtn.querySelector('span');
+                    const commentBtns = document.querySelectorAll(`button[onclick*="toggleComments(${postId}, '${postType}')"]`);
+                    commentBtns.forEach(commentBtn => {
+                        const countSpan = commentBtn.querySelector('.comment-count');
                         if (countSpan) {
-                            const currentText = countSpan.textContent.trim();
-                            const currentCount = parseInt(currentText) || 0;
-                            countSpan.textContent = `${currentCount + 1} ${currentCount === 0 ? 'Comment' : 'Comments'}`;
+                            const currentCount = parseInt(countSpan.textContent) || 0;
+                            countSpan.textContent = currentCount + 1;
+                        } else {
+                            // Create count span if it doesn't exist
+                            const newCountSpan = document.createElement('span');
+                            newCountSpan.className = 'comment-count';
+                            newCountSpan.textContent = '1';
+                            newCountSpan.style.cssText = 'margin-left: 0.5rem; background: #3b82f6; color: white; border-radius: 10px; padding: 0.125rem 0.5rem; font-size: 0.75rem; font-weight: 600;';
+                            commentBtn.appendChild(newCountSpan);
                         }
-                    }
+                    });
                 } else {
                     showToast(data.message || 'Failed to post comment', 'error');
                 }
@@ -3270,6 +3480,11 @@
                 if (picker) {
                     picker.style.display = 'flex';
                 }
+                // Also show reaction breakdown if it exists
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = 'block';
+                }
             }
         }
 
@@ -3284,6 +3499,21 @@
                             picker.style.display = 'none';
                         }
                     }, 200);
+                }
+                // Also hide reaction breakdown
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = 'none';
+                }
+            }
+        }
+        
+        function toggleReactionBreakdown(button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            if (wrapper) {
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = breakdown.style.display === 'none' ? 'block' : 'none';
                 }
             }
         }
@@ -3327,6 +3557,7 @@
             const wrapper = button.closest('.reaction-wrapper');
             const reactionIcon = wrapper ? wrapper.querySelector('.reaction-icon') : null;
             const reactionCount = wrapper ? wrapper.querySelector('.reaction-count') : null;
+            const breakdown = wrapper ? wrapper.querySelector('.reaction-breakdown') : null;
             
             fetch(baseUrl + 'student/likePost', {
                 method: 'POST',
@@ -3345,16 +3576,43 @@
                         button.classList.add('reacted', 'reaction-' + data.reaction_type);
                         button.classList.remove('reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
                         button.classList.add('reaction-' + data.reaction_type);
-                        
-                        if (reactionIcon) {
-                            reactionIcon.textContent = reactionIcons[data.reaction_type] || '👍';
-                        }
                     } else {
                         // User removed reaction
                         button.classList.remove('reacted', 'reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
+                    }
+                    
+                    // Update reaction icon to show most common reaction
+                    if (data.counts) {
+                        const counts = data.counts;
+                        let topReaction = 'like';
+                        let topCount = 0;
+                        const reactionTypes = ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'];
+                        reactionTypes.forEach(type => {
+                            if ((counts[type] || 0) > topCount) {
+                                topCount = counts[type];
+                                topReaction = type;
+                            }
+                        });
                         
                         if (reactionIcon) {
-                            reactionIcon.textContent = '👍';
+                            reactionIcon.textContent = reactionIcons[topReaction] || '👍';
+                        }
+                        
+                        // Update reaction breakdown
+                        if (breakdown && counts.total > 0) {
+                            breakdown.innerHTML = '';
+                            reactionTypes.forEach(type => {
+                                if ((counts[type] || 0) > 0) {
+                                    const div = document.createElement('div');
+                                    div.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;';
+                                    div.innerHTML = `
+                                        <span>${reactionIcons[type]}</span>
+                                        <span style="text-transform: capitalize;">${type}</span>
+                                        <span style="margin-left: auto; font-weight: 600;">${counts[type]}</span>
+                                    `;
+                                    breakdown.appendChild(div);
+                                }
+                            });
                         }
                     }
                     
@@ -3377,6 +3635,9 @@
                     } else {
                         if (reactionCount) {
                             reactionCount.remove();
+                        }
+                        if (breakdown) {
+                            breakdown.style.display = 'none';
                         }
                     }
                     

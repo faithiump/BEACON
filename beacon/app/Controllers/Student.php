@@ -836,6 +836,30 @@ class Student extends BaseController
             }
         }
 
+        // Calculate new events count (events created in last 7 days)
+        $newEventsCount = 0;
+        if (!empty($allEventsList)) {
+            $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+            foreach ($allEventsList as $event) {
+                $eventCreatedAt = $event['created_at'] ?? $event['date'] ?? '';
+                if ($eventCreatedAt && strtotime($eventCreatedAt) >= strtotime($sevenDaysAgo)) {
+                    $newEventsCount++;
+                }
+            }
+        }
+        
+        // Calculate new announcements count (announcements created in last 7 days)
+        $newAnnouncementsCount = 0;
+        if (!empty($allAnnouncementsList)) {
+            $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+            foreach ($allAnnouncementsList as $announcement) {
+                $announcementCreatedAt = $announcement['created_at'] ?? '';
+                if ($announcementCreatedAt && strtotime($announcementCreatedAt) >= strtotime($sevenDaysAgo)) {
+                    $newAnnouncementsCount++;
+                }
+            }
+        }
+
         $data = [
             'student' => $student,
             'profile' => $profile,
@@ -854,6 +878,8 @@ class Student extends BaseController
             'allProducts' => $allProductsList ?? [],
             'eventCount' => $eventCount,
             'orgCount' => $orgCount,
+            'newEventsCount' => $newEventsCount, // New events count for navbar badge
+            'newAnnouncementsCount' => $newAnnouncementsCount, // New announcements count for navbar badge
             'pageTitle' => 'Student Dashboard'
         ];
 
