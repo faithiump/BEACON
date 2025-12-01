@@ -7,3 +7,4 @@ ALTER TABLE `events`
 ADD COLUMN `end_date` DATE NULL AFTER `date`,
 ADD COLUMN `end_time` TIME NULL AFTER `time`;
 
+

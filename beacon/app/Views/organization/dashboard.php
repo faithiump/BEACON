@@ -2105,16 +2105,28 @@
                         // Set end date and end time
                         document.getElementById('event_end_date').value = event.end_date || '';
                         let endTimeValue = event.end_time || '';
-                        if (endTimeValue && (endTimeValue.includes('AM') || endTimeValue.includes('PM'))) {
-                            const timeParts = endTimeValue.replace(/\s*(AM|PM)\s*/i, '').split(':');
-                            let hour = parseInt(timeParts[0]);
-                            const minute = parseInt(timeParts[1] || 0);
-                            const period = endTimeValue.toUpperCase().includes('PM') ? 'PM' : 'AM';
-                            
-                            if (period === 'PM' && hour !== 12) hour += 12;
-                            if (period === 'AM' && hour === 12) hour = 0;
-                            
-                            endTimeValue = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                        if (endTimeValue) {
+                            // Handle 12-hour format (with AM/PM)
+                            if (endTimeValue.includes('AM') || endTimeValue.includes('PM')) {
+                                const timeParts = endTimeValue.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                let hour = parseInt(timeParts[0]);
+                                const minute = parseInt(timeParts[1] || 0);
+                                const period = endTimeValue.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                
+                                if (period === 'PM' && hour !== 12) hour += 12;
+                                if (period === 'AM' && hour === 12) hour = 0;
+                                
+                                endTimeValue = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                            } else {
+                                // Handle 24-hour format (already in HH:MM or HH:MM:SS format)
+                                // Extract just HH:MM for the time input
+                                const timeParts = endTimeValue.split(':');
+                                if (timeParts.length >= 2) {
+                                    const hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    endTimeValue = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                            }
                         }
                         document.getElementById('event_end_time').value = endTimeValue;
                         

@@ -249,6 +249,15 @@ class Student extends BaseController
                         $eventId = $event['event_id'] ?? $event['id'];
                         $processedEventIds[] = $eventId;
                         
+                        // Update event status in database based on current date/time
+                        $eventModel->updateEventStatus($eventId);
+                        // Refresh event data to get updated status from database
+                        $db = \Config\Database::connect();
+                        $event = $db->table('events')
+                            ->where('event_id', $eventId)
+                            ->get()
+                            ->getRowArray();
+                        
                         $audienceType = $event['audience_type'] ?? 'all';
                         $departmentAccess = strtolower($event['department_access'] ?? '');
                         $studentAccessList = [];
@@ -335,7 +344,17 @@ class Student extends BaseController
                         
                         // Check if event is ongoing (date and time have arrived)
                         $isOngoing = false;
-                        $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+                        // Parse time - handle both 24-hour (08:00) and 12-hour (8:00 AM) formats
+                        $eventTime = $event['time'] ?? '00:00:00';
+                        // If time doesn't have AM/PM and is in 24-hour format, convert for strtotime
+                        if (strpos($eventTime, 'AM') === false && strpos($eventTime, 'PM') === false && strpos($eventTime, ':') !== false) {
+                            // Time is in 24-hour format like "08:00" or "08:00:00"
+                            $timeParts = explode(':', $eventTime);
+                            $hour = (int)$timeParts[0];
+                            $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                            $eventTime = sprintf('%02d:%02d:00', $hour, $minute);
+                        }
+                        $eventDateTime = $event['date'] . ' ' . $eventTime;
                         $eventTimestamp = strtotime($eventDateTime);
                         $now = time();
                         
@@ -359,6 +378,9 @@ class Student extends BaseController
                             $isOngoing = true;
                         }
                         
+                        // Determine if event has ended
+                        $isEnded = ($now > $endDateTime);
+                        
                         $eventData = [
                             'id' => $eventId,
                             'title' => $event['event_name'] ?? $event['title'],
@@ -377,6 +399,7 @@ class Student extends BaseController
                             'is_interested' => $isInterested,
                             'interest_count' => $interestCount,
                             'is_ongoing' => $isOngoing,
+                            'is_ended' => $isEnded,
                             'attendees' => $event['current_attendees'] ?? 0,
                             'max_attendees' => $event['max_attendees'],
                             'status' => $event['status'] ?? 'upcoming',
@@ -397,8 +420,11 @@ class Student extends BaseController
                         $organizationPosts['events'][] = $eventData;
                         $allEventsList[] = $eventData;
                         
-                        // Collect upcoming events for sidebar (only future events)
-                        if (strtotime($event['date']) >= strtotime(date('Y-m-d'))) {
+                        // Collect upcoming events for sidebar (only future events that haven't started yet)
+                        // Exclude ongoing events and events that have already started
+                        // Use the same eventTimestamp that was calculated for isOngoing check
+                        // Only add if event hasn't started yet (current time < event start time)
+                        if (!$isOngoing && $now < $eventTimestamp) {
                             $allUpcomingEvents[] = $eventData;
                         }
                     }
@@ -432,6 +458,11 @@ class Student extends BaseController
                         if (in_array($eventId, $processedEventIds)) {
                             continue;
                         }
+                        
+                        // Update event status in database based on current date/time
+                        $eventModel->updateEventStatus($eventId);
+                        // Refresh event data to get updated status
+                        $event = $eventModel->find($eventId);
                         
                         $audienceType = $event['audience_type'] ?? 'all';
                         
@@ -509,7 +540,17 @@ class Student extends BaseController
                                 
                                 // Check if event is ongoing (date and time have arrived)
                                 $isOngoing = false;
-                                $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+                                // Parse time - handle both 24-hour (08:00) and 12-hour (8:00 AM) formats
+                                $eventTime = $event['time'] ?? '00:00:00';
+                                // If time doesn't have AM/PM and is in 24-hour format, convert for strtotime
+                                if (strpos($eventTime, 'AM') === false && strpos($eventTime, 'PM') === false && strpos($eventTime, ':') !== false) {
+                                    // Time is in 24-hour format like "08:00" or "08:00:00"
+                                    $timeParts = explode(':', $eventTime);
+                                    $hour = (int)$timeParts[0];
+                                    $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                                    $eventTime = sprintf('%02d:%02d:00', $hour, $minute);
+                                }
+                                $eventDateTime = $event['date'] . ' ' . $eventTime;
                                 $eventTimestamp = strtotime($eventDateTime);
                                 $now = time();
                                 
@@ -533,6 +574,9 @@ class Student extends BaseController
                                     $isOngoing = true;
                                 }
                                 
+                                // Determine if event has ended
+                                $isEnded = ($now > $endDateTime);
+                                
                                 $eventData = [
                                     'id' => $eventId,
                                     'title' => $event['event_name'] ?? $event['title'],
@@ -551,6 +595,7 @@ class Student extends BaseController
                                     'is_interested' => $isInterested,
                                     'interest_count' => $interestCount,
                                     'is_ongoing' => $isOngoing,
+                                    'is_ended' => $isEnded,
                                     'attendees' => $event['current_attendees'] ?? 0,
                                     'max_attendees' => $event['max_attendees'],
                                     'status' => $event['status'] ?? 'upcoming',
@@ -571,8 +616,11 @@ class Student extends BaseController
                                 $organizationPosts['events'][] = $eventData;
                                 $allEventsList[] = $eventData;
                                 
-                                // Collect upcoming events for sidebar (only future events)
-                                if (strtotime($event['date']) >= strtotime(date('Y-m-d'))) {
+                                // Collect upcoming events for sidebar (only future events that haven't started yet)
+                                // Exclude ongoing events and events that have already started
+                                // Use the same eventTimestamp that was calculated for isOngoing check
+                                // Only add if event hasn't started yet (current time < event start time)
+                                if (!$isOngoing && $now < $eventTimestamp) {
                                     $allUpcomingEvents[] = $eventData;
                                 }
                         }
@@ -697,15 +745,16 @@ class Student extends BaseController
             ];
         }
 
-        // Get suggested organizations (organizations student hasn't joined)
+        // Get suggested organizations (organizations student hasn't joined AND hasn't followed)
         $suggestedOrganizations = [];
         if ($student && isset($allMemberships)) {
             // Get all organization IDs the student has joined (active or pending)
             $joinedOrgIds = array_column($allMemberships, 'org_id');
             
-            // Filter out organizations student has already joined (active or pending)
+            // Filter out organizations student has already joined (active or pending) OR is following
             foreach ($formattedOrgs as $org) {
-                if (!in_array($org['id'], $joinedOrgIds)) {
+                // Exclude if student has joined (active or pending) OR is following
+                if (!in_array($org['id'], $joinedOrgIds) && !in_array($org['id'], $studentFollows)) {
                     $suggestedOrganizations[] = $org;
                 }
             }
@@ -716,8 +765,18 @@ class Student extends BaseController
             });
             $suggestedOrganizations = array_slice($suggestedOrganizations, 0, 3);
         } else {
-            // If no student or no memberships, just show first 3 organizations
-            $suggestedOrganizations = array_slice($formattedOrgs, 0, 3);
+            // If no student or no memberships, filter out followed organizations if any
+            if ($student && !empty($studentFollows)) {
+                foreach ($formattedOrgs as $org) {
+                    if (!in_array($org['id'], $studentFollows)) {
+                        $suggestedOrganizations[] = $org;
+                    }
+                }
+                $suggestedOrganizations = array_slice($suggestedOrganizations, 0, 3);
+            } else {
+                // If no student or no follows, just show first 3 organizations
+                $suggestedOrganizations = array_slice($formattedOrgs, 0, 3);
+            }
         }
         
         // Format all memberships (including pending) for sidebar
@@ -1475,10 +1534,33 @@ class Student extends BaseController
             ->getRowArray();
         
         if ($existingAttendee) {
+            // Check if event is ongoing even if already joined
+            $isOngoing = false;
+            $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+            $eventTimestamp = strtotime($eventDateTime);
+            $now = time();
+            
+            // Determine end time
+            $endDateTime = null;
+            if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_time'])) {
+                $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_date'])) {
+                $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+            } else {
+                $endDateTime = strtotime($event['date'] . ' 23:59:59');
+            }
+            
+            if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                $isOngoing = true;
+            }
+            
             return $this->response->setJSON([
                 'success' => false, 
                 'message' => 'You have already joined this event.',
-                'has_joined' => true
+                'has_joined' => true,
+                'is_ongoing' => $isOngoing
             ]);
         }
         
@@ -1499,16 +1581,40 @@ class Student extends BaseController
         
         if ($db->table('event_attendees')->insert($attendeeData)) {
             // Update current_attendees count
+            $newAttendeeCount = ($event['current_attendees'] ?? 0) + 1;
             $eventModel->update($eventId, [
-                'current_attendees' => ($event['current_attendees'] ?? 0) + 1
+                'current_attendees' => $newAttendeeCount
             ]);
+            
+            // Check if event is ongoing
+            $isOngoing = false;
+            $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+            $eventTimestamp = strtotime($eventDateTime);
+            $now = time();
+            
+            // Determine end time
+            $endDateTime = null;
+            if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_time'])) {
+                $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_date'])) {
+                $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+            } else {
+                $endDateTime = strtotime($event['date'] . ' 23:59:59');
+            }
+            
+            if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                $isOngoing = true;
+            }
             
             return $this->response->setJSON([
                 'success' => true, 
                 'message' => 'Successfully registered for the event!',
                 'event_id' => $eventId,
                 'has_joined' => true,
-                'attendees' => ($event['current_attendees'] ?? 0) + 1
+                'is_ongoing' => $isOngoing,
+                'attendees' => $newAttendeeCount
             ]);
         } else {
             return $this->response->setJSON([
@@ -1581,8 +1687,28 @@ class Student extends BaseController
             $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
         }
 
+        // Format end time if available
+        $endTimeFormatted = null;
+        if (!empty($event['end_time'])) {
+            $endTimeFormatted = $event['end_time'];
+            if (strpos($endTimeFormatted, ':') !== false) {
+                $timeParts = explode(':', $endTimeFormatted);
+                $hour = (int)$timeParts[0];
+                $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                $period = $hour >= 12 ? 'PM' : 'AM';
+                $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                $endTimeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+            }
+        }
+
         // Format date
         $eventDate = date('F j, Y', strtotime($event['date']));
+        
+        // Format end date if available
+        $endDateFormatted = null;
+        if (!empty($event['end_date'])) {
+            $endDateFormatted = date('F j, Y', strtotime($event['end_date']));
+        }
 
         // Check if student has joined
         $hasJoined = false;
@@ -1635,6 +1761,15 @@ class Student extends BaseController
             $eventImage = base_url('uploads/events/' . $event['image']);
         }
 
+        // Update event status in database based on current date/time
+        $eventModel->updateEventStatus($eventId);
+        // Refresh event data to get updated status from database
+        $db = \Config\Database::connect();
+        $event = $db->table('events')
+            ->where('event_id', $eventId)
+            ->get()
+            ->getRowArray();
+        
         // Check if event is ongoing (date and time have arrived)
         $isOngoing = false;
         $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
@@ -1660,6 +1795,9 @@ class Student extends BaseController
         if ($now >= $eventTimestamp && $now <= $endDateTime) {
             $isOngoing = true;
         }
+        
+        // Determine if event has ended
+        $isEnded = ($now > $endDateTime);
 
         return $this->response->setJSON([
             'success' => true,
@@ -1671,7 +1809,8 @@ class Student extends BaseController
                 'date_formatted' => $eventDate,
                 'time' => $timeFormatted,
                 'end_date' => $event['end_date'] ?? null,
-                'end_time' => $event['end_time'] ?? null,
+                'end_date_formatted' => $endDateFormatted,
+                'end_time' => $endTimeFormatted,
                 'location' => $event['venue'] ?? $event['location'],
                 'image' => $eventImage,
                 'max_attendees' => $event['max_attendees'] ?? null,
@@ -1686,8 +1825,10 @@ class Student extends BaseController
                 'can_join' => $canJoin,
                 'has_joined' => $hasJoined,
                 'is_ongoing' => $isOngoing,
+                'is_ended' => $isEnded,
                 'is_interested' => $isInterested,
                 'interest_count' => $interestCount,
+                'status' => $event['status'] ?? 'upcoming',
                 'created_at' => $event['created_at'] ?? $event['date']
             ]
         ]);
@@ -2033,6 +2174,15 @@ class Student extends BaseController
         $formattedEvents = [];
         foreach ($events as $event) {
             $eventId = $event['event_id'] ?? $event['id'];
+            
+            // Update event status in database based on current date/time
+            $eventModel->updateEventStatus($eventId);
+            // Refresh event data to get updated status from database
+            $db = \Config\Database::connect();
+            $event = $db->table('events')
+                ->where('event_id', $eventId)
+                ->get()
+                ->getRowArray();
             
             // Format time
             $timeFormatted = $event['time'];

@@ -483,7 +483,7 @@
                                 <div class="post-content">
                                     <p class="post-text">🎉 New event from <?= esc($event['org_acronym'] ?? 'Organization') ?>!</p>
                                 </div>
-                                <div class="event-preview-card">
+                                <div class="event-preview-card" data-event-id="<?= $event['id'] ?>" data-has-joined="<?= isset($event['has_joined']) && $event['has_joined'] ? 'true' : 'false' ?>" data-is-ongoing="<?= isset($event['is_ongoing']) && $event['is_ongoing'] ? 'true' : 'false' ?>" data-event-date="<?= $event['date'] ?>" data-event-time="<?= $event['time'] ?>" data-event-end-date="<?= $event['end_date'] ?? '' ?>" data-event-end-time="<?= $event['end_time'] ?? '' ?>">
                                     <div class="event-preview-banner" style="position: relative; overflow: hidden;">
                                         <?php if(!empty($event['image'])): ?>
                                             <img src="<?= base_url('uploads/events/' . $event['image']) ?>" alt="<?= esc($event['title']) ?>" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;">
@@ -501,7 +501,11 @@
                                         <p><i class="fas fa-users"></i> <?= $event['attendees'] ?> going</p>
                                         <div class="event-preview-actions">
                                             <?php if(isset($event['can_join']) && $event['can_join']): ?>
-                                                <?php if(isset($event['is_ongoing']) && $event['is_ongoing']): ?>
+                                                <?php if(isset($event['status']) && $event['status'] === 'ended'): ?>
+                                                    <button class="btn btn-secondary btn-sm" style="background-color: #6b7280; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2); cursor: default;" disabled>
+                                                        <i class="fas fa-check-circle"></i> <span>Ended</span>
+                                                    </button>
+                                                <?php elseif(isset($event['is_ongoing']) && $event['is_ongoing']): ?>
                                                     <button class="btn btn-warning btn-sm" style="background-color: #f59e0b; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2); cursor: default;" disabled>
                                                         <i class="fas fa-circle"></i> <span>Ongoing</span>
                                                     </button>
@@ -715,6 +719,8 @@
                             <select class="filter-select" id="eventFilter">
                                 <option value="all">All Events</option>
                                 <option value="upcoming">Upcoming</option>
+                                <option value="ongoing">Ongoing</option>
+                                <option value="ended">Ended</option>
                                 <option value="joined">Joined</option>
                             </select>
                         </div>
@@ -722,7 +728,7 @@
                     <div class="events-grid" id="eventsGrid">
                         <?php if(!empty($allEvents)): ?>
                             <?php foreach($allEvents as $event): ?>
-                            <div class="event-card" data-event-id="<?= $event['id'] ?>" data-has-joined="<?= isset($event['has_joined']) && $event['has_joined'] ? 'true' : 'false' ?>" data-event-date="<?= $event['date'] ?>">
+                            <div class="event-card" data-event-id="<?= $event['id'] ?>" data-has-joined="<?= isset($event['has_joined']) && $event['has_joined'] ? 'true' : 'false' ?>" data-is-ongoing="<?= isset($event['is_ongoing']) && $event['is_ongoing'] ? 'true' : 'false' ?>" data-status="<?= isset($event['status']) ? esc($event['status']) : 'upcoming' ?>" data-event-date="<?= $event['date'] ?>" data-event-time="<?= $event['time'] ?>" data-event-end-date="<?= $event['end_date'] ?? '' ?>" data-event-end-time="<?= $event['end_time'] ?? '' ?>">
                                 <div class="event-card-header">
                                     <span class="event-tag"><?= esc($event['org_type']) ?></span>
                                     <span class="event-fee free">Free</span>
@@ -755,7 +761,15 @@
                                 </div>
                                 <div class="event-card-footer">
                                     <?php if(isset($event['can_join']) && $event['can_join']): ?>
-                                        <?php if(isset($event['has_joined']) && $event['has_joined']): ?>
+                                        <?php if(isset($event['status']) && $event['status'] === 'ended'): ?>
+                                            <button class="btn-primary" style="background-color: #6b7280; border-color: #6b7280; border-radius: 20px; padding: 0.625rem 1.25rem; font-weight: 500; color: white; cursor: default;" disabled>
+                                                <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> Ended
+                                            </button>
+                                        <?php elseif(isset($event['is_ongoing']) && $event['is_ongoing']): ?>
+                                            <button class="btn-primary" style="background-color: #f59e0b; border-color: #f59e0b; border-radius: 20px; padding: 0.625rem 1.25rem; font-weight: 500; color: white; cursor: default;" disabled>
+                                                <i class="fas fa-circle" style="margin-right: 0.5rem;"></i> Ongoing
+                                            </button>
+                                        <?php elseif(isset($event['has_joined']) && $event['has_joined']): ?>
                                             <button class="btn-primary" onclick="joinEvent(<?= $event['id'] ?>)" style="background-color: #10b981; border-color: #10b981; border-radius: 20px; padding: 0.625rem 1.25rem; font-weight: 500; color: white;">
                                                 <i class="fas fa-check" style="margin-right: 0.5rem;"></i> Joined
                                             </button>
@@ -2098,8 +2112,189 @@
                         shouldShow = true;
                         break;
                     case 'upcoming':
-                        // Show events where date is today or in the future
-                        shouldShow = eventDate >= today;
+                        // Show events that haven't started yet (not ongoing)
+                        const isOngoingForUpcoming = card.getAttribute('data-is-ongoing') === 'true';
+                        if (isOngoingForUpcoming) {
+                            shouldShow = false; // Don't show ongoing events in upcoming
+                        } else {
+                            // Check if event has started based on date/time
+                            const startDate = card.getAttribute('data-event-date');
+                            const startTime = card.getAttribute('data-event-time');
+                            const endDate = card.getAttribute('data-event-end-date');
+                            const endTime = card.getAttribute('data-event-end-time');
+                            
+                            if (startDate && startTime) {
+                                // Parse time format
+                                let timeStr = startTime;
+                                if (timeStr.includes('AM') || timeStr.includes('PM')) {
+                                    const timeParts = timeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    timeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                
+                                const eventDateTime = startDate + ' ' + timeStr;
+                                const eventTimestamp = new Date(eventDateTime).getTime();
+                                const now = Date.now();
+                                
+                                // Event is upcoming if it hasn't started yet
+                                shouldShow = now < eventTimestamp;
+                            } else {
+                                // Fallback to date comparison if time is not available
+                                shouldShow = eventDate >= today;
+                            }
+                        }
+                        break;
+                    case 'ongoing':
+                        // Show only events that are currently ongoing
+                        const isOngoing = card.getAttribute('data-is-ongoing') === 'true';
+                        if (isOngoing) {
+                            shouldShow = true;
+                        } else {
+                            // Check if event is ongoing based on date/time
+                            const startDate = card.getAttribute('data-event-date');
+                            const startTime = card.getAttribute('data-event-time');
+                            const endDate = card.getAttribute('data-event-end-date');
+                            const endTime = card.getAttribute('data-event-end-time');
+                            
+                            if (startDate && startTime) {
+                                // Parse time format
+                                let timeStr = startTime;
+                                if (timeStr.includes('AM') || timeStr.includes('PM')) {
+                                    const timeParts = timeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    timeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                
+                                const eventDateTime = startDate + ' ' + timeStr;
+                                const eventTimestamp = new Date(eventDateTime).getTime();
+                                const now = Date.now();
+                                
+                                let endDateTime = null;
+                                if (endDate && endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(endDate + ' ' + endTimeStr).getTime();
+                                } else if (endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(startDate + ' ' + endTimeStr).getTime();
+                                } else if (endDate) {
+                                    endDateTime = new Date(endDate + ' 23:59:59').getTime();
+                                } else {
+                                    endDateTime = new Date(startDate + ' 23:59:59').getTime();
+                                }
+                                
+                                shouldShow = (now >= eventTimestamp && now <= endDateTime);
+                            } else {
+                                shouldShow = false;
+                            }
+                        }
+                        break;
+                    case 'ended':
+                        // Show only events that have ended
+                        const eventStatus = card.getAttribute('data-status');
+                        if (eventStatus === 'ended') {
+                            shouldShow = true;
+                        } else {
+                            // Fallback: check if event has ended based on date/time
+                            const startDate = card.getAttribute('data-event-date');
+                            const startTime = card.getAttribute('data-event-time');
+                            const endDate = card.getAttribute('data-event-end-date');
+                            const endTime = card.getAttribute('data-event-end-time');
+                            const now = Date.now();
+                            
+                            if (startDate) {
+                                let eventTimestamp;
+                                if (startTime) {
+                                    let startTimeStr = startTime;
+                                    if (startTimeStr.includes('AM') || startTimeStr.includes('PM')) {
+                                        const timeParts = startTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = startTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        startTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    eventTimestamp = new Date(startDate + ' ' + startTimeStr).getTime();
+                                } else {
+                                    eventTimestamp = new Date(startDate).getTime();
+                                }
+                                
+                                let endDateTime;
+                                if (endDate && endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(endDate + ' ' + endTimeStr).getTime();
+                                } else if (endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(startDate + ' ' + endTimeStr).getTime();
+                                } else if (endDate) {
+                                    endDateTime = new Date(endDate + ' 23:59:59').getTime();
+                                } else {
+                                    endDateTime = new Date(startDate + ' 23:59:59').getTime();
+                                }
+                                
+                                shouldShow = (now > endDateTime);
+                            } else {
+                                shouldShow = false;
+                            }
+                        }
                         break;
                     case 'joined':
                         // Show only events the student has joined
@@ -2279,20 +2474,38 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.has_joined) {
-                    // Update button to show joined state
-                    button.classList.remove('btn-primary');
-                    button.classList.add('btn-success');
-                    button.style.backgroundColor = '#10b981';
-                    button.style.border = 'none';
-                    button.style.borderRadius = '25px';
-                    button.style.padding = '0.5rem 1.25rem';
-                    button.style.fontWeight = '500';
-                    button.style.color = 'white';
-                    button.style.display = 'inline-flex';
-                    button.style.alignItems = 'center';
-                    button.style.gap = '0.5rem';
-                    button.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
-                    button.innerHTML = '<i class="fas fa-check"></i> <span>Joined</span>';
+                    // Check if event is ongoing - if so, show "Ongoing" instead of "Joined"
+                    if (data.is_ongoing) {
+                        button.classList.remove('btn-primary', 'btn-success');
+                        button.style.backgroundColor = '#f59e0b';
+                        button.style.border = 'none';
+                        button.style.borderRadius = '25px';
+                        button.style.padding = '0.5rem 1.25rem';
+                        button.style.fontWeight = '500';
+                        button.style.color = 'white';
+                        button.style.display = 'inline-flex';
+                        button.style.alignItems = 'center';
+                        button.style.gap = '0.5rem';
+                        button.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                        button.style.cursor = 'default';
+                        button.disabled = true;
+                        button.innerHTML = '<i class="fas fa-circle"></i> <span>Ongoing</span>';
+                    } else {
+                        // Update button to show joined state
+                        button.classList.remove('btn-primary');
+                        button.classList.add('btn-success');
+                        button.style.backgroundColor = '#10b981';
+                        button.style.border = 'none';
+                        button.style.borderRadius = '25px';
+                        button.style.padding = '0.5rem 1.25rem';
+                        button.style.fontWeight = '500';
+                        button.style.color = 'white';
+                        button.style.display = 'inline-flex';
+                        button.style.alignItems = 'center';
+                        button.style.gap = '0.5rem';
+                        button.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
+                        button.innerHTML = '<i class="fas fa-check"></i> <span>Joined</span>';
+                    }
                     
                     // Update attendees count if provided
                     if (data.attendees !== undefined) {
@@ -2306,6 +2519,31 @@
                     const eventCard = document.querySelector(`[data-event-id="${eventId}"]`);
                     if (eventCard) {
                         eventCard.setAttribute('data-has-joined', 'true');
+                        if (data.is_ongoing) {
+                            eventCard.setAttribute('data-is-ongoing', 'true');
+                        }
+                    }
+                    
+                    // Also update all buttons for this event across the page
+                    if (data.is_ongoing) {
+                        document.querySelectorAll(`button[onclick*="joinEvent(${eventId})"]`).forEach(btn => {
+                            if (btn.textContent.includes('Joined') || btn.textContent.includes('Join Event')) {
+                                btn.classList.remove('btn-primary', 'btn-success');
+                                btn.style.backgroundColor = '#f59e0b';
+                                btn.style.border = 'none';
+                                btn.style.borderRadius = '25px';
+                                btn.style.padding = '0.5rem 1.25rem';
+                                btn.style.fontWeight = '500';
+                                btn.style.color = 'white';
+                                btn.style.display = 'inline-flex';
+                                btn.style.alignItems = 'center';
+                                btn.style.gap = '0.5rem';
+                                btn.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                                btn.style.cursor = 'default';
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fas fa-circle"></i> <span>Ongoing</span>';
+                            }
+                        });
                     }
                     
                     // Refresh filter if active
@@ -2380,17 +2618,35 @@
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                                         <i class="fas fa-calendar" style="color: #06b6d4;"></i>
-                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Date</span>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Start Date</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.date_formatted || 'N/A'}</p>
                                 </div>
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                                         <i class="fas fa-clock" style="color: #06b6d4;"></i>
-                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Time</span>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Start Time</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.time || 'N/A'}</p>
                                 </div>
+                                ${event.end_date ? `
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-calendar-check" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">End Date</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.end_date_formatted || 'N/A'}</p>
+                                </div>
+                                ` : ''}
+                                ${event.end_time ? `
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-clock" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">End Time</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.end_time || 'N/A'}</p>
+                                </div>
+                                ` : ''}
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                                         <i class="fas fa-map-marker-alt" style="color: #06b6d4;"></i>
@@ -2451,7 +2707,11 @@
                         html += `
                             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                                 ${event.can_join ? (
-                                    event.is_ongoing ? `
+                                    event.status === 'ended' ? `
+                                        <button class="btn-primary" disabled style="background-color: #6b7280; border-color: #6b7280; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
+                                            <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> Ended
+                                        </button>
+                                    ` : event.is_ongoing ? `
                                         <button class="btn-primary" disabled style="background-color: #f59e0b; border-color: #f59e0b; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
                                             <i class="fas fa-circle" style="margin-right: 0.5rem;"></i> Ongoing
                                         </button>
@@ -3575,6 +3835,108 @@
             if (forumSection && forumSection.classList.contains('active')) {
                 setTimeout(() => loadForumPosts('all'), 300);
             }
+            
+            // Periodically check and update ongoing status for events
+            function updateOngoingEvents() {
+                // Get all event cards with has_joined but not yet marked as ongoing
+                document.querySelectorAll('[data-event-id]').forEach(eventCard => {
+                    const eventId = eventCard.getAttribute('data-event-id');
+                    const hasJoined = eventCard.getAttribute('data-has-joined') === 'true';
+                    const isOngoing = eventCard.getAttribute('data-is-ongoing') === 'true';
+                    
+                    if (hasJoined && !isOngoing) {
+                        // Get event date and time from data attributes
+                        const startDate = eventCard.getAttribute('data-event-date');
+                        const startTime = eventCard.getAttribute('data-event-time');
+                        const endDate = eventCard.getAttribute('data-event-end-date');
+                        const endTime = eventCard.getAttribute('data-event-end-time');
+                        
+                        if (startDate && startTime) {
+                            // Parse time format (could be "8:00 AM" or "08:00")
+                            let timeStr = startTime;
+                            if (timeStr.includes('AM') || timeStr.includes('PM')) {
+                                const timeParts = timeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                let hour = parseInt(timeParts[0]);
+                                const minute = parseInt(timeParts[1] || 0);
+                                const period = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                
+                                if (period === 'PM' && hour !== 12) hour += 12;
+                                if (period === 'AM' && hour === 12) hour = 0;
+                                
+                                timeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                            }
+                            
+                            const eventDateTime = startDate + ' ' + timeStr;
+                            const eventTimestamp = new Date(eventDateTime).getTime();
+                            const now = Date.now();
+                            
+                            let endDateTime = null;
+                            if (endDate && endTime) {
+                                let endTimeStr = endTime;
+                                if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                    const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                endDateTime = new Date(endDate + ' ' + endTimeStr).getTime();
+                            } else if (endTime) {
+                                let endTimeStr = endTime;
+                                if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                    const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                endDateTime = new Date(startDate + ' ' + endTimeStr).getTime();
+                            } else if (endDate) {
+                                endDateTime = new Date(endDate + ' 23:59:59').getTime();
+                            } else {
+                                endDateTime = new Date(startDate + ' 23:59:59').getTime();
+                            }
+                            
+                            if (now >= eventTimestamp && now <= endDateTime) {
+                                // Event is now ongoing - update all buttons
+                                eventCard.setAttribute('data-is-ongoing', 'true');
+                                const eventIdNum = eventCard.getAttribute('data-event-id');
+                                document.querySelectorAll(`button[onclick*="joinEvent(${eventIdNum})"]`).forEach(btn => {
+                                    if (btn.textContent.includes('Joined') && !btn.textContent.includes('Ongoing')) {
+                                        btn.classList.remove('btn-primary', 'btn-success');
+                                        btn.style.backgroundColor = '#f59e0b';
+                                        btn.style.border = 'none';
+                                        btn.style.borderRadius = '25px';
+                                        btn.style.padding = '0.5rem 1.25rem';
+                                        btn.style.fontWeight = '500';
+                                        btn.style.color = 'white';
+                                        btn.style.display = 'inline-flex';
+                                        btn.style.alignItems = 'center';
+                                        btn.style.gap = '0.5rem';
+                                        btn.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                                        btn.style.cursor = 'default';
+                                        btn.disabled = true;
+                                        btn.innerHTML = '<i class="fas fa-circle"></i> <span>Ongoing</span>';
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Check every minute for ongoing events
+            setInterval(updateOngoingEvents, 60000);
+            // Also check immediately
+            updateOngoingEvents();
         });
     </script>
 
