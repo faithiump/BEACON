@@ -673,7 +673,7 @@
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="sidebar-empty-state" style="padding: 1rem; text-align: center; color: var(--gray-500); font-size: 0.875rem;">
-                                            No organizations available to join
+                                            No organizations available to follow
                                         </div>
                                     <?php endif; ?>
                                 </div>
