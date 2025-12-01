@@ -45,7 +45,7 @@ class ForumPostModel extends Model
     /**
      * Get all posts with author information (student or organization)
      */
-    public function getAllPosts($category = null, $limit = null, $offset = 0)
+    public function getAllPosts($category = null, $limit = null, $offset = 0, $filter = 'latest')
     {
         $builder = $this->db->table($this->table);
         $builder->select('forum_posts.*,
@@ -71,6 +71,7 @@ class ForumPostModel extends Model
             $builder->where('forum_posts.category', $category);
         }
         
+        // Default ordering (filter will be handled after fetching)
         $builder->orderBy('forum_posts.is_pinned', 'DESC');
         $builder->orderBy('forum_posts.created_at', 'DESC');
         
@@ -94,6 +95,9 @@ class ForumPostModel extends Model
                 $post['lastname'] = '';
             }
         }
+        
+        // Handle sorting based on filter (after getting reaction counts in controller)
+        // Note: Sorting by reaction count will be done in the controller after reaction counts are calculated
         
         return $posts;
     }
@@ -188,6 +192,37 @@ class ForumPostModel extends Model
         }
         
         return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Get post counts by category
+     */
+    public function getCategoryCounts()
+    {
+        $builder = $this->db->table($this->table);
+        $builder->select('category, COUNT(*) as count');
+        $builder->groupBy('category');
+        $results = $builder->get()->getResultArray();
+        
+        $counts = [
+            'all' => 0,
+            'general' => 0,
+            'events' => 0,
+            'academics' => 0,
+            'marketplace' => 0,
+            'help' => 0
+        ];
+        
+        foreach ($results as $result) {
+            $category = $result['category'];
+            $count = (int)$result['count'];
+            if (isset($counts[$category])) {
+                $counts[$category] = $count;
+                $counts['all'] += $count;
+            }
+        }
+        
+        return $counts;
     }
 }
 

@@ -1196,32 +1196,32 @@
                                     <li class="forum-category-item active" data-category="all">
                                         <i class="fas fa-globe"></i>
                                         <span>All Posts</span>
-                                        <span class="category-count">24</span>
+                                        <span class="category-count" id="category-count-all"><?= $forumCategoryCounts['all'] ?? 0 ?></span>
                                     </li>
                                     <li class="forum-category-item" data-category="general">
                                         <i class="fas fa-comment-dots"></i>
                                         <span>General Discussion</span>
-                                        <span class="category-count">8</span>
+                                        <span class="category-count" id="category-count-general"><?= $forumCategoryCounts['general'] ?? 0 ?></span>
                                     </li>
                                     <li class="forum-category-item" data-category="events">
                                         <i class="fas fa-calendar-star"></i>
                                         <span>Events & Activities</span>
-                                        <span class="category-count">5</span>
+                                        <span class="category-count" id="category-count-events"><?= $forumCategoryCounts['events'] ?? 0 ?></span>
                                     </li>
                                     <li class="forum-category-item" data-category="academics">
                                         <i class="fas fa-graduation-cap"></i>
                                         <span>Academics</span>
-                                        <span class="category-count">6</span>
+                                        <span class="category-count" id="category-count-academics"><?= $forumCategoryCounts['academics'] ?? 0 ?></span>
                                     </li>
                                     <li class="forum-category-item" data-category="marketplace">
                                         <i class="fas fa-store"></i>
                                         <span>Buy & Sell</span>
-                                        <span class="category-count">3</span>
+                                        <span class="category-count" id="category-count-marketplace"><?= $forumCategoryCounts['marketplace'] ?? 0 ?></span>
                                     </li>
                                     <li class="forum-category-item" data-category="help">
                                         <i class="fas fa-question-circle"></i>
                                         <span>Help & Support</span>
-                                        <span class="category-count">2</span>
+                                        <span class="category-count" id="category-count-help"><?= $forumCategoryCounts['help'] ?? 0 ?></span>
                                     </li>
                                 </ul>
                             </div>
@@ -1979,7 +1979,9 @@
             // Load forum posts when forum section is activated
             if (sectionId === 'forum') {
                 setTimeout(() => {
-                    loadForumPosts('all');
+                    const activeFilter = document.querySelector('.forum-tab.active');
+                    const filter = activeFilter ? activeFilter.getAttribute('data-filter') : 'latest';
+                    loadForumPosts('all', filter);
                 }, 200);
             }
             
@@ -3634,9 +3636,13 @@
                 if (data.success) {
                     showToast('Post created successfully!', 'success');
                     closeCreatePostModal();
+                    // Update category counts
+                    updateCategoryCounts();
                     const activeCategory = document.querySelector('.forum-category-item.active');
                     const category = activeCategory ? activeCategory.getAttribute('data-category') : 'all';
-                    setTimeout(() => loadForumPosts(category), 300);
+                    const activeFilter = document.querySelector('.forum-tab.active');
+                    const filter = activeFilter ? activeFilter.getAttribute('data-filter') : 'latest';
+                    setTimeout(() => loadForumPosts(category, filter), 300);
                 } else {
                     showToast(data.message || 'Failed to create post', 'error');
                 }
@@ -3652,17 +3658,17 @@
         });
 
         // Load Forum Posts
-        function loadForumPosts(category = 'all') {
+        function loadForumPosts(category = 'all', filter = 'latest') {
             const postsList = document.getElementById('forumPostsList');
             if (!postsList) {
                 console.error('forumPostsList element not found');
                 return;
             }
             
-            console.log('Loading forum posts for category:', category);
+            console.log('Loading forum posts for category:', category, 'with filter:', filter);
             postsList.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading posts...</div>';
             
-            fetch(baseUrl + 'student/getPosts?category=' + encodeURIComponent(category))
+            fetch(baseUrl + 'student/getPosts?category=' + encodeURIComponent(category) + '&filter=' + encodeURIComponent(filter))
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('HTTP error! status: ' + response.status);
@@ -3682,7 +3688,7 @@
                 })
                 .catch(error => {
                     console.error('Error loading posts:', error);
-                    postsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-circle"></i><p>Error loading posts: ' + error.message + '</p><button onclick="loadForumPosts(\'' + category + '\')" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button></div>';
+                    postsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-circle"></i><p>Error loading posts: ' + error.message + '</p><button onclick="loadForumPosts(\'' + category + '\', \'' + filter + '\')" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button></div>';
                 });
         }
 
@@ -3814,15 +3820,63 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
         }
 
-        // Category Filter
+        // Filter Tabs for Forum
+        document.querySelectorAll('.forum-tab').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.forum-tab').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                const filter = this.getAttribute('data-filter');
+                const activeCategory = document.querySelector('.forum-category-item.active');
+                const category = activeCategory ? activeCategory.getAttribute('data-category') : 'all';
+                loadForumPosts(category, filter);
+            });
+        });
+
+        // Category Filter for Forum
         document.querySelectorAll('.forum-category-item').forEach(item => {
             item.addEventListener('click', function() {
                 document.querySelectorAll('.forum-category-item').forEach(i => i.classList.remove('active'));
                 this.classList.add('active');
                 const category = this.getAttribute('data-category');
-                loadForumPosts(category);
+                const activeFilter = document.querySelector('.forum-tab.active');
+                const filter = activeFilter ? activeFilter.getAttribute('data-filter') : 'latest';
+                loadForumPosts(category, filter);
             });
         });
+
+        // Update Category Counts
+        function updateCategoryCounts() {
+            fetch(baseUrl + 'student/getCategoryCounts', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.counts) {
+                    // Update all category counts
+                    const counts = data.counts;
+                    const countElements = {
+                        'all': document.getElementById('category-count-all'),
+                        'general': document.getElementById('category-count-general'),
+                        'events': document.getElementById('category-count-events'),
+                        'academics': document.getElementById('category-count-academics'),
+                        'marketplace': document.getElementById('category-count-marketplace'),
+                        'help': document.getElementById('category-count-help')
+                    };
+                    
+                    Object.keys(countElements).forEach(category => {
+                        if (countElements[category] && counts[category] !== undefined) {
+                            countElements[category].textContent = counts[category];
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error updating category counts:', error);
+            });
+        }
 
         // Initialize Forum on Page Load
         document.addEventListener('DOMContentLoaded', function() {
@@ -3830,10 +3884,17 @@
             loadCartItems();
             updateCombinedBadge();
             
+            // Update category counts on page load
+            updateCategoryCounts();
+            
             // Load forum posts if forum section is active
             const forumSection = document.getElementById('forum');
             if (forumSection && forumSection.classList.contains('active')) {
-                setTimeout(() => loadForumPosts('all'), 300);
+                const activeCategory = document.querySelector('.forum-category-item.active');
+                const category = activeCategory ? activeCategory.getAttribute('data-category') : 'all';
+                const activeFilter = document.querySelector('.forum-tab.active');
+                const filter = activeFilter ? activeFilter.getAttribute('data-filter') : 'latest';
+                setTimeout(() => loadForumPosts(category, filter), 300);
             }
             
             // Periodically check and update ongoing status for events

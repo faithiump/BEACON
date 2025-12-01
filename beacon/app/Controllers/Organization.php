@@ -45,6 +45,14 @@ class Organization extends BaseController
             mkdir($productsPath, 0755, true);
         }
 
+        // Get forum category counts
+        $forumPostModel = new ForumPostModel();
+        $categoryCounts = $forumPostModel->getCategoryCounts();
+
+        // Get forum category counts
+        $forumPostModel = new ForumPostModel();
+        $categoryCounts = $forumPostModel->getCategoryCounts();
+
         // Get current organization ID for filtering events in Events section
         $orgId = $this->session->get('organization_id');
         
@@ -57,6 +65,7 @@ class Organization extends BaseController
             'pendingPayments' => $this->getPendingPayments(),
             'recentMembers' => $this->getRecentMembers(),
             'products' => $this->getRecentProducts(),
+            'forumCategoryCounts' => $categoryCounts,
         ];
 
         return view('organization/dashboard', $data);
@@ -2930,12 +2939,13 @@ class Organization extends BaseController
         }
 
         $category = $this->request->getGet('category') ?? 'all';
+        $filter = $this->request->getGet('filter') ?? 'latest';
         $limit = $this->request->getGet('limit') ? (int)$this->request->getGet('limit') : 20;
         $offset = $this->request->getGet('offset') ? (int)$this->request->getGet('offset') : 0;
 
         try {
             $postModel = new ForumPostModel();
-            $posts = $postModel->getAllPosts($category, $limit, $offset);
+            $posts = $postModel->getAllPosts($category, $limit, $offset, $filter);
 
             // Get reaction and comment counts for each post
             $likeModel = new \App\Models\PostLikeModel();
@@ -2948,6 +2958,7 @@ class Organization extends BaseController
                 // Get reaction counts
                 $reactionCounts = $likeModel->getReactionCounts('forum_post', $post['id']);
                 $post['reaction_counts'] = $reactionCounts;
+                $post['reaction_count_total'] = $reactionCounts['total'] ?? 0;
 
                 // Get organization's reaction if logged in
                 if ($orgId) {
@@ -2974,6 +2985,25 @@ class Organization extends BaseController
                 } else {
                     $post['tags_array'] = [];
                 }
+            }
+            
+            // Sort posts based on filter
+            if ($filter === 'popular') {
+                // Sort by reaction count (total reactions), then by pinned status, then by date
+                usort($posts, function($a, $b) {
+                    // Pinned posts first
+                    if ($a['is_pinned'] != $b['is_pinned']) {
+                        return $b['is_pinned'] - $a['is_pinned'];
+                    }
+                    // Then by reaction count
+                    $aReactions = $a['reaction_count_total'] ?? 0;
+                    $bReactions = $b['reaction_count_total'] ?? 0;
+                    if ($aReactions != $bReactions) {
+                        return $bReactions - $aReactions;
+                    }
+                    // Finally by date
+                    return strtotime($b['created_at']) - strtotime($a['created_at']);
+                });
             }
 
             return $this->response->setJSON([
@@ -3077,6 +3107,32 @@ class Organization extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'An error occurred while creating post'
+            ]);
+        }
+    }
+
+    /**
+     * Get forum category counts
+     */
+    public function getCategoryCounts()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        try {
+            $postModel = new ForumPostModel();
+            $counts = $postModel->getCategoryCounts();
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Get category counts error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error loading category counts'
             ]);
         }
     }

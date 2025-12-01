@@ -68,8 +68,8 @@
                     of campus life in one place.
                 </p>
                 <div class="hero-actions">
-                    <a href="<?= base_url('auth/register') ?>" class="btn primary">Get Started</a>
-                    <a href="<?= base_url('auth/login') ?>" class="btn secondary">Sign In</a>
+                    <a href="<?= base_url('auth/register') ?>" class="btn primary">Sign Up</a>
+                    <a href="<?= base_url('auth/login') ?>" class="btn secondary">Log In</a>
                     <a href="<?= base_url('organization/launch') ?>" class="btn tertiary">Launch Organization Page</a>
                 </div>
                 <div class="hero-stats">

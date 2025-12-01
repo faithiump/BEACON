@@ -824,6 +824,11 @@ class Student extends BaseController
             'pageTitle' => 'Student Dashboard'
         ];
 
+        // Get forum category counts
+        $forumPostModel = new ForumPostModel();
+        $categoryCounts = $forumPostModel->getCategoryCounts();
+        $data['forumCategoryCounts'] = $categoryCounts;
+
         return view('student/dashboard', $data);
     }
 
@@ -3103,10 +3108,12 @@ class Student extends BaseController
         $category = $this->request->getGet('category') ?? 'all';
         $limit = $this->request->getGet('limit') ? (int)$this->request->getGet('limit') : 20;
         $offset = $this->request->getGet('offset') ? (int)$this->request->getGet('offset') : 0;
+        $filter = $this->request->getGet('filter') ?? 'latest'; // Added filter parameter
 
         try {
             $postModel = new ForumPostModel();
-            $posts = $postModel->getAllPosts($category, $limit, $offset);
+            // Pass filter to model if it needs to influence the initial query (though we're sorting in controller now)
+            $posts = $postModel->getAllPosts($category, $limit, $offset, $filter);
 
             // Get reaction and comment counts for each post
             $userId = session()->get('user_id');
@@ -3119,6 +3126,7 @@ class Student extends BaseController
                 // Get reaction counts
                 $reactionCounts = $likeModel->getReactionCounts('forum_post', $post['id']);
                 $post['reaction_counts'] = $reactionCounts;
+                $post['reaction_count_total'] = $reactionCounts['total']; // Add total for sorting
                 
                 // Get user's reaction
                 if ($student) {
@@ -3147,6 +3155,22 @@ class Student extends BaseController
                 }
             }
 
+            // Sort posts by reaction count if filter is 'popular'
+            if ($filter === 'popular') {
+                usort($posts, function($a, $b) {
+                    // Pinned posts always come first
+                    if ($a['is_pinned'] != $b['is_pinned']) {
+                        return $b['is_pinned'] - $a['is_pinned']; // Pinned (1) before unpinned (0)
+                    }
+                    // Then sort by total reaction count
+                    if ($a['reaction_count_total'] != $b['reaction_count_total']) {
+                        return $b['reaction_count_total'] - $a['reaction_count_total']; // Highest reactions first
+                    }
+                    // Fallback to creation date if reaction counts are equal
+                    return strtotime($b['created_at']) - strtotime($a['created_at']);
+                });
+            }
+
             return $this->response->setJSON([
                 'success' => true,
                 'posts' => $posts
@@ -3156,6 +3180,33 @@ class Student extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'An error occurred while fetching posts'
+            ]);
+        }
+    }
+
+    /**
+     * Get forum category counts
+     */
+    public function getCategoryCounts()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        try {
+            $postModel = new ForumPostModel();
+            $counts = $postModel->getCategoryCounts();
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Get category counts error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error loading category counts'
             ]);
         }
     }
