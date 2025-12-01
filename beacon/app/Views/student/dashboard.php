@@ -258,28 +258,24 @@
                             <div class="student-sidebar-card">
                                 <h4 class="sidebar-card-title"><i class="fas fa-users"></i> My Organizations</h4>
                                 <div class="my-org-list">
-                                    <?php if(!empty($allJoinedOrganizations)): ?>
-                                        <?php foreach($allJoinedOrganizations as $joinedOrg): ?>
+                                    <?php if(!empty($allFollowedOrganizations)): ?>
+                                        <?php foreach($allFollowedOrganizations as $followedOrg): ?>
                                         <div class="my-org-item">
-                                            <?php if(!empty($joinedOrg['photo'])): ?>
-                                                <img src="<?= esc($joinedOrg['photo']) ?>" alt="<?= esc($joinedOrg['name']) ?>" class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                                            <?php if(!empty($followedOrg['photo'])): ?>
+                                                <img src="<?= esc($followedOrg['photo']) ?>" alt="<?= esc($followedOrg['name']) ?>" class="my-org-avatar" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
                                             <?php else: ?>
-                                                <div class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>"><?= esc(strtoupper(substr($joinedOrg['acronym'], 0, 2))) ?></div>
+                                                <div class="my-org-avatar"><?= esc(strtoupper(substr($followedOrg['acronym'], 0, 2))) ?></div>
                                             <?php endif; ?>
                                             <div class="my-org-info">
-                                                <span class="my-org-name"><?= esc($joinedOrg['name']) ?></span>
-                                                <?php if($joinedOrg['status'] === 'pending'): ?>
-                                                <span class="my-org-status pending">Pending Approval</span>
-                                                <?php else: ?>
-                                                <span class="my-org-status active">Active Member</span>
-                                                <?php endif; ?>
+                                                <span class="my-org-name"><?= esc($followedOrg['name']) ?></span>
+                                                <span class="my-org-status active">Following</span>
                                             </div>
                                         </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="my-org-item">
                                             <div class="my-org-info" style="width: 100%; text-align: center; padding: 1rem;">
-                                                <span style="color: var(--gray-500); font-size: 0.875rem;">No organizations joined yet</span>
+                                                <span style="color: var(--gray-500); font-size: 0.875rem;">No organizations followed yet</span>
                                             </div>
                                         </div>
                                     <?php endif; ?>

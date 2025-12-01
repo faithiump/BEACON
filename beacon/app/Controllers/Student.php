@@ -90,6 +90,7 @@ class Student extends BaseController
         $allEventsList = [];
         $allAnnouncementsList = [];
         $allProductsList = [];
+        $followedOrgs = []; // Initialize followed organizations array
 
         if ($student) {
             // Get all organizations the student has joined (active only for posts)
@@ -803,6 +804,37 @@ class Student extends BaseController
                 ];
             }
         }
+        
+        // Format all followed organizations for sidebar (My Organizations section)
+        $allFollowedOrgs = [];
+        if ($student && !empty($followedOrgs)) {
+            $userPhotoModelForFollowed = new \App\Models\UserPhotoModel();
+            foreach ($followedOrgs as $followed) {
+                $orgId = $followed['org_id'] ?? null;
+                if ($orgId) {
+                    // Get organization details
+                    $orgForFollowed = $orgModel->find($orgId);
+                    if ($orgForFollowed && isset($orgForFollowed['is_active']) && $orgForFollowed['is_active'] == 1) {
+                        // Get organization photo from user_photos table
+                        $orgPhotoForFollowed = null;
+                        if (!empty($orgForFollowed['user_id'])) {
+                            $orgUserPhotoForFollowed = $userPhotoModelForFollowed->where('user_id', $orgForFollowed['user_id'])->first();
+                            if ($orgUserPhotoForFollowed && !empty($orgUserPhotoForFollowed['photo_path'])) {
+                                $orgPhotoForFollowed = base_url($orgUserPhotoForFollowed['photo_path']);
+                            }
+                        }
+                        
+                        $allFollowedOrgs[] = [
+                            'id' => $orgId,
+                            'name' => $orgForFollowed['organization_name'],
+                            'acronym' => $orgForFollowed['organization_acronym'],
+                            'status' => 'followed', // Status for followed organizations
+                            'photo' => $orgPhotoForFollowed
+                        ];
+                    }
+                }
+            }
+        }
 
         $data = [
             'student' => $student,
@@ -814,6 +846,7 @@ class Student extends BaseController
             'availableOrganizations' => $formattedOrgs,
             'joinedOrganizations' => $joinedOrganizations,
             'allJoinedOrganizations' => $allJoinedOrgs,
+            'allFollowedOrganizations' => $allFollowedOrgs, // For My Organizations section
             'suggestedOrganizations' => $suggestedOrganizations ?? [],
             'upcomingEvents' => $upcomingEvents ?? [],
             'allEvents' => $allEventsList ?? [],
