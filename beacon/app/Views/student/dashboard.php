@@ -312,11 +312,7 @@
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="sidebar-empty-state" style="padding: 1rem; text-align: center; color: var(--gray-500); font-size: 0.875rem;">
-                                            <?php if($hasJoinedOrg): ?>
-                                                No upcoming events from your organizations
-                                            <?php else: ?>
-                                                Join an organization to see upcoming events
-                                            <?php endif; ?>
+                                            No upcoming events yet
                                         </div>
                                     <?php endif; ?>
                                 </div>
