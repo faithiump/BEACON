@@ -2236,6 +2236,10 @@ class Student extends BaseController
         $eventModel = new EventModel();
         $events = $eventModel->getEventsByOrg($orgId);
         $formattedEvents = [];
+        
+        // Use application timezone for accurate time comparison
+        date_default_timezone_set(config('App')->appTimezone);
+        
         foreach ($events as $event) {
             $eventId = $event['event_id'] ?? $event['id'];
             

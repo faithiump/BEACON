@@ -7,3 +7,4 @@ ALTER TABLE `events`
 MODIFY COLUMN `status` ENUM('upcoming','ongoing','ended','active','completed','cancelled') NOT NULL DEFAULT 'upcoming' COMMENT 'Current status of the event';
 
 
+

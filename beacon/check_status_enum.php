@@ -34,3 +34,4 @@ if (preg_match("/enum\((.*)\)/i", $row['Type'], $matches)) {
 $mysqli->close();
 ?>
 
+

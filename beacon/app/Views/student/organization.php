@@ -537,12 +537,37 @@
                                                 </div>
                                             </div>
                                             <div class="event-preview-info">
-                                                <h3><?= esc($event['title']) ?></h3>
+                                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                                    <h3 style="margin: 0; flex: 1;"><?= esc($event['title']) ?></h3>
+                                                    <?php if(isset($event['status'])): ?>
+                                                        <?php if($event['status'] === 'ended'): ?>
+                                                            <span class="event-status ended" style="background-color: #6c757d; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                                <i class="fas fa-check-circle"></i> Ended
+                                                            </span>
+                                                        <?php elseif($event['status'] === 'ongoing'): ?>
+                                                            <span class="event-status ongoing" style="background-color: #3b82f6; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                                <i class="fas fa-circle"></i> Ongoing
+                                                            </span>
+                                                        <?php elseif($event['status'] === 'upcoming'): ?>
+                                                            <span class="event-status upcoming" style="background-color: #10b981; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                                <i class="fas fa-clock"></i> Upcoming
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    <?php endif; ?>
+                                                </div>
                                                 <p><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
                                                 <p><i class="fas fa-users"></i> <?= $event['attendees'] ?> going</p>
                                                 <div class="event-preview-actions">
                                                     <?php if(isset($event['can_join']) && $event['can_join']): ?>
-                                                        <?php if(isset($event['has_joined']) && $event['has_joined']): ?>
+                                                        <?php if(isset($event['status']) && $event['status'] === 'ended'): ?>
+                                                            <button class="btn btn-secondary btn-sm" disabled style="background-color: #6c757d; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; opacity: 0.7; cursor: not-allowed;">
+                                                                <i class="fas fa-check-circle"></i> <span>Ended</span>
+                                                            </button>
+                                                        <?php elseif(isset($event['status']) && $event['status'] === 'ongoing'): ?>
+                                                            <button class="btn btn-primary btn-sm" disabled style="background-color: #3b82f6; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; opacity: 0.9; cursor: not-allowed;">
+                                                                <i class="fas fa-circle"></i> <span>Ongoing</span>
+                                                            </button>
+                                                        <?php elseif(isset($event['has_joined']) && $event['has_joined']): ?>
                                                             <button class="btn btn-success btn-sm" onclick="joinEvent(<?= $event['id'] ?>)" style="background-color: #10b981; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
                                                                 <i class="fas fa-check"></i> <span>Joined</span>
                                                             </button>
