@@ -340,8 +340,18 @@
                         <!-- Upcoming Events -->
                         <div class="sidebar-card">
                             <h4 class="sidebar-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h4>
-                            <?php if(!empty($recentEvents)): ?>
-                                <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
+                            <?php 
+                            // Filter only upcoming events
+                            $upcomingEvents = array_filter($recentEvents ?? [], function($event) {
+                                return isset($event['status']) && $event['status'] === 'upcoming';
+                            });
+                            // Sort by date (earliest first)
+                            usort($upcomingEvents, function($a, $b) {
+                                return strtotime($a['date'] . ' ' . ($a['time'] ?? '00:00:00')) - strtotime($b['date'] . ' ' . ($b['time'] ?? '00:00:00'));
+                            });
+                            ?>
+                            <?php if(!empty($upcomingEvents)): ?>
+                                <?php foreach(array_slice($upcomingEvents, 0, 2) as $event): ?>
                                 <div class="sidebar-event">
                                     <div class="se-date">
                                         <span class="se-day"><?= date('d', strtotime($event['date'])) ?></span>
