@@ -53,15 +53,39 @@ class Organization extends BaseController
         $forumPostModel = new ForumPostModel();
         $categoryCounts = $forumPostModel->getCategoryCounts();
 
-        // Get current organization ID for filtering events in Events section
-        $orgId = $this->session->get('organization_id');
+        // Get all events and announcements from all organizations
+        $recentEvents = $this->getRecentEvents(null); // Show events from all organizations
+        $recentAnnouncements = $this->getRecentAnnouncements();
+        
+        // Combine announcements and events into a single feed (like student dashboard)
+        $allPosts = [];
+        foreach ($recentAnnouncements as $announcement) {
+            $allPosts[] = [
+                'type' => 'announcement',
+                'data' => $announcement,
+                'date' => strtotime($announcement['created_at'])
+            ];
+        }
+        foreach ($recentEvents as $event) {
+            $allPosts[] = [
+                'type' => 'event',
+                'data' => $event,
+                'date' => strtotime($event['created_at'] ?? $event['date'])
+            ];
+        }
+        
+        // Sort by date (newest first)
+        usort($allPosts, function($a, $b) {
+            return $b['date'] - $a['date'];
+        });
         
         $data = [
             'title' => 'Organization Dashboard',
             'organization' => $this->getOrganizationData(),
             'stats' => $this->getDashboardStats(),
-            'recentEvents' => $this->getRecentEvents($orgId), // Filter to show only current org's events in Events section
-            'recentAnnouncements' => $this->getRecentAnnouncements(),
+            'recentEvents' => $recentEvents,
+            'recentAnnouncements' => $recentAnnouncements,
+            'allPosts' => $allPosts, // Combined feed for overview
             'pendingPayments' => $this->getPendingPayments(),
             'recentMembers' => $this->getRecentMembers(),
             'products' => $this->getRecentProducts(),

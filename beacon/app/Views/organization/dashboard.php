@@ -413,10 +413,12 @@
                             </div>
                         </div>
 
-                        <!-- Feed Posts (Announcements) -->
-                        <?php if(!empty($recentAnnouncements)): ?>
-                            <?php foreach($recentAnnouncements as $announcement): ?>
-                            <div class="feed-post" data-announcement-id="<?= $announcement['id'] ?>">
+                        <!-- Feed Posts (Combined Announcements and Events from All Organizations) -->
+                        <?php if(!empty($allPosts)): ?>
+                            <?php foreach($allPosts as $post): ?>
+                                <?php if($post['type'] === 'announcement'): ?>
+                                    <?php $announcement = $post['data']; ?>
+                            <div class="feed-post announcement-post" data-announcement-id="<?= $announcement['id'] ?>">
                                 <div class="post-header">
                                     <div class="post-author-avatar">
                                         <?php if(!empty($announcement['org_photo'])): ?>
@@ -515,57 +517,61 @@
                                     </div>
                                 </div>
                             </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="feed-empty">
-                                <i class="fas fa-newspaper"></i>
-                                <h3>No posts yet</h3>
-                                <p>Create your first announcement to share with your members!</p>
-                                <button class="btn btn-primary" onclick="openModal('announcementModal')">
-                                    <i class="fas fa-plus"></i> Create Announcement
-                                </button>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Recent Events as Posts -->
-                        <?php if(!empty($recentEvents)): ?>
-                            <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
-                            <div class="feed-post event-post" data-event-id="<?= $event['id'] ?>">
+                                <?php elseif($post['type'] === 'event'): ?>
+                                    <?php $event = $post['data']; ?>
+                            <div class="feed-post event-post-card">
                                 <div class="post-header">
-                                    <div class="post-author-avatar event-avatar">
+                                    <div class="post-author-avatar org">
                                         <?php if(!empty($event['org_photo'])): ?>
                                             <img src="<?= esc($event['org_photo']) ?>" alt="<?= esc($event['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                                         <?php else: ?>
-                                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; color: white; font-weight: 600; font-size: 0.875rem;">
-                                                <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
-                                            </div>
+                                            <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
                                         <?php endif; ?>
                                     </div>
                                     <div class="post-author-info">
-                                        <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?> created an event</span>
+                                        <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?></span>
                                         <span class="post-time">
                                             <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($event['created_at'] ?? $event['date'])) ?>
                                         </span>
                                     </div>
                                 </div>
-                                <div class="event-card-content">
-                                    <div class="event-banner">
-                                        <div class="event-banner-overlay">
+                                <div class="post-content">
+                                    <p class="post-text">🎉 New event from <?= esc($event['org_acronym'] ?? 'Organization') ?>!</p>
+                                </div>
+                                <div class="event-preview-card" data-event-id="<?= $event['id'] ?>" data-status="<?= isset($event['status']) ? esc($event['status']) : 'upcoming' ?>" data-event-date="<?= $event['date'] ?>" data-event-time="<?= $event['time'] ?>" data-event-end-date="<?= $event['end_date'] ?? '' ?>" data-event-end-time="<?= $event['end_time'] ?? '' ?>">
+                                    <div class="event-preview-banner" style="position: relative; overflow: hidden;">
+                                        <?php if(!empty($event['image'])): ?>
+                                            <img src="<?= base_url('uploads/events/' . $event['image']) ?>" alt="<?= esc($event['title']) ?>" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;">
+                                        <?php endif; ?>
+                                        <div class="event-preview-overlay" style="position: relative; z-index: 2;">
                                             <div class="event-date-badge">
                                                 <span class="edb-day"><?= date('d', strtotime($event['date'])) ?></span>
-                                                <span class="edb-month"><?= date('M', strtotime($event['date'])) ?></span>
+                                                <span class="edb-month"><?= strtoupper(date('M', strtotime($event['date']))) ?></span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="event-card-info">
-                                        <h3><?= esc($event['title']) ?></h3>
-                                        <p class="event-location"><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
-                                        <p class="event-attendees"><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
-                                        <p class="event-interested"><i class="fas fa-star"></i> <?= $event['interest_count'] ?? 0 ?> interested</p>
+                                    <div class="event-preview-info">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <h3 style="margin: 0; flex: 1;"><?= esc($event['title']) ?></h3>
+                                            <?php if(isset($event['status'])): ?>
+                                                <?php if($event['status'] === 'ended'): ?>
+                                                    <span class="event-status ended" style="background-color: #6c757d; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                        <i class="fas fa-check-circle"></i> Ended
+                                                    </span>
+                                                <?php elseif($event['status'] === 'ongoing'): ?>
+                                                    <span class="event-status ongoing" style="background-color: #3b82f6; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                        <i class="fas fa-circle"></i> Ongoing
+                                                    </span>
+                                                <?php elseif($event['status'] === 'upcoming'): ?>
+                                                    <span class="event-status upcoming" style="background-color: #10b981; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                        <i class="fas fa-clock"></i> Upcoming
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                        <p><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
+                                        <p><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
                                     </div>
-                                </div>
-                                <div class="post-stats">
-                                    <span><i class="fas fa-eye"></i> <?= $event['views'] ?? 0 ?> views</span>
                                 </div>
                                 <div class="post-actions">
                                     <div class="reaction-wrapper" data-post-type="event" data-post-id="<?= $event['id'] ?>">
@@ -629,7 +635,17 @@
                                     </div>
                                 </div>
                             </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="feed-empty">
+                                <i class="fas fa-newspaper"></i>
+                                <h3>No posts yet</h3>
+                                <p>Create your first announcement or event to share with your members!</p>
+                                <button class="btn btn-primary" onclick="openModal('announcementModal')">
+                                    <i class="fas fa-plus"></i> Create Announcement
+                                </button>
+                            </div>
                         <?php endif; ?>
                     </div>
 
