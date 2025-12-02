@@ -35,6 +35,7 @@ $routes->get('organization/events/attendees/(:num)', 'Organization::viewEventAtt
 
 // Organization Announcements
 $routes->get('organization/announcements', 'Organization::viewAnnouncements');
+$routes->get('organization/announcements/get/(:num)', 'Organization::getAnnouncement/$1');
 $routes->post('organization/announcements/create', 'Organization::createAnnouncement');
 $routes->post('organization/announcements/update/(:num)', 'Organization::updateAnnouncement/$1');
 $routes->post('organization/announcements/delete/(:num)', 'Organization::deleteAnnouncement/$1');

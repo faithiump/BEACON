@@ -87,7 +87,7 @@
                                     <span class="quick-action-desc">Create an event</span>
                                 </div>
                             </button>
-                            <button class="quick-action-item" onclick="openModal('announcementModal')">
+                            <button class="quick-action-item" onclick="openAnnouncementModal()">
                                 <div class="quick-action-icon announcement">
                                     <i class="fas fa-bullhorn"></i>
                                 </div>
@@ -403,7 +403,7 @@
                                         <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
                                     <?php endif; ?>
                                 </div>
-                                <button class="create-post-input" onclick="openModal('announcementModal')">
+                                <button class="create-post-input" onclick="openAnnouncementModal()">
                                     What's on your mind, <?= $organization['acronym'] ?? 'Organization' ?>?
                                 </button>
                             </div>
@@ -412,7 +412,7 @@
                                     <i class="fas fa-calendar-plus text-primary"></i>
                                     <span>Event</span>
                                 </button>
-                                <button class="post-action-btn" onclick="openModal('announcementModal')">
+                                <button class="post-action-btn" onclick="openAnnouncementModal()">
                                     <i class="fas fa-bullhorn text-warning"></i>
                                     <span>Announcement</span>
                                 </button>
@@ -652,9 +652,9 @@
                                 <i class="fas fa-newspaper"></i>
                                 <h3>No posts yet</h3>
                                 <p>Create your first announcement or event to share with your members!</p>
-                                <button class="btn btn-primary" onclick="openModal('announcementModal')">
-                                    <i class="fas fa-plus"></i> Create Announcement
-                                </button>
+                                <button class="btn btn-primary" onclick="openAnnouncementModal()">
+                                        <i class="fas fa-plus"></i> Create Announcement
+                                    </button>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -851,7 +851,7 @@
                         <h1 class="section-title">Announcements</h1>
                         <p class="section-subtitle">Keep your members informed with important updates</p>
                     </div>
-                    <button class="btn btn-primary" onclick="openModal('announcementModal')">
+                    <button class="btn btn-primary" onclick="openAnnouncementModal()">
                         <i class="fas fa-plus"></i> New Announcement
                     </button>
                 </div>
@@ -887,7 +887,7 @@
                             <i class="fas fa-bullhorn"></i>
                             <h3>No Announcements</h3>
                             <p>Create announcements to keep members updated</p>
-                            <button class="btn btn-primary" onclick="openModal('announcementModal')">Create Announcement</button>
+                            <button class="btn btn-primary" onclick="openAnnouncementModal()">Create Announcement</button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1600,30 +1600,31 @@
         <div class="modal">
             <div class="modal-header">
                 <h3><i class="fas fa-bullhorn"></i> Create Announcement</h3>
-                <button class="modal-close" onclick="closeModal('announcementModal')">
+                <button class="modal-close" onclick="closeAnnouncementModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="announcementForm" class="modal-body" enctype="multipart/form-data">
+                <input type="hidden" id="announcement_id" name="announcement_id" value="">
                 <div class="form-group">
                     <label>Title *</label>
-                    <input type="text" name="title" class="form-input" required placeholder="Announcement title">
+                    <input type="text" id="announcement_title" name="title" class="form-input" required placeholder="Announcement title">
                 </div>
                 <div class="form-group">
                     <label>Content *</label>
-                    <textarea name="content" class="form-input" rows="5" required placeholder="Write your announcement..."></textarea>
+                    <textarea id="announcement_content" name="content" class="form-input" rows="5" required placeholder="Write your announcement..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>Priority</label>
-                    <select name="priority" class="form-input">
+                    <select id="announcement_priority" name="priority" class="form-input">
                         <option value="normal">Normal</option>
                         <option value="high">High Priority</option>
                     </select>
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('announcementModal')">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
+                <button class="btn btn-outline" onclick="closeAnnouncementModal()">Cancel</button>
+                <button type="button" id="announcementSubmitBtn" class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
             </div>
         </div>
     </div>
@@ -2355,6 +2356,8 @@
         // Announcement Functions
         function submitAnnouncement() {
             const form = document.getElementById('announcementForm');
+            const announcementId = document.getElementById('announcement_id').value;
+            const isEdit = announcementId && announcementId !== '';
             
             // Validate required fields
             if (!form.checkValidity()) {
@@ -2365,27 +2368,30 @@
             const formData = new FormData(form);
 
             // Show loading state
-            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const submitBtn = document.getElementById('announcementSubmitBtn');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (isEdit ? 'Updating...' : 'Posting...');
 
-            fetch(baseUrl + 'organization/announcements/create', {
+            const url = isEdit 
+                ? baseUrl + 'organization/announcements/update/' + announcementId
+                : baseUrl + 'organization/announcements/create';
+
+            fetch(url, {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Announcement posted successfully!', 'success');
-                    closeModal('announcementModal');
-                    form.reset();
-                    // Reload page to show new announcement
+                    showToast(isEdit ? 'Announcement updated successfully!' : 'Announcement posted successfully!', 'success');
+                    closeAnnouncementModal();
+                    // Reload page to show updated/new announcement
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
                 } else {
-                    showToast(data.message || 'Failed to post announcement', 'error');
+                    showToast(data.message || (isEdit ? 'Failed to update announcement' : 'Failed to post announcement'), 'error');
                     if (data.errors) {
                         console.error('Validation errors:', data.errors);
                     }
@@ -2395,14 +2401,92 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('An error occurred while posting the announcement', 'error');
+                showToast('An error occurred while ' + (isEdit ? 'updating' : 'posting') + ' the announcement', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
         }
 
         function editAnnouncement(id) {
-            showToast('Edit announcement functionality coming soon', 'info');
+            if (!id) {
+                showToast('Invalid announcement ID', 'error');
+                return;
+            }
+
+            // Fetch announcement data
+            fetch(baseUrl + 'organization/announcements/get/' + id, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.announcement) {
+                    const announcement = data.announcement;
+                    
+                    // Populate form
+                    document.getElementById('announcement_id').value = announcement.announcement_id || announcement.id;
+                    document.getElementById('announcement_title').value = announcement.title || '';
+                    document.getElementById('announcement_content').value = announcement.content || '';
+                    document.getElementById('announcement_priority').value = announcement.priority || 'normal';
+                    
+                    // Update modal title and button
+                    const modalHeader = document.querySelector('#announcementModal .modal-header h3');
+                    if (modalHeader) {
+                        modalHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Edit Announcement';
+                    }
+                    const submitBtn = document.getElementById('announcementSubmitBtn');
+                    if (submitBtn) {
+                        submitBtn.textContent = 'Update Announcement';
+                    }
+                    
+                    // Open modal
+                    openModal('announcementModal');
+                } else {
+                    showToast(data.message || 'Failed to load announcement', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while loading the announcement', 'error');
+            });
+        }
+
+        function openAnnouncementModal() {
+            // Reset form before opening
+            document.getElementById('announcementForm').reset();
+            document.getElementById('announcement_id').value = '';
+            
+            // Reset modal title and button
+            const modalHeader = document.querySelector('#announcementModal .modal-header h3');
+            if (modalHeader) {
+                modalHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Create Announcement';
+            }
+            const submitBtn = document.getElementById('announcementSubmitBtn');
+            if (submitBtn) {
+                submitBtn.textContent = 'Post Announcement';
+            }
+            
+            openModal('announcementModal');
+        }
+
+        function closeAnnouncementModal() {
+            // Reset form
+            document.getElementById('announcementForm').reset();
+            document.getElementById('announcement_id').value = '';
+            
+            // Reset modal title and button
+            const modalHeader = document.querySelector('#announcementModal .modal-header h3');
+            if (modalHeader) {
+                modalHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Create Announcement';
+            }
+            const submitBtn = document.getElementById('announcementSubmitBtn');
+            if (submitBtn) {
+                submitBtn.textContent = 'Post Announcement';
+            }
+            
+            closeModal('announcementModal');
         }
 
         function deleteAnnouncement(id) {

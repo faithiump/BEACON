@@ -957,6 +957,34 @@ class Organization extends BaseController
         ]);
     }
 
+    /**
+     * Get announcement by ID (for editing)
+     */
+    public function getAnnouncement($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $announcementModel = new AnnouncementModel();
+        $announcement = $announcementModel->find($id);
+
+        // Verify announcement belongs to organization
+        if (!$announcement || $announcement['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Announcement not found or unauthorized']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'announcement' => $announcement
+        ]);
+    }
+
     // ==========================================
     // EVENT FUNCTIONS
     // ==========================================
