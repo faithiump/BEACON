@@ -159,6 +159,12 @@ body {
     padding: 3rem 4rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
     border: 1px solid rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+.launch-form {
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .launch-header {
@@ -244,11 +250,13 @@ body {
 
 /* Form Sections */
 .form-section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding: 2rem;
     background: #f8fafc;
     border-radius: 12px;
     border-left: 4px solid #a855f7;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-section:last-of-type {
@@ -272,16 +280,17 @@ body {
 
 /* Form Groups */
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
 }
 
 .form-group label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #1a1a2e;
-    margin-bottom: 0.5rem;
-    letter-spacing: 0.08em;
+    margin-bottom: 0.625rem;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
@@ -291,25 +300,33 @@ body {
 
 .form-control {
     width: 100%;
-    padding: 0.875rem 1rem;
+    padding: 0.9375rem 1.125rem;
     font-size: 0.9375rem;
     color: #1a1a2e;
     background: #ffffff;
-    border: 1.5px solid #d1d5db;
-    border-radius: 8px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: inherit;
-    line-height: 1.5;
+    line-height: 1.6;
+    box-sizing: border-box;
+    display: block;
+}
+
+.form-control::placeholder {
+    color: #9ca3af;
+    opacity: 0.7;
 }
 
 .form-control:hover {
-    border-color: #9ca3af;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .form-control:focus {
     outline: none;
     border-color: #a855f7;
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12), 0 2px 8px rgba(168, 85, 247, 0.08);
     background-color: #ffffff;
 }
 
@@ -317,11 +334,40 @@ body {
     background: #f9fafb;
     color: #9ca3af;
     cursor: not-allowed;
+    border-color: #e5e7eb;
 }
 
 textarea.form-control {
     resize: vertical;
-    min-height: 100px;
+    min-height: 120px;
+    padding: 1rem 1.125rem;
+    line-height: 1.7;
+}
+
+input[type="date"].form-control,
+input[type="number"].form-control {
+    cursor: pointer;
+}
+
+input[type="date"].form-control::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+input[type="date"].form-control:hover::-webkit-calendar-picker-indicator {
+    opacity: 1;
+}
+
+input[type="number"].form-control::-webkit-inner-spin-button,
+input[type="number"].form-control::-webkit-outer-spin-button {
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+input[type="number"].form-control:hover::-webkit-inner-spin-button,
+input[type="number"].form-control:hover::-webkit-outer-spin-button {
+    opacity: 1;
 }
 
 .form-hint {
@@ -331,12 +377,54 @@ textarea.form-control {
     margin-top: 0.5rem;
 }
 
+/* Password Wrapper */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    display: block;
+}
+
+.password-wrapper .form-control {
+    padding-right: 4.5rem;
+    width: 100%;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+    color: #a855f7;
+}
+
+.password-toggle input[type="checkbox"] {
+    cursor: pointer;
+    margin: 0;
+    width: auto;
+}
+
+.password-toggle span {
+    font-weight: 500;
+}
+
 /* Form Rows */
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.25rem;
-    margin-bottom: 1.25rem;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
 }
 
 .form-group.full-width {
@@ -345,16 +433,27 @@ textarea.form-control {
 
 .form-group-half {
     margin-bottom: 0;
+    width: 100%;
+}
+
+.form-group-half .form-control {
+    width: 100%;
 }
 
 .form-group-third {
     margin-bottom: 0;
+    width: 100%;
+}
+
+.form-group-third .form-control {
+    width: 100%;
 }
 
 .form-row.three-columns {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    margin-bottom: 1.25rem;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
 }
 
 @media (max-width: 1024px) {
@@ -366,42 +465,77 @@ textarea.form-control {
 /* Select Wrapper */
 .select-wrapper {
     position: relative;
+    width: 100%;
+    display: block;
 }
 
 .select-wrapper .form-control {
     appearance: none;
-    padding-right: 2.5rem;
+    padding-right: 2.75rem;
+    width: 100%;
+    cursor: pointer;
+    background-image: none;
 }
 
 .select-arrow {
     position: absolute;
-    right: 1rem;
+    right: 1.125rem;
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
     color: #6b7280;
+    transition: transform 0.2s ease;
+}
+
+.select-wrapper:hover .select-arrow {
+    color: #a855f7;
+}
+
+.select-wrapper:focus-within .select-arrow {
+    color: #a855f7;
+    transform: translateY(-50%) rotate(180deg);
 }
 
 /* File Input */
 .file-input {
-    padding: 0.75rem;
+    padding: 0.9375rem 1.125rem;
     cursor: pointer;
+    width: 100%;
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    transition: all 0.25s ease;
+}
+
+.file-input:hover {
+    background: #f3f4f6;
+    border-color: #a855f7;
+}
+
+.file-input:focus {
+    background: #ffffff;
+    border-color: #a855f7;
+    border-style: solid;
 }
 
 .file-input::-webkit-file-upload-button {
-    padding: 0.5rem 1rem;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
+    padding: 0.625rem 1.25rem;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    border: none;
     border-radius: 8px;
     margin-right: 1rem;
     cursor: pointer;
     font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
+    font-weight: 600;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
 }
 
 .file-input::-webkit-file-upload-button:hover {
-    background: #e5e7eb;
+    background: linear-gradient(135deg, #6d28d9 0%, #9333ea 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(168, 85, 247, 0.3);
 }
 
 /* Officer Groups */

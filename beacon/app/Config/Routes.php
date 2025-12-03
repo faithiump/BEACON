@@ -87,9 +87,11 @@ $routes->get('admin/organizations/pending', 'Admin\\Login::organizationsPending'
 $routes->get('admin/organizations', 'Admin\\Login::organizations');
 $routes->post('admin/organizations/approve/(:num)', 'Admin\\Login::approveOrganization/$1');
 $routes->post('admin/organizations/reject/(:num)', 'Admin\\Login::rejectOrganization/$1');
+$routes->get('admin/organizations/pending/view/(:num)', 'Admin\\Login::viewPendingOrganization/$1');
 $routes->get('admin/organizations/view/(:num)', 'Admin\\Login::viewOrganization/$1');
 $routes->get('admin/organizations/file/(:num)', 'Admin\\Login::viewOrganizationFile/$1');
 $routes->get('admin/organizations/file/(:num)/download', 'Admin\\Login::downloadOrganizationFile/$1');
+$routes->post('admin/notifications/mark-read', 'Admin\\Login::markNotificationRead');
 
 // Admin student management
 $routes->get('admin/students/activity', 'Admin\\Login::studentsActivity');

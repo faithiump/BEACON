@@ -157,6 +157,15 @@
     background: #f8fafc;
 }
 
+.notification-item.unread {
+    background: #f0f9ff;
+    border-left: 3px solid #3b82f6;
+}
+
+.notification-item.unread:hover {
+    background: #e0f2fe;
+}
+
 .notification-icon {
     width: 40px;
     height: 40px;

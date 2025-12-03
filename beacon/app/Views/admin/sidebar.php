@@ -3,11 +3,10 @@
  * Admin Sidebar Navigation
  */
 ?>
-<aside class="admin-sidebar">
+<aside class="admin-sidebar collapsed" id="adminSidebar">
     <div class="sidebar-header">
         <a href="<?= base_url('admin/dashboard') ?>" class="sidebar-logo" id="sidebarToggle">
             <img src="<?= base_url('assets/images/beacon-logo-v4.png') ?>" alt="BEACON" class="logo-icon">
-            <img src="<?= base_url('assets/images/beacon-logo-text-v2.png') ?>" alt="BEACON" class="logo-text">
         </a>
     </div>
     
@@ -82,10 +81,27 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.querySelector('.admin-sidebar');
+    const sidebar = document.getElementById('adminSidebar') || document.querySelector('.admin-sidebar');
     const dashboardContainer = document.querySelector('.dashboard-container');
     const dashboardWrapper = document.querySelector('.dashboard-wrapper');
     const topbar = document.querySelector('.admin-topbar');
+    
+    // Load sidebar state from localStorage (default to collapsed)
+    const sidebarState = localStorage.getItem('adminSidebarCollapsed');
+    const isCollapsed = sidebarState === null ? true : sidebarState === 'true'; // Default to collapsed
+    
+    // Apply initial state
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+        if (dashboardContainer) {
+            dashboardContainer.classList.add('sidebar-collapsed');
+        }
+    } else {
+        sidebar.classList.remove('collapsed');
+        if (dashboardContainer) {
+            dashboardContainer.classList.remove('sidebar-collapsed');
+        }
+    }
     
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function(e) {
@@ -93,11 +109,18 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             
             // Toggle sidebar collapsed state
-            sidebar.classList.toggle('collapsed');
+            const isNowCollapsed = sidebar.classList.toggle('collapsed');
+            
+            // Save state to localStorage
+            localStorage.setItem('adminSidebarCollapsed', isNowCollapsed.toString());
             
             // Toggle dashboard container class
             if (dashboardContainer) {
-                dashboardContainer.classList.toggle('sidebar-collapsed');
+                if (isNowCollapsed) {
+                    dashboardContainer.classList.add('sidebar-collapsed');
+                } else {
+                    dashboardContainer.classList.remove('sidebar-collapsed');
+                }
             }
         });
     }

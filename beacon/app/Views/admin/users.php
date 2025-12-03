@@ -46,6 +46,29 @@
                                 <option value="student">Students</option>
                                 <option value="organization">Organizations</option>
                             </select>
+                            <select class="form-control" id="userSort">
+                                <option value="">Sort by...</option>
+                                <optgroup label="Time">
+                                    <option value="date_newest">Registration Date (Newest First)</option>
+                                    <option value="date_oldest">Registration Date (Oldest First)</option>
+                                </optgroup>
+                                <optgroup label="Name">
+                                    <option value="name_asc">Name (A-Z)</option>
+                                    <option value="name_desc">Name (Z-A)</option>
+                                </optgroup>
+                                <optgroup label="Email">
+                                    <option value="email_asc">Email (A-Z)</option>
+                                    <option value="email_desc">Email (Z-A)</option>
+                                </optgroup>
+                                <optgroup label="Role">
+                                    <option value="role_asc">Role (A-Z)</option>
+                                    <option value="role_desc">Role (Z-A)</option>
+                                </optgroup>
+                                <optgroup label="Status">
+                                    <option value="status_active">Status (Active First)</option>
+                                    <option value="status_inactive">Status (Inactive First)</option>
+                                </optgroup>
+                            </select>
                         </div>
                         <div class="table-container">
                             <table class="data-table" id="users">
@@ -96,10 +119,107 @@
     </div>
 
     <script>
-        // User Management Search and Filter
+        // User Management Search, Filter, and Sort
         const userSearchInput = document.getElementById('userSearch');
         const userFilterSelect = document.getElementById('userFilter');
+        const userSortSelect = document.getElementById('userSort');
         const userTableBody = document.querySelector('#users tbody');
+        let allUserRows = [];
+
+        // Store all rows data on page load
+        function initializeUserData() {
+            if (!userTableBody) return;
+            
+            const rows = Array.from(userTableBody.querySelectorAll('tr'));
+            allUserRows = rows.map(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 0) return null;
+                
+                const name = cells[0].textContent.trim();
+                const email = cells[1].textContent.trim();
+                const roleCell = cells[2];
+                const roleText = roleCell.textContent.trim();
+                const roleBadge = roleCell.querySelector('.role-badge');
+                const roleClass = roleBadge ? roleBadge.className.toLowerCase() : '';
+                const statusCell = cells[3];
+                const statusText = statusCell.textContent.trim();
+                const statusBadge = statusCell.querySelector('.status-badge');
+                const statusClass = statusBadge ? statusBadge.className.toLowerCase() : '';
+                const dateText = cells[4].textContent.trim();
+                
+                return {
+                    row: row,
+                    name: name,
+                    email: email,
+                    role: roleText,
+                    roleClass: roleClass,
+                    status: statusText,
+                    statusClass: statusClass,
+                    date: dateText,
+                    dateValue: parseDate(dateText)
+                };
+            }).filter(item => item !== null);
+        }
+
+        // Parse date string to comparable value
+        function parseDate(dateStr) {
+            if (!dateStr || dateStr === 'N/A') return 0;
+            const date = new Date(dateStr);
+            return isNaN(date.getTime()) ? 0 : date.getTime();
+        }
+
+        // Sort users
+        function sortUsers() {
+            if (!userTableBody || !userSortSelect) return;
+            
+            const sortValue = userSortSelect.value;
+            if (!sortValue) {
+                applyFilters();
+                return;
+            }
+
+            // Create a copy of visible rows for sorting
+            const visibleRows = allUserRows.filter(item => {
+                const row = item.row;
+                return row.style.display !== 'none';
+            });
+
+            visibleRows.sort((a, b) => {
+                switch(sortValue) {
+                    case 'date_newest':
+                        return b.dateValue - a.dateValue;
+                    case 'date_oldest':
+                        return a.dateValue - b.dateValue;
+                    case 'name_asc':
+                        return a.name.localeCompare(b.name);
+                    case 'name_desc':
+                        return b.name.localeCompare(a.name);
+                    case 'email_asc':
+                        return a.email.localeCompare(b.email);
+                    case 'email_desc':
+                        return b.email.localeCompare(a.email);
+                    case 'role_asc':
+                        return a.role.localeCompare(b.role);
+                    case 'role_desc':
+                        return b.role.localeCompare(a.role);
+                    case 'status_active':
+                        if (a.statusClass.includes('active') && !b.statusClass.includes('active')) return -1;
+                        if (!a.statusClass.includes('active') && b.statusClass.includes('active')) return 1;
+                        return 0;
+                    case 'status_inactive':
+                        if (a.statusClass.includes('active') && !b.statusClass.includes('active')) return 1;
+                        if (!a.statusClass.includes('active') && b.statusClass.includes('active')) return -1;
+                        return 0;
+                    default:
+                        return 0;
+                }
+            });
+
+            // Reorder rows in DOM
+            visibleRows.forEach(item => {
+                userTableBody.appendChild(item.row);
+            });
+        }
 
         function filterUsers() {
             if (!userTableBody) return;
@@ -155,15 +275,31 @@
                 tr.innerHTML = '<td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">No users found matching your criteria.</td>';
                 userTableBody.appendChild(tr);
             }
+
+            // Apply sorting after filtering
+            sortUsers();
         }
+
+        function applyFilters() {
+            filterUsers();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUserData();
+        });
 
         // Add event listeners
         if (userSearchInput) {
-            userSearchInput.addEventListener('input', filterUsers);
+            userSearchInput.addEventListener('input', applyFilters);
         }
         
         if (userFilterSelect) {
-            userFilterSelect.addEventListener('change', filterUsers);
+            userFilterSelect.addEventListener('change', applyFilters);
+        }
+
+        if (userSortSelect) {
+            userSortSelect.addEventListener('change', sortUsers);
         }
 
         function viewStudentDetails(id, returnTo) {

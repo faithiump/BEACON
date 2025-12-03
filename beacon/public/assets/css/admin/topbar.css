@@ -40,6 +40,13 @@
     white-space: nowrap;
 }
 
+.topbar-title-image {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
 .search-btn {
     background: transparent;
     border: none;
@@ -192,6 +199,15 @@
 
 .notification-item:hover {
     background: #f8fafc;
+}
+
+.notification-item.unread {
+    background: #f0f9ff;
+    border-left: 3px solid #3b82f6;
+}
+
+.notification-item.unread:hover {
+    background: #e0f2fe;
 }
 
 .notification-icon {

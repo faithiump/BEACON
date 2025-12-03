@@ -62,7 +62,7 @@
                                             <button class="btn-action reject" onclick="rejectOrg(<?= esc($org['id']) ?>)" title="Reject">
                                                 <i class="fas fa-times"></i> Reject
                                             </button>
-                                            <button class="btn-action view" onclick="viewOrgDetails(<?= esc($org['id']) ?>, 'organizations')" title="View Details">
+                                            <button class="btn-action view" onclick="viewPendingOrgDetails(<?= esc($org['id']) ?>)" title="View Details">
                                                 <i class="fas fa-eye"></i> View
                                             </button>
                                         </div>
@@ -119,9 +119,8 @@
             }
         }
 
-        function viewOrgDetails(id, returnTo) {
-            const returnParam = returnTo ? '?return=' + returnTo : '';
-            window.location.href = '<?= base_url('admin/organizations/view') ?>/' + id + returnParam;
+        function viewPendingOrgDetails(id) {
+            window.location.href = '<?= base_url('admin/organizations/pending/view') ?>/' + id + '?return=organizations';
         }
     </script>
 </body>
