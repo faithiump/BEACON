@@ -2725,9 +2725,9 @@ class Student extends BaseController
     }
 
     /**
-     * Purchase Product (Create Reservation)
+     * Reserve Product (Direct Reservation - No Cart)
      */
-    public function purchaseProduct()
+    public function reserveProduct()
     {
         $authCheck = $this->checkAuth();
         if ($authCheck !== true) {
@@ -2741,11 +2741,11 @@ class Student extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
         }
 
-        $paymentMethod = $this->request->getPost('payment_method');
-        $cart = session()->get('cart') ?? [];
+        $productId = $this->request->getPost('product_id');
+        $quantity = $this->request->getPost('quantity') ?? 1;
 
-        if (empty($cart)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Your cart is empty']);
+        if (empty($productId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Product ID is required']);
         }
 
         $productModel = new ProductModel();
@@ -2755,38 +2755,39 @@ class Student extends BaseController
         $db->transStart();
         
         try {
-            foreach ($cart as $productId => $item) {
-                $product = $productModel->find($productId);
-                
-                if (!$product) {
-                    throw new \Exception("Product not found: {$productId}");
-                }
-                
-                // Check stock availability
-                if ($product['stock'] < $item['quantity']) {
-                    throw new \Exception("Insufficient stock for {$product['product_name']}. Available: {$product['stock']}, Requested: {$item['quantity']}");
-                }
-                
-                $quantity = $item['quantity'] ?? 1;
-                $price = (float)$product['price'];
-                $totalAmount = $price * $quantity;
-                
-                // Create reservation
-                $reservationData = [
-                    'student_id' => $student['id'],
-                    'org_id' => $product['org_id'],
-                    'product_id' => $productId,
-                    'product_name' => $product['product_name'],
-                    'quantity' => $quantity,
-                    'price' => $price,
-                    'total_amount' => $totalAmount,
-                    'status' => 'pending',
-                    'payment_method' => $paymentMethod ?? null
-                ];
-                
-                if (!$reservationModel->insert($reservationData)) {
-                    throw new \Exception('Failed to create reservation');
-                }
+            $product = $productModel->find($productId);
+            
+            if (!$product) {
+                throw new \Exception("Product not found");
+            }
+            
+            // Check stock availability
+            if ($product['stock'] < $quantity) {
+                throw new \Exception("Insufficient stock. Available: {$product['stock']}, Requested: {$quantity}");
+            }
+            
+            // Check if product is out of stock
+            if ($product['status'] === 'out_of_stock' || $product['stock'] <= 0) {
+                throw new \Exception("This product is currently out of stock");
+            }
+            
+            $price = (float)$product['price'];
+            $totalAmount = $price * $quantity;
+            
+            // Create reservation
+            $reservationData = [
+                'student_id' => $student['id'],
+                'org_id' => $product['org_id'],
+                'product_id' => $productId,
+                'product_name' => $product['product_name'],
+                'quantity' => $quantity,
+                'price' => $price,
+                'total_amount' => $totalAmount,
+                'status' => 'pending'
+            ];
+            
+            if (!$reservationModel->insert($reservationData)) {
+                throw new \Exception('Failed to create reservation');
             }
             
             $db->transComplete();
@@ -2795,13 +2796,9 @@ class Student extends BaseController
                 throw new \Exception('Transaction failed');
             }
             
-            // Clear cart after successful reservation
-            session()->remove('cart');
-            
             return $this->response->setJSON([
                 'success' => true, 
-                'message' => 'Reservation created successfully! Waiting for organization approval.',
-                'payment_method' => $paymentMethod
+                'message' => 'Reservation created successfully! Waiting for organization approval.'
             ]);
             
         } catch (\Exception $e) {

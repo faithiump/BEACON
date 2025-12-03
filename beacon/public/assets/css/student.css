@@ -2093,20 +2093,44 @@ body {
 }
 
 .btn-add-cart {
-    width: 44px;
-    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    min-width: 120px;
+    height: auto;
     border-radius: var(--border-radius);
     background: var(--primary-500);
     color: white;
     border: none;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
-.btn-add-cart:hover {
+.btn-add-cart:hover:not(:disabled) {
     background: var(--primary-600);
-    transform: scale(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.btn-add-cart:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-add-cart:disabled {
+    background: var(--gray-300);
+    color: var(--gray-500);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-add-cart i {
+    font-size: 1rem;
 }
 
 /* ==============================================
