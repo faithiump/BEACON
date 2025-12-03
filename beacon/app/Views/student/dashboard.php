@@ -33,7 +33,7 @@
                         <?php if(isset($newEventsCount) && $newEventsCount > 0): ?>
                             <span class="nav-badge" id="eventsNavBadge" style="display: flex;"><?= $newEventsCount ?></span>
                         <?php else: ?>
-                            <span class="nav-badge" id="eventsNavBadge" style="display: none;">0</span>
+                            <span class="nav-badge" style="display: none;">0</span>
                         <?php endif; ?>
                     </a>
                     <a href="#announcements" class="nav-link" data-section="announcements">
@@ -42,7 +42,7 @@
                         <?php if(isset($newAnnouncementsCount) && $newAnnouncementsCount > 0): ?>
                             <span class="nav-badge" id="announcementsNavBadge" style="display: flex;"><?= $newAnnouncementsCount ?></span>
                         <?php else: ?>
-                            <span class="nav-badge" id="announcementsNavBadge" style="display: none;">0</span>
+                            <span class="nav-badge" style="display: none;">0</span>
                         <?php endif; ?>
                     </a>
                     <a href="#organizations" class="nav-link" data-section="organizations">
@@ -98,13 +98,13 @@
                                     <span class="quick-action-desc">Updates & alerts</span>
                                 </div>
                                 
-                                <!-- Payments Action -->
+                                <!-- Reservations Action -->
                                 <div class="quick-action-item" id="paymentsActionBtn">
                                     <div class="quick-action-icon payment">
-                                        <i class="fas fa-credit-card"></i>
-                                        <span class="item-badge" id="pendingPaymentCount">2</span>
+                                        <i class="fas fa-shopping-cart"></i>
+                                        <span class="item-badge" id="pendingPaymentCount" style="display: none;">0</span>
                                     </div>
-                                    <span class="quick-action-label">Payments</span>
+                                    <span class="quick-action-label">Reservations</span>
                                     <span class="quick-action-desc">Pending & history</span>
                                 </div>
                             </div>
@@ -180,7 +180,7 @@
                     <?php if(isset($newEventsCount) && $newEventsCount > 0): ?>
                         <span class="nav-badge" id="eventsMobileNavBadge" style="display: flex;"><?= $newEventsCount ?></span>
                     <?php else: ?>
-                        <span class="nav-badge" id="eventsMobileNavBadge" style="display: none;">0</span>
+                        <span class="nav-badge" style="display: none;">0</span>
                     <?php endif; ?>
                 </a>
                 <a href="#announcements" class="mobile-nav-link" data-section="announcements">
@@ -188,7 +188,7 @@
                     <?php if(isset($newAnnouncementsCount) && $newAnnouncementsCount > 0): ?>
                         <span class="nav-badge" id="announcementsMobileNavBadge" style="display: flex;"><?= $newAnnouncementsCount ?></span>
                     <?php else: ?>
-                        <span class="nav-badge" id="announcementsMobileNavBadge" style="display: none;">0</span>
+                        <span class="nav-badge" style="display: none;">0</span>
                     <?php endif; ?>
                 </a>
                 <a href="#organizations" class="mobile-nav-link" data-section="organizations">
@@ -228,7 +228,7 @@
                                         <?php if(session()->get('photo')): ?>
                                             <img src="<?= esc(session()->get('photo')) ?>" alt="Profile" id="sidebarProfilePhoto">
                                         <?php else: ?>
-                                            <img src="" alt="Profile" id="sidebarProfilePhoto" style="display: none;">
+                                            <img src="" alt="Profile" style="display: none;">
                                             <div class="avatar-placeholder-lg" id="sidebarProfilePlaceholder">
                                                 <?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1) . substr($profile['lastname'] ?? 'T', 0, 1)) ?>
                                             </div>
@@ -448,10 +448,10 @@
                                         <?php endif; ?>
                                     </button>
                                 </div>
-                                <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
-                                    <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
+                                <div class="comments-section" id="comments-feed-announcement-<?= $announcement['id'] ?>" style="display: none;">
+                                    <div class="comments-list" id="comments-list-feed-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
+                                        <input type="text" class="comment-input" id="comment-input-feed-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
                                         <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
@@ -603,40 +603,17 @@
 
                         <!-- Right Sidebar -->
                         <aside class="student-sidebar-right">
-                            <!-- Pending Payments -->
+                            <!-- Pending Reservations -->
                             <div class="student-sidebar-card payments-sidebar">
                                 <div class="sidebar-header-flex">
-                                    <h4 class="sidebar-card-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
-                                    <span class="pending-count">2</span>
+                                    <h4 class="sidebar-card-title"><i class="fas fa-shopping-cart"></i> Pending Reservations</h4>
+                                    <span class="pending-count" id="sidebarPendingCount" style="display: none;">0</span>
                                 </div>
-                                <div class="pending-payments-list">
-                                    <div class="pending-payment-item">
-                                        <div class="pp-icon">
-                                            <i class="fas fa-tshirt"></i>
-                                        </div>
-                                        <div class="pp-info">
-                                            <span class="pp-name">CSS Official T-Shirt x2</span>
-                                            <span class="pp-due">Due: Dec 1, 2025</span>
-                                        </div>
-                                        <span class="pp-amount">₱700</span>
-                                    </div>
-                                    <div class="pending-payment-item">
-                                        <div class="pp-icon">
-                                            <i class="fas fa-ticket-alt"></i>
-                                        </div>
-                                        <div class="pp-info">
-                                            <span class="pp-name">Tech Summit Registration</span>
-                                            <span class="pp-due">Due: Dec 3, 2025</span>
-                                        </div>
-                                        <span class="pp-amount">₱150</span>
-                                    </div>
-                                </div>
-                                <div class="pending-total">
-                                    <span>Total Pending</span>
-                                    <span class="total-value">₱850</span>
+                                <div class="pending-payments-list" id="pendingReservationsList">
+                                    <p style="text-align: center; color: #64748b; padding: 1rem;">No pending reservations</p>
                                 </div>
                                 <a href="#payments" class="btn btn-primary btn-block" onclick="switchSection('payments')">
-                                    <i class="fas fa-credit-card"></i> Pay Now
+                                    <i class="fas fa-shopping-cart"></i> View Reservations
                                 </a>
                             </div>
 
@@ -699,8 +676,8 @@
                                         <span>Announcements</span>
                                     </a>
                                     <a href="#payments" class="quick-link-item" onclick="switchSection('payments')">
-                                        <i class="fas fa-history"></i>
-                                        <span>Payment History</span>
+                                        <i class="fas fa-shopping-cart"></i>
+                                        <span>Reservations</span>
                                     </a>
                                 </div>
                             </div>
@@ -1087,62 +1064,26 @@
                     </div>
                 </section>
 
-                <!-- Payments Section -->
+                <!-- Reservations Section -->
                 <section class="content-section" id="payments">
                     <div class="section-header">
                         <div>
-                            <h1 class="section-title">Payments</h1>
-                            <p class="section-subtitle">Manage your pending payments and view history</p>
+                            <h1 class="section-title">Reservations</h1>
+                            <p class="section-subtitle">Manage your pending reservations and view history</p>
                         </div>
                     </div>
                     
                     <div class="payments-tabs">
-                        <button class="payment-tab active" data-tab="pending">Pending Payments</button>
-                        <button class="payment-tab" data-tab="history">Payment History</button>
+                        <button class="payment-tab active" data-tab="pending">Pending Reservations</button>
+                        <button class="payment-tab" data-tab="history">Reservation History</button>
                     </div>
 
                     <div class="payment-content active" id="pending-content">
-                        <div class="payment-cards">
-                            <div class="payment-card pending">
-                                <div class="payment-card-header">
-                                    <span class="payment-status pending"><i class="fas fa-clock"></i> Pending</span>
-                                    <span class="payment-id">ORD-6745ABC1</span>
-                                </div>
-                                <div class="payment-card-body">
-                                    <h3>CSS Official T-Shirt x2</h3>
-                                    <p class="payment-org"><i class="fas fa-building"></i> Computer Science Society</p>
-                                    <div class="payment-due">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>Due: December 1, 2025</span>
-                                    </div>
-                                </div>
-                                <div class="payment-card-footer">
-                                    <span class="payment-amount">₱700.00</span>
-                                    <button class="btn-primary" onclick="initiatePayment(1)">
-                                        <i class="fas fa-credit-card"></i> Pay Now
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="payment-card pending">
-                                <div class="payment-card-header">
-                                    <span class="payment-status pending"><i class="fas fa-clock"></i> Pending</span>
-                                    <span class="payment-id">ORD-6745ABC2</span>
-                                </div>
-                                <div class="payment-card-body">
-                                    <h3>Tech Summit 2025 Registration</h3>
-                                    <p class="payment-org"><i class="fas fa-building"></i> Computer Science Society</p>
-                                    <div class="payment-due">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>Due: December 3, 2025</span>
-                                    </div>
-                                </div>
-                                <div class="payment-card-footer">
-                                    <span class="payment-amount">₱150.00</span>
-                                    <button class="btn-primary" onclick="initiatePayment(2)">
-                                        <i class="fas fa-credit-card"></i> Pay Now
-                                    </button>
-                                </div>
+                        <div class="payment-cards" id="pendingReservationsCards">
+                            <!-- Reservations will be loaded dynamically -->
+                            <div style="text-align: center; padding: 3rem; color: #64748b;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>Loading reservations...</p>
                             </div>
                         </div>
                     </div>
@@ -1163,31 +1104,10 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><span class="txn-id">TXN-9876DEF1</span></td>
-                                        <td>GEI Eco-Bag</td>
-                                        <td>Green Energy Initiative</td>
-                                        <td>₱150.00</td>
-                                        <td>Nov 15, 2025</td>
-                                        <td><span class="method-badge gcash">GCash</span></td>
-                                        <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="txn-id">TXN-9876DEF2</span></td>
-                                        <td>CSS Membership Fee</td>
-                                        <td>Computer Science Society</td>
-                                        <td>₱200.00</td>
-                                        <td>Nov 10, 2025</td>
-                                        <td><span class="method-badge cash">Cash</span></td>
-                                        <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="txn-id">TXN-9876DEF3</span></td>
-                                        <td>Business Workshop Registration</td>
-                                        <td>Business Administration Club</td>
-                                        <td>₱300.00</td>
-                                        <td>Nov 5, 2025</td>
-                                        <td><span class="method-badge bank">Bank Transfer</span></td>
-                                        <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
+                                        <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
+                                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                            <p>Loading reservation history...</p>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1616,7 +1536,7 @@
 
 
     <script>
-        const baseUrl = '<?= base_url() ?>';
+        const baseUrl = <?= json_encode(base_url()) ?>;
         
         // Global Search Functionality
         function initializeGlobalSearch() {
@@ -1687,7 +1607,14 @@
                     `;
                     
                     // Insert at the beginning of active section content
-                    const sectionContent = activeSection.querySelector('.org-posts-container, .events-grid, .orgs-grid, .products-grid, #announcementsList, > div:first-child');
+                    // Try different selectors to find the content container
+                    let sectionContent = activeSection.querySelector('.org-posts-container') ||
+                                       activeSection.querySelector('.events-grid') ||
+                                       activeSection.querySelector('.orgs-grid') ||
+                                       activeSection.querySelector('.products-grid') ||
+                                       activeSection.querySelector('#announcementsList') ||
+                                       activeSection.querySelector('div:first-child');
+                    
                     if (sectionContent) {
                         sectionContent.insertBefore(generalEmpty, sectionContent.firstChild);
                     } else {
@@ -1968,26 +1895,62 @@
         }
         
         // Hide badges if user has already viewed the sections
+        // Make dropdownMenu accessible globally
+        let dropdownMenu = null;
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Get dropdownMenu reference
+            dropdownMenu = document.getElementById('dropdownMenu');
+            
+            // Initialize navigation first
+            const navLinks = document.querySelectorAll('.nav-link[data-section], .mobile-nav-link[data-section], .dropdown-item[data-section]');
+            
+            if (navLinks && navLinks.length > 0) {
+                navLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const sectionId = link.dataset.section;
+                        if (sectionId) {
+                            switchSection(sectionId);
+                        }
+                        if (typeof closeMobileMenu === 'function') {
+                            closeMobileMenu();
+                        }
+                        if (dropdownMenu) {
+                            dropdownMenu.classList.remove('active');
+                        }
+                    });
+                });
+            }
+            
             // Load initial notification count
-            fetch(baseUrl + 'student/notifications', {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.notifications) {
-                    updateNotificationCount(data.notifications);
-                }
-            })
-            .catch(error => {
-                console.error('Error loading notification count:', error);
-            });
+            try {
+                fetch(baseUrl + 'student/notifications', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.notifications) {
+                        if (typeof updateNotificationCount === 'function') {
+                            updateNotificationCount(data.notifications);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notification count:', error);
+                });
+            } catch (e) {
+                console.error('Error in notification fetch:', e);
+            }
             
             // Initialize global search
-            initializeGlobalSearch();
+            if (typeof initializeGlobalSearch === 'function') {
+                initializeGlobalSearch();
+            }
             
             // Hide events badge if already viewed
             const eventsBadgeViewed = localStorage.getItem('eventsBadgeViewed');
@@ -2013,6 +1976,39 @@
                 if (announcementsMobileNavBadge) {
                     announcementsMobileNavBadge.style.display = 'none';
                 }
+            }
+            
+            // Load pending reservations count and sidebar list on page load
+            if (typeof loadPendingReservations === 'function') {
+                fetch(baseUrl + 'student/payments/pending', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.pending_payments) {
+                        updatePendingReservationsCount(data.pending_payments.length);
+                        updateSidebarReservations(data.pending_payments);
+                    } else {
+                        updatePendingReservationsCount(0);
+                        updateSidebarReservations([]);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading pending reservations count:', error);
+                });
+            }
+            
+            // Initialize User Dropdown
+            const userBtn = document.getElementById('userBtn');
+            if (userBtn && dropdownMenu) {
+                userBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('active');
+                    const quickActionsDropdown = document.getElementById('quickActionsDropdown');
+                    if (quickActionsDropdown) {
+                        quickActionsDropdown.classList.remove('active');
+                    }
+                });
             }
         });
         
@@ -2066,88 +2062,103 @@
         const mobileNavOverlay = document.getElementById('mobileNavOverlay');
         const closeMobileNav = document.getElementById('closeMobileNav');
         
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileNav.classList.add('open');
-            mobileNavOverlay.classList.add('active');
-        });
+        if (mobileMenuBtn && mobileNav && mobileNavOverlay) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileNav.classList.add('open');
+                mobileNavOverlay.classList.add('active');
+            });
+        }
         
-        closeMobileNav.addEventListener('click', closeMobileMenu);
-        mobileNavOverlay.addEventListener('click', closeMobileMenu);
+        if (closeMobileNav) {
+            closeMobileNav.addEventListener('click', closeMobileMenu);
+        }
+        if (mobileNavOverlay) {
+            mobileNavOverlay.addEventListener('click', closeMobileMenu);
+        }
         
         function closeMobileMenu() {
-            mobileNav.classList.remove('open');
-            mobileNavOverlay.classList.remove('active');
+            if (mobileNav) {
+                mobileNav.classList.remove('open');
+            }
+            if (mobileNavOverlay) {
+                mobileNavOverlay.classList.remove('active');
+            }
         }
 
-        // User Dropdown
-        const userBtn = document.getElementById('userBtn');
-        const dropdownMenu = document.getElementById('dropdownMenu');
-        
-        userBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownMenu.classList.toggle('active');
-            quickActionsDropdown.classList.remove('active');
-        });
-        
-        // Quick Actions Dropdown
+        // Quick Actions Dropdown - Declare first
         const quickActionsBtn = document.getElementById('quickActionsBtn');
         const quickActionsDropdown = document.getElementById('quickActionsDropdown');
         const notificationPanel = document.getElementById('notificationPanel');
         const cartActionBtn = document.getElementById('cartActionBtn');
+        const cartSidebar = document.getElementById('cartSidebar');
+        const cartOverlay = document.getElementById('cartOverlay');
         const notificationActionBtn = document.getElementById('notificationActionBtn');
         const backToActions = document.getElementById('backToActions');
         const notifTabs = document.querySelectorAll('.notif-tab');
         
-        quickActionsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            quickActionsDropdown.classList.toggle('active');
-            dropdownMenu.classList.remove('active');
-            // Reset to main view when opening
-            notificationPanel.classList.remove('active');
-            quickActionsDropdown.classList.remove('show-notifications');
-        });
+        if (quickActionsBtn && quickActionsDropdown) {
+            quickActionsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                quickActionsDropdown.classList.toggle('active');
+                if (dropdownMenu) {
+                    dropdownMenu.classList.remove('active');
+                }
+                // Reset to main view when opening
+                if (notificationPanel) {
+                    notificationPanel.classList.remove('active');
+                }
+                quickActionsDropdown.classList.remove('show-notifications');
+            });
+        }
         
         // Cart action - opens cart sidebar
-        cartActionBtn.addEventListener('click', () => {
-            quickActionsDropdown.classList.remove('active');
-            cartSidebar.classList.add('open');
-            cartOverlay.classList.add('active');
-        });
+        if (cartActionBtn && cartSidebar && cartOverlay) {
+            cartActionBtn.addEventListener('click', () => {
+                if (quickActionsDropdown) {
+                    quickActionsDropdown.classList.remove('active');
+                }
+                cartSidebar.classList.add('open');
+                cartOverlay.classList.add('active');
+            });
+        }
         
         // Notification action - shows notification panel
-        notificationActionBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            notificationPanel.classList.add('active');
-            quickActionsDropdown.classList.add('show-notifications');
-        });
+        if (notificationActionBtn && notificationPanel && quickActionsDropdown) {
+            notificationActionBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notificationPanel.classList.add('active');
+                quickActionsDropdown.classList.add('show-notifications');
+            });
+        }
         
         // Payments action - navigates to payments section
         const paymentsActionBtn = document.getElementById('paymentsActionBtn');
-        paymentsActionBtn.addEventListener('click', () => {
-            quickActionsDropdown.classList.remove('active');
-            // Switch to payments tab
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelectorAll('.mobile-nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelectorAll('.dashboard-section').forEach(section => section.classList.remove('active'));
-            document.getElementById('payments').classList.add('active');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        if (paymentsActionBtn) {
+            paymentsActionBtn.addEventListener('click', () => {
+                switchSection('payments');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
         
         // Back button in notification panel
-        backToActions.addEventListener('click', (e) => {
-            e.stopPropagation();
-            notificationPanel.classList.remove('active');
-            quickActionsDropdown.classList.remove('show-notifications');
-        });
+        if (backToActions && notificationPanel && quickActionsDropdown) {
+            backToActions.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notificationPanel.classList.remove('active');
+                quickActionsDropdown.classList.remove('show-notifications');
+            });
+        }
         
         // Notification tabs
-        notifTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                notifTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                filterNotifications(tab.dataset.type);
+        if (notifTabs && notifTabs.length > 0) {
+            notifTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    notifTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    filterNotifications(tab.dataset.type);
+                });
             });
-        });
+        }
         
         // Load notifications from API
         function loadNotifications() {
@@ -2189,7 +2200,8 @@
                 'announcement': { class: 'announcement', icon: 'fa-bullhorn' },
                 'org': { class: 'org', icon: 'fa-users' },
                 'comment': { class: 'comment', icon: 'fa-comment' },
-                'payment': { class: 'payment', icon: 'fa-credit-card' }
+                'payment': { class: 'payment', icon: 'fa-credit-card' },
+                'product': { class: 'product', icon: 'fa-shopping-bag' }
             };
             
             notificationList.innerHTML = notifications.map(notif => {
@@ -2207,6 +2219,12 @@
                 } else if (notif.type === 'org' && notif.id && notif.id.startsWith('org_')) {
                     const orgId = notif.id.replace('org_', '');
                     clickHandler = `onclick="handleNotificationClick('${notif.id}', 'org', ${orgId})"`;
+                } else if (notif.type === 'product' && notif.id && notif.id.startsWith('product_')) {
+                    const productId = notif.id.replace('product_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'product', ${productId})"`;
+                } else if (notif.type === 'event' && notif.id && notif.id.startsWith('event_new_')) {
+                    const eventId = notif.id.replace('event_new_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'event', ${eventId})"`;
                 } else {
                     clickHandler = `onclick="handleNotificationClick('${notif.id}', '${notif.type}', null)"`;
                 }
@@ -2250,6 +2268,12 @@
                 switchSection('organizations');
                 setTimeout(() => {
                     showToast('Organization notification clicked', 'info');
+                }, 100);
+            } else if (type === 'product' && itemId) {
+                // Navigate to products section
+                switchSection('products');
+                setTimeout(() => {
+                    showToast('Product notification clicked', 'info');
                 }, 100);
             } else {
                 // Default navigation
@@ -2310,36 +2334,39 @@
             });
         }
         
-        document.getElementById('markAllRead').addEventListener('click', () => {
-            // Call API to mark all as read
-            fetch(baseUrl + 'student/notifications/read', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: 'mark_all=true'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
+        const markAllReadBtn = document.getElementById('markAllRead');
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', () => {
+                // Call API to mark all as read
+                fetch(baseUrl + 'student/notifications/read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'mark_all=true'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelectorAll('.notification-item.unread').forEach(item => {
+                            item.classList.remove('unread');
+                        });
+                        updateNotificationCountFromDOM();
+                        showToast('All notifications marked as read', 'success');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error marking all notifications as read:', error);
+                    // Still update UI even if API call fails
                     document.querySelectorAll('.notification-item.unread').forEach(item => {
                         item.classList.remove('unread');
                     });
                     updateNotificationCountFromDOM();
                     showToast('All notifications marked as read', 'success');
-                }
-            })
-            .catch(error => {
-                console.error('Error marking all notifications as read:', error);
-                // Still update UI even if API call fails
-                document.querySelectorAll('.notification-item.unread').forEach(item => {
-                    item.classList.remove('unread');
                 });
-                updateNotificationCountFromDOM();
-                showToast('All notifications marked as read', 'success');
             });
-        });
+        }
         
         function updateNotificationCount(notifications) {
             const unreadCount = notifications.filter(n => n.unread).length;
@@ -2377,21 +2404,20 @@
             }
         }
 
-        // Load notifications when notification panel is opened
-        notificationActionBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            notificationPanel.classList.add('active');
-            quickActionsDropdown.classList.add('show-notifications');
-            loadNotifications();
-        });
+        // Load notifications when notification panel is opened (duplicate removed - already handled above)
         
         // Add click handlers to notification tabs
-        document.querySelectorAll('.notif-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                const type = this.getAttribute('data-type');
-                filterNotifications(type);
+        const notifTabsElements = document.querySelectorAll('.notif-tab');
+        if (notifTabsElements && notifTabsElements.length > 0) {
+            notifTabsElements.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const type = this.getAttribute('data-type');
+                    if (type) {
+                        filterNotifications(type);
+                    }
+                });
             });
-        });
+        }
         
         function updateCombinedBadge() {
             const unreadCount = document.querySelectorAll('.notification-item.unread').length;
@@ -2406,39 +2432,41 @@
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
-            if (!quickActionsDropdown.contains(e.target) && !quickActionsBtn.contains(e.target)) {
+            if (quickActionsDropdown && !quickActionsDropdown.contains(e.target) && quickActionsBtn && !quickActionsBtn.contains(e.target)) {
                 quickActionsDropdown.classList.remove('active');
+            }
+            if (notificationPanel && !notificationPanel.contains(e.target) && notificationActionBtn && !notificationActionBtn.contains(e.target)) {
                 notificationPanel.classList.remove('active');
             }
-            if (!dropdownMenu.contains(e.target) && !userBtn.contains(e.target)) {
+            const userBtn = document.getElementById('userBtn');
+            if (dropdownMenu && !dropdownMenu.contains(e.target) && userBtn && !userBtn.contains(e.target)) {
                 dropdownMenu.classList.remove('active');
             }
-        });
-
-        // Navigation
-        const navLinks = document.querySelectorAll('.nav-link[data-section], .mobile-nav-link[data-section], .dropdown-item[data-section]');
-        const sections = document.querySelectorAll('.content-section');
-        
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const sectionId = link.dataset.section;
-                switchSection(sectionId);
-                closeMobileMenu();
-                dropdownMenu.classList.remove('active');
-            });
         });
 
         function switchSection(sectionId) {
+            if (!sectionId) {
+                console.error('switchSection called without sectionId');
+                return;
+            }
+            
             // Update nav
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             document.querySelectorAll('.mobile-nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelector(`.nav-link[data-section="${sectionId}"]`)?.classList.add('active');
-            document.querySelector(`.mobile-nav-link[data-section="${sectionId}"]`)?.classList.add('active');
+            const activeNavLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+            const activeMobileNavLink = document.querySelector(`.mobile-nav-link[data-section="${sectionId}"]`);
+            if (activeNavLink) activeNavLink.classList.add('active');
+            if (activeMobileNavLink) activeMobileNavLink.classList.add('active');
             
-            // Update sections
-            sections.forEach(section => section.classList.remove('active'));
-            document.getElementById(sectionId)?.classList.add('active');
+            // Update sections - query DOM each time to ensure we get all sections
+            const allSections = document.querySelectorAll('.content-section');
+            allSections.forEach(section => section.classList.remove('active'));
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            } else {
+                console.error('Section not found:', sectionId);
+            }
             
             // Hide events badge when events section is viewed
             if (sectionId === 'events') {
@@ -2497,6 +2525,12 @@
                 }, 200);
             }
             
+            // Load reservations when payments section is activated
+            if (sectionId === 'payments') {
+                loadPendingReservations();
+                loadReservationHistory();
+            }
+            
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -2511,22 +2545,199 @@
                 paymentContents.forEach(c => c.classList.remove('active'));
                 
                 tab.classList.add('active');
-                document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+                const contentId = `${tab.dataset.tab}-content`;
+                const content = document.getElementById(contentId);
+                if (content) {
+                    content.classList.add('active');
+                }
+                
+                // Load data when tab is clicked
+                if (tab.dataset.tab === 'pending') {
+                    loadPendingReservations();
+                } else if (tab.dataset.tab === 'history') {
+                    loadReservationHistory();
+                }
             });
         });
+        
+        // Load Pending Reservations
+        function loadPendingReservations() {
+            const container = document.getElementById('pendingReservationsCards');
+            if (!container) return;
+            
+            container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Loading reservations...</p></div>';
+            
+            fetch(baseUrl + 'student/payments/pending', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.pending_payments) {
+                    renderPendingReservations(data.pending_payments, container);
+                    updatePendingReservationsCount(data.pending_payments.length);
+                    updateSidebarReservations(data.pending_payments);
+                } else {
+                    container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No pending reservations</p></div>';
+                    updatePendingReservationsCount(0);
+                    updateSidebarReservations([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading pending reservations:', error);
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #ef4444;"><p>Error loading reservations. Please try again.</p></div>';
+            });
+        }
+        
+        // Update Pending Reservations Count
+        function updatePendingReservationsCount(count) {
+            const badge = document.getElementById('pendingPaymentCount');
+            const sidebarBadge = document.getElementById('sidebarPendingCount');
+            
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            if (sidebarBadge) {
+                if (count > 0) {
+                    sidebarBadge.textContent = count;
+                    sidebarBadge.style.display = 'inline-block';
+                } else {
+                    sidebarBadge.style.display = 'none';
+                }
+            }
+        }
+        
+        // Update Sidebar Reservations List
+        function updateSidebarReservations(reservations) {
+            const sidebarList = document.getElementById('pendingReservationsList');
+            if (!sidebarList) return;
+            
+            if (!reservations || reservations.length === 0) {
+                sidebarList.innerHTML = '<p style="text-align: center; color: #64748b; padding: 1rem;">No pending reservations</p>';
+                return;
+            }
+            
+            sidebarList.innerHTML = reservations.slice(0, 3).map(reservation => {
+                return `
+                    <div style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">
+                        <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 0.25rem;">
+                            ${reservation.product_name}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #64748b;">
+                            ${reservation.organization} • ₱${parseFloat(reservation.total_amount).toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            }).join('') + (reservations.length > 3 ? `<p style="text-align: center; color: #64748b; padding: 0.5rem; font-size: 0.75rem;">+${reservations.length - 3} more</p>` : '');
+        }
+        
+        // Load Reservation History
+        function loadReservationHistory() {
+            const container = document.getElementById('history-content');
+            if (!container) return;
+            
+            const tableBody = container.querySelector('tbody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Loading history...</p></td></tr>';
+            
+            fetch(baseUrl + 'student/payments/history', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.payment_history && data.payment_history.length > 0) {
+                    renderReservationHistory(data.payment_history, tableBody);
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-history" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No reservation history</p></td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading reservation history:', error);
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #ef4444;"><p>Error loading history. Please try again.</p></td></tr>';
+            });
+        }
+        
+        // Render Pending Reservations
+        function renderPendingReservations(reservations, container) {
+            if (!reservations || reservations.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No pending reservations</p></div>';
+                return;
+            }
+            
+            container.innerHTML = reservations.map(reservation => {
+                const imageUrl = reservation.product_image ? baseUrl + 'uploads/products/' + reservation.product_image : 'https://via.placeholder.com/100';
+                return `
+                    <div class="payment-card" style="background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="display: flex; gap: 1rem; align-items: start;">
+                            <img src="${imageUrl}" alt="${reservation.product_name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #1e293b;">${reservation.product_name}</h4>
+                                <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #64748b;">${reservation.organization}</p>
+                                <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: #64748b;">
+                                    <span>Qty: ${reservation.quantity}</span>
+                                    <span>Price: ₱${parseFloat(reservation.price).toFixed(2)}</span>
+                                </div>
+                                <div style="margin-top: 0.5rem; font-weight: 600; color: #1e293b;">
+                                    Total: ₱${parseFloat(reservation.total_amount).toFixed(2)}
+                                </div>
+                                <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #64748b;">
+                                    Reserved: ${new Date(reservation.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="status-badge pending" style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #fef3c7; color: #92400e;">
+                                    <i class="fas fa-clock"></i> Pending
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Render Reservation History
+        function renderReservationHistory(history, tableBody) {
+            tableBody.innerHTML = history.map(item => {
+                const methodClass = item.method.toLowerCase().replace(/\s+/g, '');
+                return `
+                    <tr>
+                        <td><span class="txn-id">${item.transaction_id}</span></td>
+                        <td>${item.description}</td>
+                        <td>${item.organization}</td>
+                        <td>₱${parseFloat(item.amount).toFixed(2)}</td>
+                        <td>${item.date}</td>
+                        <td><span class="method-badge ${methodClass}">${item.method}</span></td>
+                        <td><span class="status-badge completed"><i class="fas fa-check"></i> ${item.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
 
         // Cart Functionality
-        const cartSidebar = document.getElementById('cartSidebar');
-        const cartOverlay = document.getElementById('cartOverlay');
         const closeCart = document.getElementById('closeCart');
         let cart = [];
 
-        closeCart.addEventListener('click', closeCartSidebar);
-        cartOverlay.addEventListener('click', closeCartSidebar);
+        if (closeCart) {
+            closeCart.addEventListener('click', closeCartSidebar);
+        }
+        if (cartOverlay) {
+            cartOverlay.addEventListener('click', closeCartSidebar);
+        }
 
         function closeCartSidebar() {
-            cartSidebar.classList.remove('open');
-            cartOverlay.classList.remove('active');
+            if (cartSidebar) {
+                cartSidebar.classList.remove('open');
+            }
+            if (cartOverlay) {
+                cartOverlay.classList.remove('active');
+            }
         }
 
         function addToCart(productId) {
@@ -3595,16 +3806,21 @@
                 // Find the parent container (announcement-card or feed-post)
                 const parentCard = buttonElement.closest('.announcement-card, .feed-post');
                 if (parentCard) {
-                    // Find comments section within this specific card
-                    commentsSection = parentCard.querySelector(`#comments-${postType}-${postId}`);
-                    commentsList = parentCard.querySelector(`#comments-list-${postType}-${postId}`);
+                    // Try to find comments section within this specific card
+                    // First try the standard pattern, then try feed pattern
+                    commentsSection = parentCard.querySelector(`#comments-${postType}-${postId}`) ||
+                                    parentCard.querySelector(`#comments-feed-${postType}-${postId}`);
+                    commentsList = parentCard.querySelector(`#comments-list-${postType}-${postId}`) ||
+                                 parentCard.querySelector(`#comments-list-feed-${postType}-${postId}`);
                 }
             }
             
             // Fallback to getElementById if not found via parent
             if (!commentsSection) {
-                commentsSection = document.getElementById(`comments-${postType}-${postId}`);
-                commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+                commentsSection = document.getElementById(`comments-${postType}-${postId}`) ||
+                                 document.getElementById(`comments-feed-${postType}-${postId}`);
+                commentsList = document.getElementById(`comments-list-${postType}-${postId}`) ||
+                             document.getElementById(`comments-list-feed-${postType}-${postId}`);
             }
             
             console.log('Comments section element:', commentsSection);
@@ -3637,9 +3853,10 @@
             console.log('loadComments called:', postId, postType);
             let commentsList = commentsListElement;
             
-            // If commentsListElement not provided, try to find it
+            // If commentsListElement not provided, try to find it (check both standard and feed patterns)
             if (!commentsList) {
-                commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+                commentsList = document.getElementById(`comments-list-${postType}-${postId}`) ||
+                             document.getElementById(`comments-list-feed-${postType}-${postId}`);
             }
             
             console.log('Comments list element:', commentsList);
@@ -3842,7 +4059,9 @@
         }
 
         function postComment(postId, postType) {
-            const input = document.getElementById(`comment-input-${postType}-${postId}`);
+            // Try to find comment input - check both standard and feed patterns
+            const input = document.getElementById(`comment-input-${postType}-${postId}`) ||
+                         document.getElementById(`comment-input-feed-${postType}-${postId}`);
             if (!input) return;
             
             const content = input.value.trim();

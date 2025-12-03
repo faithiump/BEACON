@@ -47,11 +47,11 @@
                     <i class="fas fa-box"></i>
                     <span>Products</span>
                 </a>
-                <a href="#payments" class="nav-link" data-section="payments">
-                    <i class="fas fa-credit-card"></i>
-                    <span>Payments</span>
+                <a href="#reservations" class="nav-link" data-section="reservations">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Reservations</span>
                     <?php if(($stats['pending_payments'] ?? 0) > 0): ?>
-                    <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
+                    <span class="nav-badge warning" id="reservationsBadge"><?= $stats['pending_payments'] ?></span>
                     <?php endif; ?>
                 </a>
                 <a href="#forum" class="nav-link" data-section="forum">
@@ -96,7 +96,7 @@
                                     <span class="quick-action-desc">Post an update</span>
                                 </div>
                             </button>
-                            <button class="quick-action-item" onclick="openModal('productModal')">
+                            <button class="quick-action-item" onclick="openProductModal()">
                                 <div class="quick-action-icon product">
                                     <i class="fas fa-box"></i>
                                 </div>
@@ -123,11 +123,11 @@
                         <div class="notification-list" id="notificationList">
                             <div class="notification-item unread" data-id="1">
                                 <div class="notif-icon payment">
-                                    <i class="fas fa-credit-card"></i>
+                                    <i class="fas fa-calendar-check"></i>
                                 </div>
                                 <div class="notif-content">
-                                    <p class="notif-title">New Payment Submitted</p>
-                                    <p class="notif-text">John Dela Cruz submitted payment for CSS T-Shirt</p>
+                                    <p class="notif-title">New Reservation Submitted</p>
+                                    <p class="notif-text">John Dela Cruz submitted reservation for CSS T-Shirt</p>
                                     <span class="notif-time"><i class="fas fa-clock"></i> 5 min ago</span>
                                 </div>
                             </div>
@@ -237,10 +237,10 @@
             <a href="#products" class="mobile-nav-link" data-section="products">
                 <i class="fas fa-box"></i> Products
             </a>
-            <a href="#payments" class="mobile-nav-link" data-section="payments">
-                <i class="fas fa-credit-card"></i> Payments
+            <a href="#reservations" class="mobile-nav-link" data-section="reservations">
+                <i class="fas fa-calendar-check"></i> Reservations
                 <?php if(($stats['pending_payments'] ?? 0) > 0): ?>
-                <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
+                <span class="nav-badge warning" id="reservationsBadgeMobile"><?= $stats['pending_payments'] ?></span>
                 <?php endif; ?>
             </a>
             <a href="#forum" class="mobile-nav-link" data-section="forum">
@@ -303,6 +303,10 @@
                                     <span class="stat-num"><?= $stats['total_products'] ?? 0 ?></span>
                                     <span class="stat-text">PRODUCTS</span>
                                 </div>
+                                <div class="profile-stat" style="cursor: pointer;" onclick="viewFollowers()">
+                                    <span class="stat-num"><?= $stats['total_followers'] ?? 0 ?></span>
+                                    <span class="stat-text">FOLLOWERS</span>
+                                </div>
                             </div>
                             <div class="profile-actions">
                                 <button class="btn btn-outline-primary btn-sm" onclick="switchSection('settings')">
@@ -325,7 +329,7 @@
                                 <div class="qs-icon amber"><i class="fas fa-clock"></i></div>
                                 <div class="qs-info">
                                     <span class="qs-value"><?= $stats['pending_payments'] ?? 0 ?></span>
-                                    <span class="qs-label">Pending Payments</span>
+                                    <span class="qs-label">Pending Reservations</span>
                                 </div>
                             </div>
                             <div class="quick-stat-item">
@@ -416,7 +420,7 @@
                                     <i class="fas fa-bullhorn text-warning"></i>
                                     <span>Announcement</span>
                                 </button>
-                                <button class="post-action-btn" onclick="openModal('productModal')">
+                                <button class="post-action-btn" onclick="openProductModal()">
                                     <i class="fas fa-box text-purple"></i>
                                     <span>Product</span>
                                 </button>
@@ -665,7 +669,7 @@
                         <div class="sidebar-card marketplace-card">
                             <div class="sidebar-header">
                                 <h4 class="sidebar-title"><i class="fas fa-store"></i> Our Products</h4>
-                                <button class="btn btn-sm btn-primary" onclick="openModal('productModal')">
+                                <button class="btn btn-sm btn-primary" onclick="openProductModal()">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -690,7 +694,7 @@
                                     <div class="sidebar-empty-full">
                                         <i class="fas fa-box-open"></i>
                                         <p>No products yet</p>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="openModal('productModal')">Add Product</button>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="openProductModal()">Add Product</button>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -730,9 +734,9 @@
                             <a href="#members" class="sidebar-link" onclick="switchSection('members')">Manage members <i class="fas fa-arrow-right"></i></a>
                         </div>
 
-                        <!-- Pending Payments -->
+                        <!-- Pending Reservations -->
                         <div class="sidebar-card">
-                            <h4 class="sidebar-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
+                            <h4 class="sidebar-title"><i class="fas fa-calendar-check"></i> Pending Reservations</h4>
                             <?php if(!empty($pendingPayments)): ?>
                                 <?php foreach(array_slice($pendingPayments, 0, 3) as $payment): ?>
                                 <div class="payment-request-item">
@@ -747,9 +751,9 @@
                                 </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <p class="sidebar-empty">No pending payments</p>
+                                <p class="sidebar-empty">No pending reservations</p>
                             <?php endif; ?>
-                            <a href="#payments" class="sidebar-link" onclick="switchSection('payments')">View all payments <i class="fas fa-arrow-right"></i></a>
+                            <a href="#reservations" class="sidebar-link" onclick="switchSection('reservations')">View all reservations <i class="fas fa-arrow-right"></i></a>
                         </div>
                     </aside>
                 </div>
@@ -972,7 +976,7 @@
                         <h1 class="section-title">Products & Merchandise</h1>
                         <p class="section-subtitle">Manage your organization's products and inventory</p>
                     </div>
-                    <button class="btn btn-primary" onclick="openModal('productModal')">
+                    <button class="btn btn-primary" onclick="openProductModal()">
                         <i class="fas fa-plus"></i> Add Product
                     </button>
                 </div>
@@ -1019,22 +1023,22 @@
                             <i class="fas fa-box-open"></i>
                             <h3>No Products Yet</h3>
                             <p>Create your first product to start selling merchandise</p>
-                            <button class="btn btn-primary" onclick="openModal('productModal')">Add Product</button>
+                            <button class="btn btn-primary" onclick="openProductModal()">Add Product</button>
                         </div>
                     <?php endif; ?>
                 </div>
             </section>
 
-            <!-- Payments Section -->
-            <section id="payments" class="dashboard-section">
+            <!-- Reservations Section -->
+            <section id="reservations" class="dashboard-section">
                 <div class="section-header">
                     <div>
-                        <h1 class="section-title">Payment Management</h1>
-                        <p class="section-subtitle">Review and confirm member payments</p>
+                        <h1 class="section-title">Reservation Management</h1>
+                        <p class="section-subtitle">Review and confirm member reservations</p>
                     </div>
                     <div class="section-tabs">
-                        <button class="tab-btn active" data-tab="pending-payments">Pending <span class="badge"><?= $stats['pending_payments'] ?? 0 ?></span></button>
-                        <button class="tab-btn" data-tab="confirmed-payments">Confirmed</button>
+                        <button class="tab-btn active" data-tab="pending-reservations">Pending <span class="badge"><?= $stats['pending_payments'] ?? 0 ?></span></button>
+                        <button class="tab-btn" data-tab="confirmed-reservations">Confirmed</button>
                     </div>
                 </div>
 
@@ -1079,7 +1083,7 @@
                         <div class="empty-state-large">
                             <i class="fas fa-check-circle"></i>
                             <h3>All Caught Up!</h3>
-                            <p>No pending payments to review</p>
+                            <p>No pending reservations to review</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1629,46 +1633,68 @@
         </div>
     </div>
 
+    <!-- Followers Modal -->
+    <div class="modal-overlay" id="followersModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Followers</h3>
+                <button class="modal-close" onclick="closeModal('followersModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="followersList" style="max-height: 500px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                        <p style="margin-top: 1rem; color: #64748b;">Loading followers...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Product Modal -->
     <div class="modal-overlay" id="productModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-box"></i> Add New Product</h3>
-                <button class="modal-close" onclick="closeModal('productModal')">
+                <h3 id="productModalTitle"><i class="fas fa-box"></i> Add New Product</h3>
+                <button class="modal-close" onclick="closeProductModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="productForm" class="modal-body" enctype="multipart/form-data">
+                <input type="hidden" name="product_id" id="productId">
                 <div class="form-group">
                     <label>Product Name *</label>
-                    <input type="text" name="name" class="form-input" required placeholder="Product name">
+                    <input type="text" name="name" id="productName" class="form-input" required placeholder="Product name">
                 </div>
                 <div class="form-group">
                     <label>Description</label>
-                    <textarea name="description" class="form-input" rows="3" placeholder="Product description"></textarea>
+                    <textarea name="description" id="productDescription" class="form-input" rows="3" placeholder="Product description"></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Price (₱) *</label>
-                        <input type="number" name="price" class="form-input" required min="0" step="0.01" placeholder="0.00">
+                        <input type="number" name="price" id="productPrice" class="form-input" required min="0" step="0.01" placeholder="0.00">
                     </div>
                     <div class="form-group">
                         <label>Initial Stock *</label>
-                        <input type="number" name="stock" class="form-input" required min="0" placeholder="0">
+                        <input type="number" name="stock" id="productStock" class="form-input" required min="0" placeholder="0">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Sizes (comma separated)</label>
-                    <input type="text" name="sizes" class="form-input" placeholder="S, M, L, XL">
+                    <input type="text" name="sizes" id="productSizes" class="form-input" placeholder="S, M, L, XL">
                 </div>
                 <div class="form-group">
                     <label>Product Image</label>
-                    <input type="file" name="image" class="form-input" accept="image/*">
+                    <input type="file" name="image" id="productImage" class="form-input" accept="image/*">
+                    <small style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; display: block;">Leave empty to keep current image</small>
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitProduct()">Add Product</button>
+                <button class="btn btn-outline" onclick="closeProductModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="productSubmitBtn" onclick="submitProduct()">Add Product</button>
             </div>
         </div>
     </div>
@@ -1786,6 +1812,18 @@
                 section.classList.remove('active');
             });
             document.getElementById(sectionId).classList.add('active');
+
+            // Hide reservations badge when reservations section is viewed
+            if (sectionId === 'reservations') {
+                const reservationsBadge = document.getElementById('reservationsBadge');
+                const reservationsBadgeMobile = document.getElementById('reservationsBadgeMobile');
+                if (reservationsBadge) {
+                    reservationsBadge.style.display = 'none';
+                }
+                if (reservationsBadgeMobile) {
+                    reservationsBadgeMobile.style.display = 'none';
+                }
+            }
 
             // Load forum posts when forum section is activated
             if (sectionId === 'forum') {
@@ -2489,6 +2527,88 @@
             closeModal('announcementModal');
         }
 
+        function viewFollowers() {
+            const modal = document.getElementById('followersModal');
+            const followersList = document.getElementById('followersList');
+            
+            if (!modal || !followersList) {
+                showToast('Modal elements not found', 'error');
+                return;
+            }
+            
+            // Show loading state
+            followersList.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                    <p style="margin-top: 1rem; color: #64748b;">Loading followers...</p>
+                </div>
+            `;
+            
+            // Open modal
+            openModal('followersModal');
+            
+            // Fetch followers
+            fetch(baseUrl + 'organization/followers', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.followers) {
+                    if (data.followers.length === 0) {
+                        followersList.innerHTML = `
+                            <div style="text-align: center; padding: 3rem; color: #64748b;">
+                                <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                                <p style="font-size: 1rem; font-weight: 500;">No followers yet</p>
+                                <p style="font-size: 0.875rem; margin-top: 0.5rem;">Share your organization to get more followers!</p>
+                            </div>
+                        `;
+                    } else {
+                        let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+                        data.followers.forEach(follower => {
+                            const name = follower.name || (follower.firstname + ' ' + follower.lastname) || 'Student';
+                            const photo = follower.photo || null;
+                            const yearLevel = follower.year_level || '';
+                            
+                            html += `
+                                <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #e2e8f0; transition: all 0.2s;" 
+                                     onmouseover="this.style.backgroundColor='#f8fafc'" 
+                                     onmouseout="this.style.backgroundColor='transparent'">
+                                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; flex-shrink: 0; overflow: hidden;">
+                                        ${photo ? `<img src="${photo}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;">` : name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-weight: 600; color: #1e293b; font-size: 0.9375rem; margin-bottom: 0.25rem;">${name}</div>
+                                        ${yearLevel ? `<div style="font-size: 0.8125rem; color: #64748b;">Year ${yearLevel}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        followersList.innerHTML = html;
+                    }
+                } else {
+                    followersList.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>${data.message || 'Failed to load followers'}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                followersList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>An error occurred while loading followers</p>
+                    </div>
+                `;
+            });
+        }
+
         function deleteAnnouncement(id) {
             if (!confirm('Are you sure you want to delete this announcement?')) {
                 return;
@@ -2520,6 +2640,7 @@
         // Product Functions
         function submitProduct() {
             const form = document.getElementById('productForm');
+            const productId = document.getElementById('productId').value;
             
             // Validate required fields
             if (!form.checkValidity()) {
@@ -2533,24 +2654,28 @@
             const submitBtn = form.closest('.modal').querySelector('.btn-primary');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (productId ? 'Updating...' : 'Adding...');
 
-            fetch(baseUrl + 'organization/products/create', {
+            // Determine endpoint based on whether it's create or update
+            const endpoint = productId 
+                ? baseUrl + 'organization/products/update/' + productId
+                : baseUrl + 'organization/products/create';
+
+            fetch(endpoint, {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Product added successfully!', 'success');
-                    closeModal('productModal');
-                    form.reset();
-                    // Reload page to show new product
+                    showToast(productId ? 'Product updated successfully!' : 'Product added successfully!', 'success');
+                    closeProductModal();
+                    // Reload page to show updated/new product
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
                 } else {
-                    showToast(data.message || 'Failed to add product', 'error');
+                    showToast(data.message || (productId ? 'Failed to update product' : 'Failed to add product'), 'error');
                     if (data.errors) {
                         console.error('Validation errors:', data.errors);
                     }
@@ -2560,14 +2685,61 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('An error occurred while adding the product', 'error');
+                showToast('An error occurred while ' + (productId ? 'updating' : 'adding') + ' the product', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
         }
 
         function editProduct(id) {
-            showToast('Edit product functionality coming soon', 'info');
+            // Fetch product data
+            fetch(baseUrl + 'organization/products/get/' + id)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.product) {
+                        const product = data.product;
+                        
+                        // Populate form fields
+                        document.getElementById('productId').value = product.product_id;
+                        document.getElementById('productName').value = product.product_name || '';
+                        document.getElementById('productDescription').value = product.description || '';
+                        document.getElementById('productPrice').value = product.price || '';
+                        document.getElementById('productStock').value = product.stock || 0;
+                        document.getElementById('productSizes').value = product.sizes || '';
+                        document.getElementById('productImage').value = '';
+                        
+                        // Update modal title and button
+                        document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-box"></i> Edit Product';
+                        document.getElementById('productSubmitBtn').innerHTML = 'Update Product';
+                        
+                        // Open modal
+                        openModal('productModal');
+                    } else {
+                        showToast(data.message || 'Failed to load product', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('An error occurred while loading the product', 'error');
+                });
+        }
+        
+        function openProductModal() {
+            const form = document.getElementById('productForm');
+            form.reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-box"></i> Add New Product';
+            document.getElementById('productSubmitBtn').innerHTML = 'Add Product';
+            openModal('productModal');
+        }
+        
+        function closeProductModal() {
+            const form = document.getElementById('productForm');
+            form.reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-box"></i> Add New Product';
+            document.getElementById('productSubmitBtn').innerHTML = 'Add Product';
+            closeModal('productModal');
         }
 
         function updateStock(productId) {
@@ -2629,11 +2801,11 @@
             });
         }
 
-        // Payment Functions
+        // Reservation Functions
         function confirmPayment(paymentId, action) {
             const messages = {
-                approve: 'Payment confirmed successfully!',
-                reject: 'Payment rejected'
+                approve: 'Reservation confirmed successfully!',
+                reject: 'Reservation rejected'
             };
 
             fetch(baseUrl + 'organization/payments/confirm', {

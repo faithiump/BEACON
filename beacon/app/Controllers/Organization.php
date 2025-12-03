@@ -275,6 +275,9 @@ class Organization extends BaseController
         $totalMembers = 0;
         $pendingMembers = 0;
         
+        // Get followers count
+        $totalFollowers = 0;
+        
         if ($orgId) {
             // Get organization data to get organization name
             $orgModel = new OrganizationModel();
@@ -293,6 +296,11 @@ class Organization extends BaseController
                 if ($organization['current_members'] != $totalMembers) {
                     $orgModel->update($orgId, ['current_members' => $totalMembers]);
                 }
+                
+                // Get followers count
+                $followModel = new \App\Models\OrganizationFollowModel();
+                $followers = $followModel->getOrganizationFollowers($orgId);
+                $totalFollowers = count($followers);
             }
             
             $allEvents = $eventModel->getEventsByOrg($orgId);
@@ -308,13 +316,27 @@ class Organization extends BaseController
             $totalProducts = count($allProducts);
         }
 
+        // Get pending reservations count
+        $pendingReservationsCount = 0;
+        if ($orgId) {
+            try {
+                $reservationModel = new \App\Models\ReservationModel();
+                $pendingReservations = $reservationModel->getPendingReservations($orgId);
+                $pendingReservationsCount = count($pendingReservations);
+            } catch (\Exception $e) {
+                // If reservations table doesn't exist yet, default to 0
+                $pendingReservationsCount = 0;
+            }
+        }
+
         return [
             'total_members' => $totalMembers,
             'pending_members' => $pendingMembers,
             'total_events' => $totalEvents,
             'upcoming_events' => $upcomingEvents,
             'total_products' => $totalProducts,
-            'pending_payments' => 28,
+            'total_followers' => $totalFollowers,
+            'pending_payments' => $pendingReservationsCount,
             'total_revenue' => 45680,
             'announcements' => $totalAnnouncements,
         ];
@@ -702,39 +724,39 @@ class Organization extends BaseController
     }
 
     /**
-     * Get pending payments
+     * Get pending payments (reservations)
      */
     private function getPendingPayments()
     {
-        return [
-            [
-                'id' => 1,
-                'student_name' => 'John Dela Cruz',
-                'student_id' => 'STU-2024-001',
-                'product' => 'CSS T-Shirt (Large)',
-                'amount' => 450,
-                'submitted_at' => '2025-11-24 15:30:00',
-                'proof_image' => null,
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Maria Santos',
-                'student_id' => 'STU-2024-002',
-                'product' => 'Membership Fee',
-                'amount' => 250,
-                'submitted_at' => '2025-11-24 12:00:00',
-                'proof_image' => null,
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Pedro Garcia',
-                'student_id' => 'STU-2024-003',
-                'product' => 'CSS Hoodie (Medium)',
-                'amount' => 850,
-                'submitted_at' => '2025-11-23 18:45:00',
-                'proof_image' => null,
-            ],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return [];
+        }
+
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->getPendingReservations($orgId);
+
+        $formattedReservations = [];
+        foreach ($reservations as $reservation) {
+            $studentName = trim(($reservation['firstname'] ?? '') . ' ' . ($reservation['lastname'] ?? ''));
+            if (empty($studentName)) {
+                $studentName = 'Student';
+            }
+
+            $formattedReservations[] = [
+                'id' => $reservation['reservation_id'],
+                'student_name' => $studentName,
+                'student_id' => $reservation['student_number'] ?? 'N/A',
+                'product' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'amount' => (float)$reservation['total_amount'],
+                'submitted_at' => $reservation['created_at'],
+                'proof_image' => $reservation['proof_image'] ?? null,
+                'quantity' => $reservation['quantity'] ?? 1,
+                'payment_method' => $reservation['payment_method'] ?? null,
+            ];
+        }
+
+        return $formattedReservations;
     }
 
     /**
@@ -982,6 +1004,64 @@ class Organization extends BaseController
         return $this->response->setJSON([
             'success' => true,
             'announcement' => $announcement
+        ]);
+    }
+
+    /**
+     * Get organization followers
+     */
+    public function getFollowers()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $followModel = new \App\Models\OrganizationFollowModel();
+        $followers = $followModel->getOrganizationFollowers($orgId);
+        
+        // Get student details for each follower
+        $studentModel = new \App\Models\StudentModel();
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        $formattedFollowers = [];
+        
+        foreach ($followers as $follow) {
+            $student = $studentModel->find($follow['student_id']);
+            if ($student) {
+                // Get student photo
+                $photo = null;
+                if (!empty($student['user_id'])) {
+                    $userPhoto = $userPhotoModel->where('user_id', $student['user_id'])->first();
+                    if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                        $photo = base_url($userPhoto['photo_path']);
+                    }
+                }
+                
+                // Get user profile for name
+                $userProfileModel = new \App\Models\UserProfileModel();
+                $profile = $userProfileModel->where('user_id', $student['user_id'])->first();
+                
+                $formattedFollowers[] = [
+                    'student_id' => $student['id'],
+                    'student_number' => $student['student_number'] ?? '',
+                    'name' => ($profile ? ($profile['firstname'] . ' ' . $profile['lastname']) : '') ?: 'Student',
+                    'firstname' => $profile['firstname'] ?? '',
+                    'lastname' => $profile['lastname'] ?? '',
+                    'course' => $student['course'] ?? '',
+                    'year_level' => $student['year_level'] ?? '',
+                    'photo' => $photo,
+                    'followed_at' => $follow['created_at'] ?? ''
+                ];
+            }
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'followers' => $formattedFollowers
         ]);
     }
 
@@ -2117,6 +2197,132 @@ class Organization extends BaseController
     }
 
     /**
+     * Get product by ID (for editing)
+     */
+    public function getProduct($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $productModel = new ProductModel();
+        $product = $productModel->find($id);
+
+        // Verify product belongs to organization
+        if (!$product || $product['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Product not found or unauthorized']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'product' => $product
+        ]);
+    }
+
+    /**
+     * Update product
+     */
+    public function updateProduct($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $productModel = new ProductModel();
+        $product = $productModel->find($id);
+
+        // Verify product belongs to organization
+        if (!$product || $product['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Product not found or unauthorized']);
+        }
+
+        // Prepare product data
+        $productData = [
+            'product_name' => $this->request->getPost('name'),
+            'description' => $this->request->getPost('description') ?: null,
+            'price' => $this->request->getPost('price'),
+            'stock' => $this->request->getPost('stock') ? (int)$this->request->getPost('stock') : 0,
+            'sizes' => $this->request->getPost('sizes') ? trim($this->request->getPost('sizes')) : null,
+        ];
+
+        // Determine status based on stock
+        if ($productData['stock'] == 0) {
+            $productData['status'] = 'out_of_stock';
+        } elseif ($productData['stock'] <= 10) {
+            $productData['status'] = 'low_stock';
+        } else {
+            $productData['status'] = 'available';
+        }
+
+        // Handle image upload (only if new image is provided)
+        $image = $this->request->getFile('image');
+        if ($image && $image->isValid() && !$image->hasMoved()) {
+            $uploadPath = FCPATH . 'uploads/products/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
+            // Delete old image if exists
+            if (!empty($product['image']) && file_exists($uploadPath . $product['image'])) {
+                unlink($uploadPath . $product['image']);
+            }
+
+            $newName = $image->getRandomName();
+            if ($image->move($uploadPath, $newName)) {
+                $productData['image'] = $newName;
+            }
+        }
+
+        // Update product
+        if (!$productModel->update($id, $productData)) {
+            $errors = $productModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to update product',
+                'errors' => $errors
+            ]);
+        }
+
+        $updatedProduct = $productModel->find($id);
+
+        // Format response data
+        $status = 'available';
+        if ($updatedProduct['stock'] == 0) {
+            $status = 'out_of_stock';
+        } elseif ($updatedProduct['stock'] <= 10) {
+            $status = 'low_stock';
+        }
+
+        $responseData = [
+            'id' => $updatedProduct['product_id'],
+            'name' => $updatedProduct['product_name'],
+            'description' => $updatedProduct['description'] ?? '',
+            'price' => (float)$updatedProduct['price'],
+            'stock' => (int)$updatedProduct['stock'],
+            'sold' => (int)($updatedProduct['sold'] ?? 0),
+            'sizes' => $updatedProduct['sizes'] ? explode(',', $updatedProduct['sizes']) : null,
+            'image' => $updatedProduct['image'] ?? null,
+            'status' => $status,
+        ];
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Product updated successfully',
+            'data' => $responseData
+        ]);
+    }
+
+    /**
      * Manage products (update, delete)
      */
     public function manageProducts()
@@ -2222,7 +2428,7 @@ class Organization extends BaseController
     }
 
     /**
-     * Confirm payment
+     * Confirm payment (reservation)
      */
     public function confirmPayment()
     {
@@ -2230,6 +2436,7 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
+        $orgId = $this->session->get('organization_id');
         $paymentId = $this->request->getPost('payment_id');
         $action = $this->request->getPost('action'); // approve, reject
 
@@ -2237,11 +2444,42 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
         }
 
-        // TODO: Update payment status in database
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservation = $reservationModel->find($paymentId);
+
+        // Verify reservation belongs to organization
+        if (!$reservation || $reservation['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Reservation not found or unauthorized']);
+        }
+
+        // Update status
+        $status = $action === 'approve' ? 'confirmed' : 'rejected';
+        if (!$reservationModel->updateReservationStatus($paymentId, $status)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Failed to update reservation status']);
+        }
+
+        // If approved, update product stock and sold count
+        if ($action === 'approve') {
+            $productModel = new ProductModel();
+            $product = $productModel->find($reservation['product_id']);
+            
+            if ($product) {
+                $newStock = max(0, $product['stock'] - $reservation['quantity']);
+                $newSold = ($product['sold'] ?? 0) + $reservation['quantity'];
+                
+                $productModel->update($reservation['product_id'], [
+                    'stock' => $newStock,
+                    'sold' => $newSold
+                ]);
+                
+                // Update product status based on new stock
+                $productModel->updateProductStatus($reservation['product_id']);
+            }
+        }
 
         $messages = [
-            'approve' => 'Payment confirmed successfully',
-            'reject' => 'Payment rejected',
+            'approve' => 'Reservation confirmed successfully',
+            'reject' => 'Reservation rejected',
         ];
 
         return $this->response->setJSON([
@@ -2259,11 +2497,30 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // Sample data
-        $history = [
-            ['id' => 1, 'student_name' => 'John Doe', 'product' => 'CSS T-Shirt', 'amount' => 450, 'status' => 'confirmed', 'confirmed_at' => '2025-11-20'],
-            ['id' => 2, 'student_name' => 'Jane Smith', 'product' => 'Membership Fee', 'amount' => 250, 'status' => 'confirmed', 'confirmed_at' => '2025-11-19'],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->getConfirmedReservations($orgId);
+
+        $history = [];
+        foreach ($reservations as $reservation) {
+            $studentName = trim(($reservation['firstname'] ?? '') . ' ' . ($reservation['lastname'] ?? ''));
+            if (empty($studentName)) {
+                $studentName = 'Student';
+            }
+
+            $history[] = [
+                'id' => $reservation['reservation_id'],
+                'student_name' => $studentName,
+                'product' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'amount' => (float)$reservation['total_amount'],
+                'status' => $reservation['status'],
+                'confirmed_at' => $reservation['updated_at']
+            ];
+        }
 
         return $this->response->setJSON(['success' => true, 'data' => $history]);
     }

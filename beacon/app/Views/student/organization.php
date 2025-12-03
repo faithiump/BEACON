@@ -371,6 +371,7 @@
                         <p class="org-profile-type"><?= esc($organization['type']) ?></p>
                         <div class="org-profile-stats">
                             <span><i class="fas fa-users"></i> <?= number_format($organization['members']) ?> Members</span>
+                            <span style="cursor: pointer;" onclick="viewOrganizationFollowers(<?= $organization['id'] ?>)"><i class="fas fa-user-plus"></i> <?= number_format($organization['followers'] ?? 0) ?> Followers</span>
                             <span><i class="fas fa-bullhorn"></i> <?= count($announcements) ?> Announcements</span>
                             <span><i class="fas fa-calendar"></i> <?= count($events) ?> Events</span>
                         </div>
@@ -706,6 +707,10 @@
                             <div>
                                 <h4 style="font-size: 0.875rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Members</h4>
                                 <p style="color: #64748b; font-size: 0.9375rem;"><?= number_format($organization['members']) ?> active members</p>
+                            </div>
+                            <div>
+                                <h4 style="font-size: 0.875rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Followers</h4>
+                                <p style="color: #64748b; font-size: 0.9375rem;"><?= number_format($organization['followers'] ?? 0) ?> followers</p>
                             </div>
                             <div>
                                 <h4 style="font-size: 0.875rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">Activity</h4>
@@ -1323,6 +1328,147 @@
                 });
             });
         });
+
+        function viewOrganizationFollowers(orgId) {
+            if (!orgId) {
+                showToast('Invalid organization ID', 'error');
+                return;
+            }
+
+            // Create modal dynamically
+            let modal = document.getElementById('followersModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'followersModal';
+                modal.className = 'modal-overlay';
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; visibility: hidden; transition: all 0.3s ease;';
+                modal.innerHTML = `
+                    <div class="modal" style="background: white; border-radius: 20px; width: 90%; max-width: 600px; max-height: 90vh; overflow: hidden; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25); transform: scale(0.9) translateY(30px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; border-bottom: 1px solid #e5e7eb;">
+                            <h3 style="font-family: Inter, sans-serif; font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0; display: flex; align-items: center; gap: 0.75rem;"><i class="fas fa-user-plus"></i> Followers</h3>
+                            <button class="modal-close" onclick="closeFollowersModal()" style="width: 36px; height: 36px; border: none; background: #dbeafe; border-radius: 50%; cursor: pointer; color: #1e40af; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body" style="padding: 1.5rem 2rem;">
+                            <div id="followersList" style="max-height: 500px; overflow-y: auto;">
+                                <div style="text-align: center; padding: 2rem;">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                                    <p style="margin-top: 1rem; color: #64748b;">Loading followers...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Get followersList after modal is appended
+            const followersList = document.getElementById('followersList');
+            if (!followersList) {
+                showToast('Failed to initialize followers modal', 'error');
+                return;
+            }
+            
+            // Show loading state
+            followersList.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                    <p style="margin-top: 1rem; color: #64748b;">Loading followers...</p>
+                </div>
+            `;
+            
+            // Show modal
+            modal.style.opacity = '1';
+            modal.style.visibility = 'visible';
+            setTimeout(() => {
+                const modalContent = modal.querySelector('.modal');
+                if (modalContent) {
+                    modalContent.style.transform = 'scale(1) translateY(0)';
+                }
+            }, 10);
+            
+            // Fetch followers
+            fetch(baseUrl + 'student/organization/followers/' + orgId, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.followers) {
+                    if (data.followers.length === 0) {
+                        followersList.innerHTML = `
+                            <div style="text-align: center; padding: 3rem; color: #64748b;">
+                                <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                                <p style="font-size: 1rem; font-weight: 500;">No followers yet</p>
+                                <p style="font-size: 0.875rem; margin-top: 0.5rem;">This organization doesn't have any followers yet.</p>
+                            </div>
+                        `;
+                    } else {
+                        let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+                        data.followers.forEach(follower => {
+                            const name = follower.name || (follower.firstname + ' ' + follower.lastname) || 'Student';
+                            const photo = follower.photo || null;
+                            const yearLevel = follower.year_level || '';
+                            
+                            html += `
+                                <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #e2e8f0; transition: all 0.2s;" 
+                                     onmouseover="this.style.backgroundColor='#f8fafc'" 
+                                     onmouseout="this.style.backgroundColor='transparent'">
+                                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; flex-shrink: 0; overflow: hidden;">
+                                        ${photo ? `<img src="${photo}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;">` : name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-weight: 600; color: #1e293b; font-size: 0.9375rem; margin-bottom: 0.25rem;">${name}</div>
+                                        ${yearLevel ? `<div style="font-size: 0.8125rem; color: #64748b;">Year ${yearLevel}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        followersList.innerHTML = html;
+                    }
+                } else {
+                    followersList.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>${data.message || 'Failed to load followers'}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                followersList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>An error occurred while loading followers</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem; color: #64748b;">${error.message}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function closeFollowersModal() {
+            const modal = document.getElementById('followersModal');
+            if (modal) {
+                const modalContent = modal.querySelector('.modal');
+                if (modalContent) {
+                    modalContent.style.transform = 'scale(0.9) translateY(30px)';
+                }
+                setTimeout(() => {
+                    modal.style.opacity = '0';
+                    modal.style.visibility = 'hidden';
+                }, 300);
+            }
+        }
     </script>
 </body>
 </html>

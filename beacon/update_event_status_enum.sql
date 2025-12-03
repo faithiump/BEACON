@@ -8,3 +8,4 @@ MODIFY COLUMN `status` ENUM('upcoming','ongoing','ended','active','completed','c
 
 
 
+

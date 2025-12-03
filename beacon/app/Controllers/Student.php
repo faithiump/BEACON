@@ -13,6 +13,7 @@ use App\Models\AnnouncementModel;
 use App\Models\ProductModel;
 use App\Models\StudentOrganizationMembershipModel;
 use App\Models\ForumPostModel;
+use App\Models\ReservationModel;
 
 class Student extends BaseController
 {
@@ -2232,6 +2233,11 @@ class Student extends BaseController
             return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
 
+        // Get followers count
+        $followModel = new \App\Models\OrganizationFollowModel();
+        $followers = $followModel->getOrganizationFollowers($orgId);
+        $followersCount = count($followers);
+        
         // Get all events from this organization
         $eventModel = new EventModel();
         $events = $eventModel->getEventsByOrg($orgId);
@@ -2425,6 +2431,7 @@ class Student extends BaseController
                 'mission' => $organization['mission'] ?? '',
                 'vision' => $organization['vision'] ?? '',
                 'members' => $organization['current_members'] ?? 0,
+                'followers' => $followersCount,
                 'photo' => $orgPhoto,
                 'is_following' => $isFollowing,
                 'is_member' => $isMember,
@@ -2437,6 +2444,63 @@ class Student extends BaseController
         ];
 
         return view('student/organization', $data);
+    }
+
+    /**
+     * Get organization followers (for student view)
+     */
+    public function getOrganizationFollowers($orgId)
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $authCheck;
+        }
+
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $followModel = new \App\Models\OrganizationFollowModel();
+        $followers = $followModel->getOrganizationFollowers($orgId);
+        
+        // Get student details for each follower
+        $studentModel = new StudentModel();
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        $formattedFollowers = [];
+        
+        foreach ($followers as $follow) {
+            $student = $studentModel->find($follow['student_id']);
+            if ($student) {
+                // Get student photo
+                $photo = null;
+                if (!empty($student['user_id'])) {
+                    $userPhoto = $userPhotoModel->where('user_id', $student['user_id'])->first();
+                    if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                        $photo = base_url($userPhoto['photo_path']);
+                    }
+                }
+                
+                // Get user profile for name
+                $profile = $this->userProfileModel->where('user_id', $student['user_id'])->first();
+                
+                $formattedFollowers[] = [
+                    'student_id' => $student['id'],
+                    'student_number' => $student['student_number'] ?? '',
+                    'name' => ($profile ? ($profile['firstname'] . ' ' . $profile['lastname']) : '') ?: 'Student',
+                    'firstname' => $profile['firstname'] ?? '',
+                    'lastname' => $profile['lastname'] ?? '',
+                    'course' => $student['course'] ?? '',
+                    'year_level' => $student['year_level'] ?? '',
+                    'photo' => $photo,
+                    'followed_at' => $follow['created_at'] ?? ''
+                ];
+            }
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'followers' => $formattedFollowers
+        ]);
     }
 
     /**
@@ -2661,13 +2725,20 @@ class Student extends BaseController
     }
 
     /**
-     * Purchase Product
+     * Purchase Product (Create Reservation)
      */
     public function purchaseProduct()
     {
         $authCheck = $this->checkAuth();
         if ($authCheck !== true) {
             return $authCheck;
+        }
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
         }
 
         $paymentMethod = $this->request->getPost('payment_method');
@@ -2677,22 +2748,73 @@ class Student extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Your cart is empty']);
         }
 
-        // Mock order creation - implement actual database logic
-        $orderId = 'ORD-' . strtoupper(uniqid());
+        $productModel = new ProductModel();
+        $reservationModel = new \App\Models\ReservationModel();
+        $db = \Config\Database::connect();
         
-        // Clear cart after successful order
-        session()->remove('cart');
-
-        return $this->response->setJSON([
-            'success' => true, 
-            'message' => 'Order placed successfully!',
-            'order_id' => $orderId,
-            'payment_method' => $paymentMethod
-        ]);
+        $db->transStart();
+        
+        try {
+            foreach ($cart as $productId => $item) {
+                $product = $productModel->find($productId);
+                
+                if (!$product) {
+                    throw new \Exception("Product not found: {$productId}");
+                }
+                
+                // Check stock availability
+                if ($product['stock'] < $item['quantity']) {
+                    throw new \Exception("Insufficient stock for {$product['product_name']}. Available: {$product['stock']}, Requested: {$item['quantity']}");
+                }
+                
+                $quantity = $item['quantity'] ?? 1;
+                $price = (float)$product['price'];
+                $totalAmount = $price * $quantity;
+                
+                // Create reservation
+                $reservationData = [
+                    'student_id' => $student['id'],
+                    'org_id' => $product['org_id'],
+                    'product_id' => $productId,
+                    'product_name' => $product['product_name'],
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'total_amount' => $totalAmount,
+                    'status' => 'pending',
+                    'payment_method' => $paymentMethod ?? null
+                ];
+                
+                if (!$reservationModel->insert($reservationData)) {
+                    throw new \Exception('Failed to create reservation');
+                }
+            }
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaction failed');
+            }
+            
+            // Clear cart after successful reservation
+            session()->remove('cart');
+            
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => 'Reservation created successfully! Waiting for organization approval.',
+                'payment_method' => $paymentMethod
+            ]);
+            
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
-     * View Pending Payments
+     * View Pending Reservations
      */
     public function viewPendingPayments()
     {
@@ -2701,37 +2823,50 @@ class Student extends BaseController
             return $authCheck;
         }
 
-        // Mock pending payments data
-        $pendingPayments = [
-            [
-                'id' => 1,
-                'order_id' => 'ORD-6745ABC1',
-                'description' => 'CSS Official T-Shirt x2',
-                'amount' => 700.00,
-                'due_date' => '2025-12-01',
-                'organization' => 'Computer Science Society',
-                'status' => 'pending'
-            ],
-            [
-                'id' => 2,
-                'order_id' => 'ORD-6745ABC2',
-                'description' => 'Tech Summit 2025 Registration',
-                'amount' => 150.00,
-                'due_date' => '2025-12-03',
-                'organization' => 'Computer Science Society',
-                'status' => 'pending'
-            ]
-        ];
-
-        if ($this->request->isAJAX()) {
-            return $this->response->setJSON(['success' => true, 'pending_payments' => $pendingPayments]);
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+            }
+            return redirect()->to(base_url('student/dashboard'));
         }
 
-        return view('student/pending-payments', ['pendingPayments' => $pendingPayments]);
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->select('reservations.*, organizations.organization_name, organizations.organization_acronym, products.image as product_image')
+            ->join('organizations', 'organizations.id = reservations.org_id', 'left')
+            ->join('products', 'products.product_id = reservations.product_id', 'left')
+            ->where('reservations.student_id', $student['id'])
+            ->where('reservations.status', 'pending')
+            ->orderBy('reservations.created_at', 'DESC')
+            ->findAll();
+
+        $pendingReservations = [];
+        foreach ($reservations as $reservation) {
+            $orgName = $reservation['organization_acronym'] ?? $reservation['organization_name'] ?? 'Organization';
+            $pendingReservations[] = [
+                'id' => $reservation['reservation_id'],
+                'product_name' => $reservation['product_name'],
+                'organization' => $orgName,
+                'quantity' => $reservation['quantity'],
+                'price' => (float)$reservation['price'],
+                'total_amount' => (float)$reservation['total_amount'],
+                'created_at' => $reservation['created_at'],
+                'product_image' => $reservation['product_image'] ?? null,
+                'payment_method' => $reservation['payment_method'] ?? null
+            ];
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => true, 'pending_payments' => $pendingReservations]);
+        }
+
+        return view('student/pending-payments', ['pendingPayments' => $pendingReservations]);
     }
 
     /**
-     * View Payment History
+     * View Reservation History
      */
     public function viewPaymentHistory()
     {
@@ -2740,42 +2875,37 @@ class Student extends BaseController
             return $authCheck;
         }
 
-        // Mock payment history data
-        $paymentHistory = [
-            [
-                'id' => 1,
-                'transaction_id' => 'TXN-9876DEF1',
-                'order_id' => 'ORD-5634XYZ1',
-                'description' => 'GEI Eco-Bag',
-                'amount' => 150.00,
-                'payment_date' => '2025-11-15',
-                'payment_method' => 'GCash',
-                'organization' => 'Green Energy Initiative',
-                'status' => 'completed'
-            ],
-            [
-                'id' => 2,
-                'transaction_id' => 'TXN-9876DEF2',
-                'order_id' => 'ORD-5634XYZ2',
-                'description' => 'CSS Membership Fee',
-                'amount' => 200.00,
-                'payment_date' => '2025-11-10',
-                'payment_method' => 'Cash',
-                'organization' => 'Computer Science Society',
-                'status' => 'completed'
-            ],
-            [
-                'id' => 3,
-                'transaction_id' => 'TXN-9876DEF3',
-                'order_id' => 'ORD-5634XYZ3',
-                'description' => 'Business Workshop Registration',
-                'amount' => 300.00,
-                'payment_date' => '2025-11-05',
-                'payment_method' => 'Bank Transfer',
-                'organization' => 'Business Administration Club',
-                'status' => 'completed'
-            ]
-        ];
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+            }
+            return redirect()->to(base_url('student/dashboard'));
+        }
+
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->select('reservations.*, organizations.organization_name, organizations.organization_acronym')
+            ->join('organizations', 'organizations.id = reservations.org_id', 'left')
+            ->where('reservations.student_id', $student['id'])
+            ->whereIn('reservations.status', ['confirmed', 'completed'])
+            ->orderBy('reservations.updated_at', 'DESC')
+            ->findAll();
+
+        $paymentHistory = [];
+        foreach ($reservations as $reservation) {
+            $orgName = $reservation['organization_acronym'] ?? $reservation['organization_name'] ?? 'Organization';
+            $paymentHistory[] = [
+                'transaction_id' => 'RES-' . str_pad($reservation['reservation_id'], 8, '0', STR_PAD_LEFT),
+                'description' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'organization' => $orgName,
+                'amount' => (float)$reservation['total_amount'],
+                'date' => date('M d, Y', strtotime($reservation['updated_at'])),
+                'method' => $reservation['payment_method'] ?? 'N/A',
+                'status' => ucfirst($reservation['status'])
+            ];
+        }
 
         if ($this->request->isAJAX()) {
             return $this->response->setJSON(['success' => true, 'payment_history' => $paymentHistory]);
@@ -2789,182 +2919,249 @@ class Student extends BaseController
      */
     public function getNotifications()
     {
-        $authCheck = $this->checkAuth();
-        if ($authCheck !== true) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
-        }
+        try {
+            $authCheck = $this->checkAuth();
+            if ($authCheck !== true) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+            }
 
-        $userId = session()->get('user_id');
-        $studentId = session()->get('student_id');
-        $student = $this->studentModel->where('user_id', $userId)->first();
+            $userId = session()->get('user_id');
+            $studentId = session()->get('student_id');
+            $student = $this->studentModel->where('user_id', $userId)->first();
 
-        if (!$student) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
-        }
+            if (!$student) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+            }
 
-        $notifications = [];
+            $notifications = [];
 
-        // 1. Upcoming Events (events happening within 2 days)
-        $eventModel = new EventModel();
-        $eventAttendeesModel = new \App\Models\EventAttendeesModel();
-        
-        // Get events the student has joined
-        $joinedEvents = $eventAttendeesModel->where('student_id', $student['id'])->findAll();
-        $joinedEventIds = array_column($joinedEvents, 'event_id');
-        
-        if (!empty($joinedEventIds)) {
-            $upcomingEvents = $eventModel
-                ->whereIn('event_id', $joinedEventIds)
-                ->where('date >=', date('Y-m-d'))
-                ->where('date <=', date('Y-m-d', strtotime('+2 days')))
-                ->findAll();
+            // 1. Upcoming Events (events happening within 2 days)
+            $eventModel = new EventModel();
+            $db = \Config\Database::connect();
             
-            foreach ($upcomingEvents as $event) {
-                $eventDate = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
-                $eventDateTime = strtotime($eventDate);
-                $hoursUntil = round(($eventDateTime - time()) / 3600);
+            // Get events the student has joined
+            $joinedEvents = $db->table('event_attendees')
+                ->where('student_id', $student['id'])
+                ->get()
+                ->getResultArray();
+            $joinedEventIds = !empty($joinedEvents) ? array_column($joinedEvents, 'event_id') : [];
+            
+            if (!empty($joinedEventIds)) {
+                $upcomingEvents = $eventModel
+                    ->whereIn('event_id', $joinedEventIds)
+                    ->where('date >=', date('Y-m-d'))
+                    ->where('date <=', date('Y-m-d', strtotime('+2 days')))
+                    ->findAll();
                 
-                if ($hoursUntil <= 24 && $hoursUntil > 0) {
+                foreach ($upcomingEvents as $event) {
+                    $eventDate = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+                    $eventDateTime = strtotime($eventDate);
+                    $hoursUntil = round(($eventDateTime - time()) / 3600);
+                    
+                    if ($hoursUntil <= 24 && $hoursUntil > 0) {
+                        $notifications[] = [
+                            'id' => 'event_' . $event['event_id'],
+                            'type' => 'event',
+                            'icon' => 'event',
+                            'title' => 'Event Reminder: ' . $event['title'],
+                            'text' => $event['title'] . ' is happening in ' . ($hoursUntil < 1 ? 'less than an hour' : ($hoursUntil == 1 ? '1 hour' : $hoursUntil . ' hours')),
+                            'time' => $this->formatTimeAgo($eventDate),
+                            'created_at' => $eventDate,
+                            'unread' => true
+                        ];
+                    } elseif ($hoursUntil <= 48 && $hoursUntil > 24) {
+                        $daysUntil = round($hoursUntil / 24);
+                        $notifications[] = [
+                            'id' => 'event_' . $event['event_id'],
+                            'type' => 'event',
+                            'icon' => 'event',
+                            'title' => 'Upcoming Event: ' . $event['title'],
+                            'text' => $event['title'] . ' is happening in ' . ($daysUntil == 1 ? '1 day' : $daysUntil . ' days'),
+                            'time' => $this->formatTimeAgo($eventDate),
+                            'created_at' => $eventDate,
+                            'unread' => true
+                        ];
+                    }
+                }
+            }
+
+            // 2. New Announcements (posted in last 7 days)
+            $announcementModel = new AnnouncementModel();
+            $membershipModel = new StudentOrganizationMembershipModel();
+            $orgFollowModel = new \App\Models\OrganizationFollowModel();
+            
+            // Get organizations student follows or is a member of
+            $memberships = $membershipModel->getStudentOrganizations($student['id']);
+            $followedOrgs = $orgFollowModel->where('student_id', $student['id'])->findAll();
+            
+            $orgIds = !empty($memberships) ? array_column($memberships, 'organization_id') : [];
+            $followedOrgIds = !empty($followedOrgs) ? array_column($followedOrgs, 'organization_id') : [];
+            $allOrgIds = !empty($orgIds) || !empty($followedOrgIds) ? array_unique(array_merge($orgIds, $followedOrgIds)) : [];
+            
+            if (!empty($allOrgIds)) {
+                $recentAnnouncements = $announcementModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->findAll();
+                
+                foreach ($recentAnnouncements as $announcement) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($announcement['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
                     $notifications[] = [
-                        'id' => 'event_' . $event['event_id'],
-                        'type' => 'event',
-                        'icon' => 'event',
-                        'title' => 'Event Reminder: ' . $event['title'],
-                        'text' => $event['title'] . ' is happening in ' . ($hoursUntil < 1 ? 'less than an hour' : ($hoursUntil == 1 ? '1 hour' : $hoursUntil . ' hours')),
-                        'time' => $this->formatTimeAgo($eventDate),
-                        'created_at' => $eventDate,
-                        'unread' => true
-                    ];
-                } elseif ($hoursUntil <= 48 && $hoursUntil > 24) {
-                    $daysUntil = round($hoursUntil / 24);
-                    $notifications[] = [
-                        'id' => 'event_' . $event['event_id'],
-                        'type' => 'event',
-                        'icon' => 'event',
-                        'title' => 'Upcoming Event: ' . $event['title'],
-                        'text' => $event['title'] . ' is happening in ' . ($daysUntil == 1 ? '1 day' : $daysUntil . ' days'),
-                        'time' => $this->formatTimeAgo($eventDate),
-                        'created_at' => $eventDate,
+                        'id' => 'announcement_' . $announcement['id'],
+                        'type' => 'announcement',
+                        'icon' => 'announcement',
+                        'title' => $announcement['priority'] === 'high' ? 'Important: ' . $announcement['title'] : 'New Announcement: ' . $announcement['title'],
+                        'text' => $orgName . ' posted: ' . (strlen($announcement['content']) > 50 ? substr($announcement['content'], 0, 50) . '...' : $announcement['content']),
+                        'time' => $this->formatTimeAgo($announcement['created_at']),
+                        'created_at' => $announcement['created_at'],
                         'unread' => true
                     ];
                 }
             }
-        }
 
-        // 2. New Announcements (posted in last 7 days)
-        $announcementModel = new AnnouncementModel();
-        $membershipModel = new StudentOrganizationMembershipModel();
-        $orgFollowModel = new \App\Models\OrganizationFollowModel();
-        
-        // Get organizations student follows or is a member of
-        $memberships = $membershipModel->getStudentOrganizations($student['id']);
-        $followedOrgs = $orgFollowModel->where('student_id', $student['id'])->findAll();
-        
-        $orgIds = array_column($memberships, 'organization_id');
-        $followedOrgIds = array_column($followedOrgs, 'organization_id');
-        $allOrgIds = array_unique(array_merge($orgIds, $followedOrgIds));
-        
-        if (!empty($allOrgIds)) {
-            $recentAnnouncements = $announcementModel
-                ->whereIn('org_id', $allOrgIds)
-                ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
-                ->orderBy('created_at', 'DESC')
-                ->limit(10)
+            // 3. New Events (posted in last 7 days from followed organizations)
+            if (!empty($allOrgIds)) {
+                $recentEvents = $eventModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->findAll();
+                
+                foreach ($recentEvents as $event) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($event['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'event_new_' . $event['event_id'],
+                        'type' => 'event',
+                        'icon' => 'event',
+                        'title' => 'New Event: ' . $event['event_name'],
+                        'text' => $orgName . ' created a new event: ' . $event['event_name'],
+                        'time' => $this->formatTimeAgo($event['created_at']),
+                        'created_at' => $event['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // 4. New Products (posted in last 7 days from followed organizations)
+            if (!empty($allOrgIds)) {
+                $productModel = new ProductModel();
+                $recentProducts = $productModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->findAll();
+                
+                foreach ($recentProducts as $product) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($product['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'product_' . $product['product_id'],
+                        'type' => 'product',
+                        'icon' => 'product',
+                        'title' => 'New Product: ' . $product['product_name'],
+                        'text' => $orgName . ' added a new product: ' . $product['product_name'],
+                        'time' => $this->formatTimeAgo($product['created_at']),
+                        'created_at' => $product['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // 5. Membership Approvals
+            $pendingMemberships = $membershipModel
+                ->where('student_id', $student['id'])
+                ->where('status', 'active')
+                ->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-30 days')))
                 ->findAll();
             
-            foreach ($recentAnnouncements as $announcement) {
+            foreach ($pendingMemberships as $membership) {
                 $orgModel = new OrganizationModel();
-                $org = $orgModel->find($announcement['org_id']);
-                $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
-                
-                $notifications[] = [
-                    'id' => 'announcement_' . $announcement['id'],
-                    'type' => 'announcement',
-                    'icon' => 'announcement',
-                    'title' => $announcement['priority'] === 'high' ? 'Important: ' . $announcement['title'] : 'New Announcement: ' . $announcement['title'],
-                    'text' => $orgName . ' posted: ' . (strlen($announcement['content']) > 50 ? substr($announcement['content'], 0, 50) . '...' : $announcement['content']),
-                    'time' => $this->formatTimeAgo($announcement['created_at']),
-                    'created_at' => $announcement['created_at'],
-                    'unread' => true
-                ];
+                $org = $orgModel->find($membership['organization_id']);
+                if ($org) {
+                    $orgName = $org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization';
+                    $daysAgo = round((time() - strtotime($membership['updated_at'])) / 86400);
+                    
+                    if ($daysAgo <= 7) {
+                        $notifications[] = [
+                            'id' => 'membership_' . $membership['id'],
+                            'type' => 'org',
+                            'icon' => 'org',
+                            'title' => 'Membership Approved',
+                            'text' => $orgName . ' membership approved!',
+                            'time' => $this->formatTimeAgo($membership['updated_at']),
+                            'created_at' => $membership['updated_at'],
+                            'unread' => $daysAgo <= 3
+                        ];
+                    }
+                }
             }
-        }
 
-        // 3. Membership Approvals
-        $pendingMemberships = $membershipModel
-            ->where('student_id', $student['id'])
-            ->where('status', 'active')
-            ->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-30 days')))
-            ->findAll();
-        
-        foreach ($pendingMemberships as $membership) {
-            $orgModel = new OrganizationModel();
-            $org = $orgModel->find($membership['organization_id']);
-            if ($org) {
-                $orgName = $org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization';
-                $daysAgo = round((time() - strtotime($membership['updated_at'])) / 86400);
+            // 6. New Comments/Replies on student's comments
+            $commentModel = new \App\Models\PostCommentModel();
+            $studentComments = $commentModel->where('user_id', $userId)->findAll();
+            $studentCommentIds = !empty($studentComments) ? array_column($studentComments, 'id') : [];
+            
+            if (!empty($studentCommentIds)) {
+                // Get replies to student's comments (last 7 days)
+                $replies = $commentModel
+                    ->whereIn('parent_comment_id', $studentCommentIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->where('user_id !=', $userId)
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(5)
+                    ->findAll();
                 
-                if ($daysAgo <= 7) {
+                foreach ($replies as $reply) {
+                    $userModel = new UserModel();
+                    $replyUser = $userModel->find($reply['user_id']);
+                    $replyUserName = $replyUser ? ($replyUser['name'] ?? 'Someone') : 'Someone';
+                    
                     $notifications[] = [
-                        'id' => 'membership_' . $membership['id'],
-                        'type' => 'org',
-                        'icon' => 'org',
-                        'title' => 'Membership Approved',
-                        'text' => $orgName . ' membership approved!',
-                        'time' => $this->formatTimeAgo($membership['updated_at']),
-                        'created_at' => $membership['updated_at'],
-                        'unread' => $daysAgo <= 3
+                        'id' => 'comment_' . $reply['id'],
+                        'type' => 'comment',
+                        'icon' => 'comment',
+                        'title' => 'New Reply to Your Comment',
+                        'text' => $replyUserName . ' replied to your comment.',
+                        'time' => $this->formatTimeAgo($reply['created_at']),
+                        'created_at' => $reply['created_at'],
+                        'unread' => true
                     ];
                 }
             }
+
+            // Sort notifications by date (newest first)
+            usort($notifications, function($a, $b) {
+                return strtotime($b['created_at']) - strtotime($a['created_at']);
+            });
+
+            // Limit to 20 most recent
+            $notifications = array_slice($notifications, 0, 20);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'notifications' => $notifications,
+                'unread_count' => count(array_filter($notifications, function($n) { return $n['unread']; }))
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error in getNotifications: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error loading notifications: ' . $e->getMessage(),
+                'error' => $e->getFile() . ':' . $e->getLine()
+            ]);
         }
-
-        // 4. New Comments/Replies on student's comments
-        $commentModel = new \App\Models\PostCommentModel();
-        $studentComments = $commentModel->where('user_id', $userId)->findAll();
-        $studentCommentIds = array_column($studentComments, 'id');
-        
-        if (!empty($studentCommentIds)) {
-            // Get replies to student's comments (last 7 days)
-            $replies = $commentModel
-                ->whereIn('parent_comment_id', $studentCommentIds)
-                ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
-                ->where('user_id !=', $userId)
-                ->orderBy('created_at', 'DESC')
-                ->limit(5)
-                ->findAll();
-            
-            foreach ($replies as $reply) {
-                $userModel = new UserModel();
-                $replyUser = $userModel->find($reply['user_id']);
-                $replyUserName = $replyUser ? ($replyUser['name'] ?? 'Someone') : 'Someone';
-                
-                $notifications[] = [
-                    'id' => 'comment_' . $reply['id'],
-                    'type' => 'comment',
-                    'icon' => 'comment',
-                    'title' => 'New Reply to Your Comment',
-                    'text' => $replyUserName . ' replied to your comment.',
-                    'time' => $this->formatTimeAgo($reply['created_at']),
-                    'created_at' => $reply['created_at'],
-                    'unread' => true
-                ];
-            }
-        }
-
-        // Sort notifications by date (newest first)
-        usort($notifications, function($a, $b) {
-            return strtotime($b['created_at']) - strtotime($a['created_at']);
-        });
-
-        // Limit to 20 most recent
-        $notifications = array_slice($notifications, 0, 20);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'notifications' => $notifications,
-            'unread_count' => count(array_filter($notifications, function($n) { return $n['unread']; }))
-        ]);
     }
 
     /**

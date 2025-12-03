@@ -39,6 +39,7 @@ $routes->get('organization/announcements/get/(:num)', 'Organization::getAnnounce
 $routes->post('organization/announcements/create', 'Organization::createAnnouncement');
 $routes->post('organization/announcements/update/(:num)', 'Organization::updateAnnouncement/$1');
 $routes->post('organization/announcements/delete/(:num)', 'Organization::deleteAnnouncement/$1');
+$routes->get('organization/followers', 'Organization::getFollowers');
 
 // Organization Settings
 $routes->post('organization/settings/update', 'Organization::editOrgInfo');
@@ -57,7 +58,9 @@ $routes->post('organization/members/manage', 'Organization::manageMembers');
 
 // Organization Products
 $routes->get('organization/products', 'Organization::viewProducts');
+$routes->get('organization/products/get/(:num)', 'Organization::getProduct/$1');
 $routes->post('organization/products/create', 'Organization::createProduct');
+$routes->post('organization/products/update/(:num)', 'Organization::updateProduct/$1');
 $routes->post('organization/products/manage', 'Organization::manageProducts');
 $routes->post('organization/products/stock', 'Organization::updateStocks');
 
@@ -106,6 +109,7 @@ $routes->post('student/events/interested', 'Student::toggleEventInterest');
 $routes->get('student/announcements', 'Student::viewAnnouncements');
 $routes->get('student/organizations', 'Student::viewOrganizations');
 $routes->get('student/organization/(:num)', 'Student::viewOrganization/$1');
+$routes->get('student/organization/followers/(:num)', 'Student::getOrganizationFollowers/$1');
 $routes->post('student/organizations/join', 'Student::joinOrg');
 $routes->post('student/followOrg', 'Student::followOrg');
 $routes->post('student/unfollowOrg', 'Student::unfollowOrg');
