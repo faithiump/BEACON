@@ -5,6 +5,7 @@
     <meta name="robots" content="noindex">
 
     <title><?= lang('Errors.whoops') ?></title>
+    <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
 
     <style>
         <?= preg_replace('#[\r\n\t ]+#', ' ', file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'debug.css')) ?>

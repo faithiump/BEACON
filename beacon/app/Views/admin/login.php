@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - BEACON</title>
+    <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>" type="text/css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,9 +49,9 @@
             <div class="auth-left-content">
                 <div class="auth-branding">
                     <div class="admin-logo-container">
-                        <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="admin-main-logo">
+                        <img src="<?= base_url('assets/images/beacon-logo-v4.png') ?>" alt="BEACON Logo" class="admin-main-logo">
                     </div>
-                    <h1 class="auth-welcome-title">WELCOME BACK<br>BEACON ADMIN</h1>
+                    <h1 class="auth-welcome-title">Welcome back,<br>BEACON Admin!</h1>
                     <p class="auth-welcome-text">Manage campus organizations, events, and student engagement from one centralized platform.</p>
                 </div>
                 

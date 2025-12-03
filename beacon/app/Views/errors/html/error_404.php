@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title><?= lang('Errors.pageNotFound') ?></title>
-
+    <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <style>
         div.logo {
             height: 200px;

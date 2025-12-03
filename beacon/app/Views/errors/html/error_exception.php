@@ -11,6 +11,7 @@ $errorId = uniqid('error', true);
     <meta name="robots" content="noindex">
 
     <title><?= esc($title) ?></title>
+    <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <style>
         <?= preg_replace('#[\r\n\t ]+#', ' ', file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'debug.css')) ?>
     </style>

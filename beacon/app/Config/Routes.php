@@ -83,6 +83,8 @@ $routes->get('admin/dashboard', 'Admin\\Login::dashboard');
 $routes->get('admin/logout', 'Admin\\Login::logout');
 
 // Admin organization management
+$routes->get('admin/organizations/pending', 'Admin\\Login::organizationsPending');
+$routes->get('admin/organizations', 'Admin\\Login::organizations');
 $routes->post('admin/organizations/approve/(:num)', 'Admin\\Login::approveOrganization/$1');
 $routes->post('admin/organizations/reject/(:num)', 'Admin\\Login::rejectOrganization/$1');
 $routes->get('admin/organizations/view/(:num)', 'Admin\\Login::viewOrganization/$1');
@@ -90,10 +92,16 @@ $routes->get('admin/organizations/file/(:num)', 'Admin\\Login::viewOrganizationF
 $routes->get('admin/organizations/file/(:num)/download', 'Admin\\Login::downloadOrganizationFile/$1');
 
 // Admin student management
+$routes->get('admin/students/activity', 'Admin\\Login::studentsActivity');
 $routes->get('admin/students/view/(:num)', 'Admin\\Login::viewStudent/$1');
+$routes->get('admin/students', 'Admin\\Login::students');
 
 // Admin user management
 $routes->get('admin/users', 'Admin\\Login::manageUsers');
+
+// Admin transactions management
+$routes->get('admin/transactions/payments', 'Admin\\Login::transactionsPayments');
+$routes->get('admin/transactions', 'Admin\\Login::transactions');
 
 // Location routes
 $routes->get('locations/provinces', 'Locations::getProvinces');

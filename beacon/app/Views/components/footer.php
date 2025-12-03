@@ -12,8 +12,8 @@ $navLinks = [
     <div class="footer-container">
         <div class="footer-brand">
             <div class="footer-logo-container">
-                <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="footer-brand-logo">
-                <span class="footer-logo">BEACON</span>
+                <img src="<?= base_url('assets/images/beacon-logo-v4.png') ?>" alt="BEACON Logo" class="footer-brand-logo">
+                <img src="<?= base_url('assets/images/beacon-logo-text-v1.png') ?>" alt="BEACON" class="footer-logo">
             </div>
             <span class="footer-tagline">Unified Campus Hub of CSPC</span>
             <p class="footer-description">
@@ -23,8 +23,8 @@ $navLinks = [
         </div>
 
         <div class="footer-logos">
+            <img src="<?= base_url('assets/images/beacon-logo-v4.png') ?>" alt="BEACON Logo" class="footer-logo-img">
             <img src="<?= base_url('assets/images/cspc-logo.png') ?>" alt="CSPC Logo" class="footer-logo-img">
-            <img src="<?= base_url('assets/images/beacon-logo-v1.png') ?>" alt="BEACON Logo" class="footer-logo-img">
             <img src="<?= base_url('assets/images/cspc-ccs-logo.png') ?>" alt="CSPC CCS Logo" class="footer-logo-img">
         </div>
 
