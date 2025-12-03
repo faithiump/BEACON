@@ -13,6 +13,7 @@ use App\Models\AnnouncementModel;
 use App\Models\ProductModel;
 use App\Models\StudentOrganizationMembershipModel;
 use App\Models\ForumPostModel;
+use App\Models\ReservationModel;
 
 class Student extends BaseController
 {
@@ -90,6 +91,7 @@ class Student extends BaseController
         $allEventsList = [];
         $allAnnouncementsList = [];
         $allProductsList = [];
+        $followedOrgs = []; // Initialize followed organizations array
 
         if ($student) {
             // Get all organizations the student has joined (active only for posts)
@@ -249,6 +251,15 @@ class Student extends BaseController
                         $eventId = $event['event_id'] ?? $event['id'];
                         $processedEventIds[] = $eventId;
                         
+                        // Update event status in database based on current date/time
+                        $eventModel->updateEventStatus($eventId);
+                        // Refresh event data to get updated status from database
+                        $db = \Config\Database::connect();
+                        $event = $db->table('events')
+                            ->where('event_id', $eventId)
+                            ->get()
+                            ->getRowArray();
+                        
                         $audienceType = $event['audience_type'] ?? 'all';
                         $departmentAccess = strtolower($event['department_access'] ?? '');
                         $studentAccessList = [];
@@ -333,6 +344,45 @@ class Student extends BaseController
                             ->where('event_id', $eventId)
                             ->countAllResults();
                         
+                        // Check if event is ongoing (date and time have arrived)
+                        $isOngoing = false;
+                        // Parse time - handle both 24-hour (08:00) and 12-hour (8:00 AM) formats
+                        $eventTime = $event['time'] ?? '00:00:00';
+                        // If time doesn't have AM/PM and is in 24-hour format, convert for strtotime
+                        if (strpos($eventTime, 'AM') === false && strpos($eventTime, 'PM') === false && strpos($eventTime, ':') !== false) {
+                            // Time is in 24-hour format like "08:00" or "08:00:00"
+                            $timeParts = explode(':', $eventTime);
+                            $hour = (int)$timeParts[0];
+                            $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                            $eventTime = sprintf('%02d:%02d:00', $hour, $minute);
+                        }
+                        $eventDateTime = $event['date'] . ' ' . $eventTime;
+                        $eventTimestamp = strtotime($eventDateTime);
+                        $now = time();
+                        
+                        // Determine end time
+                        $endDateTime = null;
+                        if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                            $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+                        } elseif (!empty($event['end_time'])) {
+                            // If only end_time is set, use same date
+                            $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+                        } elseif (!empty($event['end_date'])) {
+                            // If only end_date is set, use end of that day
+                            $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+                        } else {
+                            // Default: end of start date
+                            $endDateTime = strtotime($event['date'] . ' 23:59:59');
+                        }
+                        
+                        // Event is ongoing if current time is between start and end time
+                        if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                            $isOngoing = true;
+                        }
+                        
+                        // Determine if event has ended
+                        $isEnded = ($now > $endDateTime);
+                        
                         $eventData = [
                             'id' => $eventId,
                             'title' => $event['event_name'] ?? $event['title'],
@@ -340,6 +390,8 @@ class Student extends BaseController
                             'date' => $event['date'],
                             'date_formatted' => $eventDate,
                             'time' => $timeFormatted,
+                            'end_date' => $event['end_date'] ?? null,
+                            'end_time' => $event['end_time'] ?? null,
                             'location' => $event['venue'] ?? $event['location'],
                             'audience_type' => $audienceType,
                             'department_access' => $departmentAccess,
@@ -348,6 +400,8 @@ class Student extends BaseController
                             'has_joined' => $hasJoined,
                             'is_interested' => $isInterested,
                             'interest_count' => $interestCount,
+                            'is_ongoing' => $isOngoing,
+                            'is_ended' => $isEnded,
                             'attendees' => $event['current_attendees'] ?? 0,
                             'max_attendees' => $event['max_attendees'],
                             'status' => $event['status'] ?? 'upcoming',
@@ -368,8 +422,11 @@ class Student extends BaseController
                         $organizationPosts['events'][] = $eventData;
                         $allEventsList[] = $eventData;
                         
-                        // Collect upcoming events for sidebar (only future events)
-                        if (strtotime($event['date']) >= strtotime(date('Y-m-d'))) {
+                        // Collect upcoming events for sidebar (only future events that haven't started yet)
+                        // Exclude ongoing events and events that have already started
+                        // Use the same eventTimestamp that was calculated for isOngoing check
+                        // Only add if event hasn't started yet (current time < event start time)
+                        if (!$isOngoing && $now < $eventTimestamp) {
                             $allUpcomingEvents[] = $eventData;
                         }
                     }
@@ -403,6 +460,11 @@ class Student extends BaseController
                         if (in_array($eventId, $processedEventIds)) {
                             continue;
                         }
+                        
+                        // Update event status in database based on current date/time
+                        $eventModel->updateEventStatus($eventId);
+                        // Refresh event data to get updated status
+                        $event = $eventModel->find($eventId);
                         
                         $audienceType = $event['audience_type'] ?? 'all';
                         
@@ -478,6 +540,45 @@ class Student extends BaseController
                                     ->where('event_id', $eventId)
                                     ->countAllResults();
                                 
+                                // Check if event is ongoing (date and time have arrived)
+                                $isOngoing = false;
+                                // Parse time - handle both 24-hour (08:00) and 12-hour (8:00 AM) formats
+                                $eventTime = $event['time'] ?? '00:00:00';
+                                // If time doesn't have AM/PM and is in 24-hour format, convert for strtotime
+                                if (strpos($eventTime, 'AM') === false && strpos($eventTime, 'PM') === false && strpos($eventTime, ':') !== false) {
+                                    // Time is in 24-hour format like "08:00" or "08:00:00"
+                                    $timeParts = explode(':', $eventTime);
+                                    $hour = (int)$timeParts[0];
+                                    $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                                    $eventTime = sprintf('%02d:%02d:00', $hour, $minute);
+                                }
+                                $eventDateTime = $event['date'] . ' ' . $eventTime;
+                                $eventTimestamp = strtotime($eventDateTime);
+                                $now = time();
+                                
+                                // Determine end time
+                                $endDateTime = null;
+                                if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                                    $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+                                } elseif (!empty($event['end_time'])) {
+                                    // If only end_time is set, use same date
+                                    $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+                                } elseif (!empty($event['end_date'])) {
+                                    // If only end_date is set, use end of that day
+                                    $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+                                } else {
+                                    // Default: end of start date
+                                    $endDateTime = strtotime($event['date'] . ' 23:59:59');
+                                }
+                                
+                                // Event is ongoing if current time is between start and end time
+                                if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                                    $isOngoing = true;
+                                }
+                                
+                                // Determine if event has ended
+                                $isEnded = ($now > $endDateTime);
+                                
                                 $eventData = [
                                     'id' => $eventId,
                                     'title' => $event['event_name'] ?? $event['title'],
@@ -485,6 +586,8 @@ class Student extends BaseController
                                     'date' => $event['date'],
                                     'date_formatted' => $eventDate,
                                     'time' => $timeFormatted,
+                                    'end_date' => $event['end_date'] ?? null,
+                                    'end_time' => $event['end_time'] ?? null,
                                     'location' => $event['venue'] ?? $event['location'],
                                     'audience_type' => $audienceType,
                                     'department_access' => strtolower($event['department_access'] ?? ''),
@@ -493,6 +596,8 @@ class Student extends BaseController
                                     'has_joined' => $hasJoined,
                                     'is_interested' => $isInterested,
                                     'interest_count' => $interestCount,
+                                    'is_ongoing' => $isOngoing,
+                                    'is_ended' => $isEnded,
                                     'attendees' => $event['current_attendees'] ?? 0,
                                     'max_attendees' => $event['max_attendees'],
                                     'status' => $event['status'] ?? 'upcoming',
@@ -513,8 +618,11 @@ class Student extends BaseController
                                 $organizationPosts['events'][] = $eventData;
                                 $allEventsList[] = $eventData;
                                 
-                                // Collect upcoming events for sidebar (only future events)
-                                if (strtotime($event['date']) >= strtotime(date('Y-m-d'))) {
+                                // Collect upcoming events for sidebar (only future events that haven't started yet)
+                                // Exclude ongoing events and events that have already started
+                                // Use the same eventTimestamp that was calculated for isOngoing check
+                                // Only add if event hasn't started yet (current time < event start time)
+                                if (!$isOngoing && $now < $eventTimestamp) {
                                     $allUpcomingEvents[] = $eventData;
                                 }
                         }
@@ -639,15 +747,16 @@ class Student extends BaseController
             ];
         }
 
-        // Get suggested organizations (organizations student hasn't joined)
+        // Get suggested organizations (organizations student hasn't joined AND hasn't followed)
         $suggestedOrganizations = [];
         if ($student && isset($allMemberships)) {
             // Get all organization IDs the student has joined (active or pending)
             $joinedOrgIds = array_column($allMemberships, 'org_id');
             
-            // Filter out organizations student has already joined (active or pending)
+            // Filter out organizations student has already joined (active or pending) OR is following
             foreach ($formattedOrgs as $org) {
-                if (!in_array($org['id'], $joinedOrgIds)) {
+                // Exclude if student has joined (active or pending) OR is following
+                if (!in_array($org['id'], $joinedOrgIds) && !in_array($org['id'], $studentFollows)) {
                     $suggestedOrganizations[] = $org;
                 }
             }
@@ -658,8 +767,18 @@ class Student extends BaseController
             });
             $suggestedOrganizations = array_slice($suggestedOrganizations, 0, 3);
         } else {
-            // If no student or no memberships, just show first 3 organizations
-            $suggestedOrganizations = array_slice($formattedOrgs, 0, 3);
+            // If no student or no memberships, filter out followed organizations if any
+            if ($student && !empty($studentFollows)) {
+                foreach ($formattedOrgs as $org) {
+                    if (!in_array($org['id'], $studentFollows)) {
+                        $suggestedOrganizations[] = $org;
+                    }
+                }
+                $suggestedOrganizations = array_slice($suggestedOrganizations, 0, 3);
+            } else {
+                // If no student or no follows, just show first 3 organizations
+                $suggestedOrganizations = array_slice($formattedOrgs, 0, 3);
+            }
         }
         
         // Format all memberships (including pending) for sidebar
@@ -686,6 +805,61 @@ class Student extends BaseController
                 ];
             }
         }
+        
+        // Format all followed organizations for sidebar (My Organizations section)
+        $allFollowedOrgs = [];
+        if ($student && !empty($followedOrgs)) {
+            $userPhotoModelForFollowed = new \App\Models\UserPhotoModel();
+            foreach ($followedOrgs as $followed) {
+                $orgId = $followed['org_id'] ?? null;
+                if ($orgId) {
+                    // Get organization details
+                    $orgForFollowed = $orgModel->find($orgId);
+                    if ($orgForFollowed && isset($orgForFollowed['is_active']) && $orgForFollowed['is_active'] == 1) {
+                        // Get organization photo from user_photos table
+                        $orgPhotoForFollowed = null;
+                        if (!empty($orgForFollowed['user_id'])) {
+                            $orgUserPhotoForFollowed = $userPhotoModelForFollowed->where('user_id', $orgForFollowed['user_id'])->first();
+                            if ($orgUserPhotoForFollowed && !empty($orgUserPhotoForFollowed['photo_path'])) {
+                                $orgPhotoForFollowed = base_url($orgUserPhotoForFollowed['photo_path']);
+                            }
+                        }
+                        
+                        $allFollowedOrgs[] = [
+                            'id' => $orgId,
+                            'name' => $orgForFollowed['organization_name'],
+                            'acronym' => $orgForFollowed['organization_acronym'],
+                            'status' => 'followed', // Status for followed organizations
+                            'photo' => $orgPhotoForFollowed
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Calculate new events count (events created in last 7 days)
+        $newEventsCount = 0;
+        if (!empty($allEventsList)) {
+            $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+            foreach ($allEventsList as $event) {
+                $eventCreatedAt = $event['created_at'] ?? $event['date'] ?? '';
+                if ($eventCreatedAt && strtotime($eventCreatedAt) >= strtotime($sevenDaysAgo)) {
+                    $newEventsCount++;
+                }
+            }
+        }
+        
+        // Calculate new announcements count (announcements created in last 7 days)
+        $newAnnouncementsCount = 0;
+        if (!empty($allAnnouncementsList)) {
+            $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+            foreach ($allAnnouncementsList as $announcement) {
+                $announcementCreatedAt = $announcement['created_at'] ?? '';
+                if ($announcementCreatedAt && strtotime($announcementCreatedAt) >= strtotime($sevenDaysAgo)) {
+                    $newAnnouncementsCount++;
+                }
+            }
+        }
 
         $data = [
             'student' => $student,
@@ -697,6 +871,7 @@ class Student extends BaseController
             'availableOrganizations' => $formattedOrgs,
             'joinedOrganizations' => $joinedOrganizations,
             'allJoinedOrganizations' => $allJoinedOrgs,
+            'allFollowedOrganizations' => $allFollowedOrgs, // For My Organizations section
             'suggestedOrganizations' => $suggestedOrganizations ?? [],
             'upcomingEvents' => $upcomingEvents ?? [],
             'allEvents' => $allEventsList ?? [],
@@ -704,6 +879,8 @@ class Student extends BaseController
             'allProducts' => $allProductsList ?? [],
             'eventCount' => $eventCount,
             'orgCount' => $orgCount,
+            'newEventsCount' => $newEventsCount, // New events count for navbar badge
+            'newAnnouncementsCount' => $newAnnouncementsCount, // New announcements count for navbar badge
             'pageTitle' => 'Student Dashboard'
         ];
 
@@ -1422,10 +1599,33 @@ class Student extends BaseController
             ->getRowArray();
         
         if ($existingAttendee) {
+            // Check if event is ongoing even if already joined
+            $isOngoing = false;
+            $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+            $eventTimestamp = strtotime($eventDateTime);
+            $now = time();
+            
+            // Determine end time
+            $endDateTime = null;
+            if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_time'])) {
+                $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_date'])) {
+                $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+            } else {
+                $endDateTime = strtotime($event['date'] . ' 23:59:59');
+            }
+            
+            if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                $isOngoing = true;
+            }
+            
             return $this->response->setJSON([
                 'success' => false, 
                 'message' => 'You have already joined this event.',
-                'has_joined' => true
+                'has_joined' => true,
+                'is_ongoing' => $isOngoing
             ]);
         }
         
@@ -1446,16 +1646,40 @@ class Student extends BaseController
         
         if ($db->table('event_attendees')->insert($attendeeData)) {
             // Update current_attendees count
+            $newAttendeeCount = ($event['current_attendees'] ?? 0) + 1;
             $eventModel->update($eventId, [
-                'current_attendees' => ($event['current_attendees'] ?? 0) + 1
+                'current_attendees' => $newAttendeeCount
             ]);
+            
+            // Check if event is ongoing
+            $isOngoing = false;
+            $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+            $eventTimestamp = strtotime($eventDateTime);
+            $now = time();
+            
+            // Determine end time
+            $endDateTime = null;
+            if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_time'])) {
+                $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+            } elseif (!empty($event['end_date'])) {
+                $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+            } else {
+                $endDateTime = strtotime($event['date'] . ' 23:59:59');
+            }
+            
+            if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                $isOngoing = true;
+            }
             
             return $this->response->setJSON([
                 'success' => true, 
                 'message' => 'Successfully registered for the event!',
                 'event_id' => $eventId,
                 'has_joined' => true,
-                'attendees' => ($event['current_attendees'] ?? 0) + 1
+                'is_ongoing' => $isOngoing,
+                'attendees' => $newAttendeeCount
             ]);
         } else {
             return $this->response->setJSON([
@@ -1528,8 +1752,28 @@ class Student extends BaseController
             $timeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
         }
 
+        // Format end time if available
+        $endTimeFormatted = null;
+        if (!empty($event['end_time'])) {
+            $endTimeFormatted = $event['end_time'];
+            if (strpos($endTimeFormatted, ':') !== false) {
+                $timeParts = explode(':', $endTimeFormatted);
+                $hour = (int)$timeParts[0];
+                $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                $period = $hour >= 12 ? 'PM' : 'AM';
+                $hour12 = $hour > 12 ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+                $endTimeFormatted = sprintf('%d:%02d %s', $hour12, $minute, $period);
+            }
+        }
+
         // Format date
         $eventDate = date('F j, Y', strtotime($event['date']));
+        
+        // Format end date if available
+        $endDateFormatted = null;
+        if (!empty($event['end_date'])) {
+            $endDateFormatted = date('F j, Y', strtotime($event['end_date']));
+        }
 
         // Check if student has joined
         $hasJoined = false;
@@ -1582,6 +1826,44 @@ class Student extends BaseController
             $eventImage = base_url('uploads/events/' . $event['image']);
         }
 
+        // Update event status in database based on current date/time
+        $eventModel->updateEventStatus($eventId);
+        // Refresh event data to get updated status from database
+        $db = \Config\Database::connect();
+        $event = $db->table('events')
+            ->where('event_id', $eventId)
+            ->get()
+            ->getRowArray();
+        
+        // Check if event is ongoing (date and time have arrived)
+        $isOngoing = false;
+        $eventDateTime = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+        $eventTimestamp = strtotime($eventDateTime);
+        $now = time();
+        
+        // Determine end time
+        $endDateTime = null;
+        if (!empty($event['end_date']) && !empty($event['end_time'])) {
+            $endDateTime = strtotime($event['end_date'] . ' ' . $event['end_time']);
+        } elseif (!empty($event['end_time'])) {
+            // If only end_time is set, use same date
+            $endDateTime = strtotime($event['date'] . ' ' . $event['end_time']);
+        } elseif (!empty($event['end_date'])) {
+            // If only end_date is set, use end of that day
+            $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+        } else {
+            // Default: end of start date
+            $endDateTime = strtotime($event['date'] . ' 23:59:59');
+        }
+        
+        // Event is ongoing if current time is between start and end time
+        if ($now >= $eventTimestamp && $now <= $endDateTime) {
+            $isOngoing = true;
+        }
+        
+        // Determine if event has ended
+        $isEnded = ($now > $endDateTime);
+
         return $this->response->setJSON([
             'success' => true,
             'data' => [
@@ -1591,6 +1873,9 @@ class Student extends BaseController
                 'date' => $event['date'],
                 'date_formatted' => $eventDate,
                 'time' => $timeFormatted,
+                'end_date' => $event['end_date'] ?? null,
+                'end_date_formatted' => $endDateFormatted,
+                'end_time' => $endTimeFormatted,
                 'location' => $event['venue'] ?? $event['location'],
                 'image' => $eventImage,
                 'max_attendees' => $event['max_attendees'] ?? null,
@@ -1604,8 +1889,11 @@ class Student extends BaseController
                 'org_photo' => $orgPhoto,
                 'can_join' => $canJoin,
                 'has_joined' => $hasJoined,
+                'is_ongoing' => $isOngoing,
+                'is_ended' => $isEnded,
                 'is_interested' => $isInterested,
                 'interest_count' => $interestCount,
+                'status' => $event['status'] ?? 'upcoming',
                 'created_at' => $event['created_at'] ?? $event['date']
             ]
         ]);
@@ -1945,12 +2233,30 @@ class Student extends BaseController
             return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
 
+        // Get followers count
+        $followModel = new \App\Models\OrganizationFollowModel();
+        $followers = $followModel->getOrganizationFollowers($orgId);
+        $followersCount = count($followers);
+        
         // Get all events from this organization
         $eventModel = new EventModel();
         $events = $eventModel->getEventsByOrg($orgId);
         $formattedEvents = [];
+        
+        // Use application timezone for accurate time comparison
+        date_default_timezone_set(config('App')->appTimezone);
+        
         foreach ($events as $event) {
             $eventId = $event['event_id'] ?? $event['id'];
+            
+            // Update event status in database based on current date/time
+            $eventModel->updateEventStatus($eventId);
+            // Refresh event data to get updated status from database
+            $db = \Config\Database::connect();
+            $event = $db->table('events')
+                ->where('event_id', $eventId)
+                ->get()
+                ->getRowArray();
             
             // Format time
             $timeFormatted = $event['time'];
@@ -2125,6 +2431,7 @@ class Student extends BaseController
                 'mission' => $organization['mission'] ?? '',
                 'vision' => $organization['vision'] ?? '',
                 'members' => $organization['current_members'] ?? 0,
+                'followers' => $followersCount,
                 'photo' => $orgPhoto,
                 'is_following' => $isFollowing,
                 'is_member' => $isMember,
@@ -2137,6 +2444,63 @@ class Student extends BaseController
         ];
 
         return view('student/organization', $data);
+    }
+
+    /**
+     * Get organization followers (for student view)
+     */
+    public function getOrganizationFollowers($orgId)
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck !== true) {
+            return $authCheck;
+        }
+
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $followModel = new \App\Models\OrganizationFollowModel();
+        $followers = $followModel->getOrganizationFollowers($orgId);
+        
+        // Get student details for each follower
+        $studentModel = new StudentModel();
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        $formattedFollowers = [];
+        
+        foreach ($followers as $follow) {
+            $student = $studentModel->find($follow['student_id']);
+            if ($student) {
+                // Get student photo
+                $photo = null;
+                if (!empty($student['user_id'])) {
+                    $userPhoto = $userPhotoModel->where('user_id', $student['user_id'])->first();
+                    if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                        $photo = base_url($userPhoto['photo_path']);
+                    }
+                }
+                
+                // Get user profile for name
+                $profile = $this->userProfileModel->where('user_id', $student['user_id'])->first();
+                
+                $formattedFollowers[] = [
+                    'student_id' => $student['id'],
+                    'student_number' => $student['student_number'] ?? '',
+                    'name' => ($profile ? ($profile['firstname'] . ' ' . $profile['lastname']) : '') ?: 'Student',
+                    'firstname' => $profile['firstname'] ?? '',
+                    'lastname' => $profile['lastname'] ?? '',
+                    'course' => $student['course'] ?? '',
+                    'year_level' => $student['year_level'] ?? '',
+                    'photo' => $photo,
+                    'followed_at' => $follow['created_at'] ?? ''
+                ];
+            }
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'followers' => $formattedFollowers
+        ]);
     }
 
     /**
@@ -2361,13 +2725,20 @@ class Student extends BaseController
     }
 
     /**
-     * Purchase Product
+     * Purchase Product (Create Reservation)
      */
     public function purchaseProduct()
     {
         $authCheck = $this->checkAuth();
         if ($authCheck !== true) {
             return $authCheck;
+        }
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
         }
 
         $paymentMethod = $this->request->getPost('payment_method');
@@ -2377,22 +2748,73 @@ class Student extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Your cart is empty']);
         }
 
-        // Mock order creation - implement actual database logic
-        $orderId = 'ORD-' . strtoupper(uniqid());
+        $productModel = new ProductModel();
+        $reservationModel = new \App\Models\ReservationModel();
+        $db = \Config\Database::connect();
         
-        // Clear cart after successful order
-        session()->remove('cart');
-
-        return $this->response->setJSON([
-            'success' => true, 
-            'message' => 'Order placed successfully!',
-            'order_id' => $orderId,
-            'payment_method' => $paymentMethod
-        ]);
+        $db->transStart();
+        
+        try {
+            foreach ($cart as $productId => $item) {
+                $product = $productModel->find($productId);
+                
+                if (!$product) {
+                    throw new \Exception("Product not found: {$productId}");
+                }
+                
+                // Check stock availability
+                if ($product['stock'] < $item['quantity']) {
+                    throw new \Exception("Insufficient stock for {$product['product_name']}. Available: {$product['stock']}, Requested: {$item['quantity']}");
+                }
+                
+                $quantity = $item['quantity'] ?? 1;
+                $price = (float)$product['price'];
+                $totalAmount = $price * $quantity;
+                
+                // Create reservation
+                $reservationData = [
+                    'student_id' => $student['id'],
+                    'org_id' => $product['org_id'],
+                    'product_id' => $productId,
+                    'product_name' => $product['product_name'],
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'total_amount' => $totalAmount,
+                    'status' => 'pending',
+                    'payment_method' => $paymentMethod ?? null
+                ];
+                
+                if (!$reservationModel->insert($reservationData)) {
+                    throw new \Exception('Failed to create reservation');
+                }
+            }
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaction failed');
+            }
+            
+            // Clear cart after successful reservation
+            session()->remove('cart');
+            
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => 'Reservation created successfully! Waiting for organization approval.',
+                'payment_method' => $paymentMethod
+            ]);
+            
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
-     * View Pending Payments
+     * View Pending Reservations
      */
     public function viewPendingPayments()
     {
@@ -2401,37 +2823,50 @@ class Student extends BaseController
             return $authCheck;
         }
 
-        // Mock pending payments data
-        $pendingPayments = [
-            [
-                'id' => 1,
-                'order_id' => 'ORD-6745ABC1',
-                'description' => 'CSS Official T-Shirt x2',
-                'amount' => 700.00,
-                'due_date' => '2025-12-01',
-                'organization' => 'Computer Science Society',
-                'status' => 'pending'
-            ],
-            [
-                'id' => 2,
-                'order_id' => 'ORD-6745ABC2',
-                'description' => 'Tech Summit 2025 Registration',
-                'amount' => 150.00,
-                'due_date' => '2025-12-03',
-                'organization' => 'Computer Science Society',
-                'status' => 'pending'
-            ]
-        ];
-
-        if ($this->request->isAJAX()) {
-            return $this->response->setJSON(['success' => true, 'pending_payments' => $pendingPayments]);
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+            }
+            return redirect()->to(base_url('student/dashboard'));
         }
 
-        return view('student/pending-payments', ['pendingPayments' => $pendingPayments]);
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->select('reservations.*, organizations.organization_name, organizations.organization_acronym, products.image as product_image')
+            ->join('organizations', 'organizations.id = reservations.org_id', 'left')
+            ->join('products', 'products.product_id = reservations.product_id', 'left')
+            ->where('reservations.student_id', $student['id'])
+            ->where('reservations.status', 'pending')
+            ->orderBy('reservations.created_at', 'DESC')
+            ->findAll();
+
+        $pendingReservations = [];
+        foreach ($reservations as $reservation) {
+            $orgName = $reservation['organization_acronym'] ?? $reservation['organization_name'] ?? 'Organization';
+            $pendingReservations[] = [
+                'id' => $reservation['reservation_id'],
+                'product_name' => $reservation['product_name'],
+                'organization' => $orgName,
+                'quantity' => $reservation['quantity'],
+                'price' => (float)$reservation['price'],
+                'total_amount' => (float)$reservation['total_amount'],
+                'created_at' => $reservation['created_at'],
+                'product_image' => $reservation['product_image'] ?? null,
+                'payment_method' => $reservation['payment_method'] ?? null
+            ];
+        }
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => true, 'pending_payments' => $pendingReservations]);
+        }
+
+        return view('student/pending-payments', ['pendingPayments' => $pendingReservations]);
     }
 
     /**
-     * View Payment History
+     * View Reservation History
      */
     public function viewPaymentHistory()
     {
@@ -2440,42 +2875,37 @@ class Student extends BaseController
             return $authCheck;
         }
 
-        // Mock payment history data
-        $paymentHistory = [
-            [
-                'id' => 1,
-                'transaction_id' => 'TXN-9876DEF1',
-                'order_id' => 'ORD-5634XYZ1',
-                'description' => 'GEI Eco-Bag',
-                'amount' => 150.00,
-                'payment_date' => '2025-11-15',
-                'payment_method' => 'GCash',
-                'organization' => 'Green Energy Initiative',
-                'status' => 'completed'
-            ],
-            [
-                'id' => 2,
-                'transaction_id' => 'TXN-9876DEF2',
-                'order_id' => 'ORD-5634XYZ2',
-                'description' => 'CSS Membership Fee',
-                'amount' => 200.00,
-                'payment_date' => '2025-11-10',
-                'payment_method' => 'Cash',
-                'organization' => 'Computer Science Society',
-                'status' => 'completed'
-            ],
-            [
-                'id' => 3,
-                'transaction_id' => 'TXN-9876DEF3',
-                'order_id' => 'ORD-5634XYZ3',
-                'description' => 'Business Workshop Registration',
-                'amount' => 300.00,
-                'payment_date' => '2025-11-05',
-                'payment_method' => 'Bank Transfer',
-                'organization' => 'Business Administration Club',
-                'status' => 'completed'
-            ]
-        ];
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+            }
+            return redirect()->to(base_url('student/dashboard'));
+        }
+
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->select('reservations.*, organizations.organization_name, organizations.organization_acronym')
+            ->join('organizations', 'organizations.id = reservations.org_id', 'left')
+            ->where('reservations.student_id', $student['id'])
+            ->whereIn('reservations.status', ['confirmed', 'completed'])
+            ->orderBy('reservations.updated_at', 'DESC')
+            ->findAll();
+
+        $paymentHistory = [];
+        foreach ($reservations as $reservation) {
+            $orgName = $reservation['organization_acronym'] ?? $reservation['organization_name'] ?? 'Organization';
+            $paymentHistory[] = [
+                'transaction_id' => 'RES-' . str_pad($reservation['reservation_id'], 8, '0', STR_PAD_LEFT),
+                'description' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'organization' => $orgName,
+                'amount' => (float)$reservation['total_amount'],
+                'date' => date('M d, Y', strtotime($reservation['updated_at'])),
+                'method' => $reservation['payment_method'] ?? 'N/A',
+                'status' => ucfirst($reservation['status'])
+            ];
+        }
 
         if ($this->request->isAJAX()) {
             return $this->response->setJSON(['success' => true, 'payment_history' => $paymentHistory]);
@@ -2485,71 +2915,277 @@ class Student extends BaseController
     }
 
     /**
-     * Get Notifications
+     * Get Notifications for Student
      */
     public function getNotifications()
     {
-        $authCheck = $this->checkAuth();
-        if ($authCheck !== true) {
-            return $authCheck;
+        try {
+            $authCheck = $this->checkAuth();
+            if ($authCheck !== true) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access']);
+            }
+
+            $userId = session()->get('user_id');
+            $studentId = session()->get('student_id');
+            $student = $this->studentModel->where('user_id', $userId)->first();
+
+            if (!$student) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+            }
+
+            $notifications = [];
+
+            // 1. Upcoming Events (events happening within 2 days)
+            $eventModel = new EventModel();
+            $db = \Config\Database::connect();
+            
+            // Get events the student has joined
+            $joinedEvents = $db->table('event_attendees')
+                ->where('student_id', $student['id'])
+                ->get()
+                ->getResultArray();
+            $joinedEventIds = !empty($joinedEvents) ? array_column($joinedEvents, 'event_id') : [];
+            
+            if (!empty($joinedEventIds)) {
+                $upcomingEvents = $eventModel
+                    ->whereIn('event_id', $joinedEventIds)
+                    ->where('date >=', date('Y-m-d'))
+                    ->where('date <=', date('Y-m-d', strtotime('+2 days')))
+                    ->findAll();
+                
+                foreach ($upcomingEvents as $event) {
+                    $eventDate = $event['date'] . ' ' . ($event['time'] ?? '00:00:00');
+                    $eventDateTime = strtotime($eventDate);
+                    $hoursUntil = round(($eventDateTime - time()) / 3600);
+                    
+                    if ($hoursUntil <= 24 && $hoursUntil > 0) {
+                        $notifications[] = [
+                            'id' => 'event_' . $event['event_id'],
+                            'type' => 'event',
+                            'icon' => 'event',
+                            'title' => 'Event Reminder: ' . $event['title'],
+                            'text' => $event['title'] . ' is happening in ' . ($hoursUntil < 1 ? 'less than an hour' : ($hoursUntil == 1 ? '1 hour' : $hoursUntil . ' hours')),
+                            'time' => $this->formatTimeAgo($eventDate),
+                            'created_at' => $eventDate,
+                            'unread' => true
+                        ];
+                    } elseif ($hoursUntil <= 48 && $hoursUntil > 24) {
+                        $daysUntil = round($hoursUntil / 24);
+                        $notifications[] = [
+                            'id' => 'event_' . $event['event_id'],
+                            'type' => 'event',
+                            'icon' => 'event',
+                            'title' => 'Upcoming Event: ' . $event['title'],
+                            'text' => $event['title'] . ' is happening in ' . ($daysUntil == 1 ? '1 day' : $daysUntil . ' days'),
+                            'time' => $this->formatTimeAgo($eventDate),
+                            'created_at' => $eventDate,
+                            'unread' => true
+                        ];
+                    }
+                }
+            }
+
+            // 2. New Announcements (posted in last 7 days)
+            $announcementModel = new AnnouncementModel();
+            $membershipModel = new StudentOrganizationMembershipModel();
+            $orgFollowModel = new \App\Models\OrganizationFollowModel();
+            
+            // Get organizations student follows or is a member of
+            $memberships = $membershipModel->getStudentOrganizations($student['id']);
+            $followedOrgs = $orgFollowModel->where('student_id', $student['id'])->findAll();
+            
+            $orgIds = !empty($memberships) ? array_column($memberships, 'organization_id') : [];
+            $followedOrgIds = !empty($followedOrgs) ? array_column($followedOrgs, 'organization_id') : [];
+            $allOrgIds = !empty($orgIds) || !empty($followedOrgIds) ? array_unique(array_merge($orgIds, $followedOrgIds)) : [];
+            
+            if (!empty($allOrgIds)) {
+                $recentAnnouncements = $announcementModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->findAll();
+                
+                foreach ($recentAnnouncements as $announcement) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($announcement['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'announcement_' . $announcement['id'],
+                        'type' => 'announcement',
+                        'icon' => 'announcement',
+                        'title' => $announcement['priority'] === 'high' ? 'Important: ' . $announcement['title'] : 'New Announcement: ' . $announcement['title'],
+                        'text' => $orgName . ' posted: ' . (strlen($announcement['content']) > 50 ? substr($announcement['content'], 0, 50) . '...' : $announcement['content']),
+                        'time' => $this->formatTimeAgo($announcement['created_at']),
+                        'created_at' => $announcement['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // 3. New Events (posted in last 7 days from followed organizations)
+            if (!empty($allOrgIds)) {
+                $recentEvents = $eventModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->findAll();
+                
+                foreach ($recentEvents as $event) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($event['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'event_new_' . $event['event_id'],
+                        'type' => 'event',
+                        'icon' => 'event',
+                        'title' => 'New Event: ' . $event['event_name'],
+                        'text' => $orgName . ' created a new event: ' . $event['event_name'],
+                        'time' => $this->formatTimeAgo($event['created_at']),
+                        'created_at' => $event['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // 4. New Products (posted in last 7 days from followed organizations)
+            if (!empty($allOrgIds)) {
+                $productModel = new ProductModel();
+                $recentProducts = $productModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->findAll();
+                
+                foreach ($recentProducts as $product) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($product['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'product_' . $product['product_id'],
+                        'type' => 'product',
+                        'icon' => 'product',
+                        'title' => 'New Product: ' . $product['product_name'],
+                        'text' => $orgName . ' added a new product: ' . $product['product_name'],
+                        'time' => $this->formatTimeAgo($product['created_at']),
+                        'created_at' => $product['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // 5. Membership Approvals
+            $pendingMemberships = $membershipModel
+                ->where('student_id', $student['id'])
+                ->where('status', 'active')
+                ->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-30 days')))
+                ->findAll();
+            
+            foreach ($pendingMemberships as $membership) {
+                $orgModel = new OrganizationModel();
+                $org = $orgModel->find($membership['organization_id']);
+                if ($org) {
+                    $orgName = $org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization';
+                    $daysAgo = round((time() - strtotime($membership['updated_at'])) / 86400);
+                    
+                    if ($daysAgo <= 7) {
+                        $notifications[] = [
+                            'id' => 'membership_' . $membership['id'],
+                            'type' => 'org',
+                            'icon' => 'org',
+                            'title' => 'Membership Approved',
+                            'text' => $orgName . ' membership approved!',
+                            'time' => $this->formatTimeAgo($membership['updated_at']),
+                            'created_at' => $membership['updated_at'],
+                            'unread' => $daysAgo <= 3
+                        ];
+                    }
+                }
+            }
+
+            // 6. New Comments/Replies on student's comments
+            $commentModel = new \App\Models\PostCommentModel();
+            $studentComments = $commentModel->where('user_id', $userId)->findAll();
+            $studentCommentIds = !empty($studentComments) ? array_column($studentComments, 'id') : [];
+            
+            if (!empty($studentCommentIds)) {
+                // Get replies to student's comments (last 7 days)
+                $replies = $commentModel
+                    ->whereIn('parent_comment_id', $studentCommentIds)
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->where('user_id !=', $userId)
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(5)
+                    ->findAll();
+                
+                foreach ($replies as $reply) {
+                    $userModel = new UserModel();
+                    $replyUser = $userModel->find($reply['user_id']);
+                    $replyUserName = $replyUser ? ($replyUser['name'] ?? 'Someone') : 'Someone';
+                    
+                    $notifications[] = [
+                        'id' => 'comment_' . $reply['id'],
+                        'type' => 'comment',
+                        'icon' => 'comment',
+                        'title' => 'New Reply to Your Comment',
+                        'text' => $replyUserName . ' replied to your comment.',
+                        'time' => $this->formatTimeAgo($reply['created_at']),
+                        'created_at' => $reply['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // Sort notifications by date (newest first)
+            usort($notifications, function($a, $b) {
+                return strtotime($b['created_at']) - strtotime($a['created_at']);
+            });
+
+            // Limit to 20 most recent
+            $notifications = array_slice($notifications, 0, 20);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'notifications' => $notifications,
+                'unread_count' => count(array_filter($notifications, function($n) { return $n['unread']; }))
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error in getNotifications: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error loading notifications: ' . $e->getMessage(),
+                'error' => $e->getFile() . ':' . $e->getLine()
+            ]);
         }
+    }
 
-        // Mock notifications data - replace with actual database queries
-        $notifications = [
-            [
-                'id' => 1,
-                'type' => 'event',
-                'title' => 'New Event: Tech Innovation Summit',
-                'message' => 'Computer Science Society posted a new event. Registration is now open!',
-                'time' => '2 hours ago',
-                'read' => false,
-                'link' => '#events'
-            ],
-            [
-                'id' => 2,
-                'type' => 'payment',
-                'title' => 'Payment Reminder',
-                'message' => 'Your payment for CSS T-Shirt is due on December 1, 2025.',
-                'time' => '5 hours ago',
-                'read' => false,
-                'link' => '#payments'
-            ],
-            [
-                'id' => 3,
-                'type' => 'announcement',
-                'title' => 'Important: Enrollment Extended',
-                'message' => 'The enrollment period has been extended until December 15, 2025.',
-                'time' => '1 day ago',
-                'read' => false,
-                'link' => '#announcements'
-            ],
-            [
-                'id' => 4,
-                'type' => 'organization',
-                'title' => 'Membership Approved',
-                'message' => 'Your membership request to Tech Innovation Hub has been approved!',
-                'time' => '2 days ago',
-                'read' => true,
-                'link' => '#organizations'
-            ],
-            [
-                'id' => 5,
-                'type' => 'comment',
-                'title' => 'New Reply to Your Comment',
-                'message' => 'John Doe replied to your comment on "Business Plan Competition".',
-                'time' => '3 days ago',
-                'read' => true,
-                'link' => '#events'
-            ]
-        ];
-
-        $unreadCount = count(array_filter($notifications, fn($n) => !$n['read']));
-
-        return $this->response->setJSON([
-            'success' => true,
-            'notifications' => $notifications,
-            'unread_count' => $unreadCount
-        ]);
+    /**
+     * Format time ago
+     */
+    private function formatTimeAgo($datetime)
+    {
+        $timestamp = strtotime($datetime);
+        $diff = time() - $timestamp;
+        
+        if ($diff < 60) {
+            return 'Just now';
+        } elseif ($diff < 3600) {
+            $mins = round($diff / 60);
+            return $mins . ' minute' . ($mins > 1 ? 's' : '') . ' ago';
+        } elseif ($diff < 86400) {
+            $hours = round($diff / 3600);
+            return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+        } elseif ($diff < 604800) {
+            $days = round($diff / 86400);
+            return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+        } else {
+            return date('M d, Y', $timestamp);
+        }
     }
 
     /**

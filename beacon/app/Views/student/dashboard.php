@@ -30,15 +30,19 @@
                     <a href="#events" class="nav-link" data-section="events">
                         <i class="fas fa-calendar-alt"></i>
                         <span>Events</span>
-                        <?php if(!empty($allEvents) && count($allEvents) > 0): ?>
-                            <span class="nav-badge" id="eventsNavBadge"><?= count($allEvents) ?></span>
+                        <?php if(isset($newEventsCount) && $newEventsCount > 0): ?>
+                            <span class="nav-badge" id="eventsNavBadge" style="display: flex;"><?= $newEventsCount ?></span>
+                        <?php else: ?>
+                            <span class="nav-badge" style="display: none;">0</span>
                         <?php endif; ?>
                     </a>
                     <a href="#announcements" class="nav-link" data-section="announcements">
                         <i class="fas fa-bullhorn"></i>
                         <span>Announcements</span>
-                        <?php if(!empty($allAnnouncements) && count($allAnnouncements) > 0): ?>
-                            <span class="nav-badge" id="announcementsNavBadge"><?= count($allAnnouncements) ?></span>
+                        <?php if(isset($newAnnouncementsCount) && $newAnnouncementsCount > 0): ?>
+                            <span class="nav-badge" id="announcementsNavBadge" style="display: flex;"><?= $newAnnouncementsCount ?></span>
+                        <?php else: ?>
+                            <span class="nav-badge" style="display: none;">0</span>
                         <?php endif; ?>
                     </a>
                     <a href="#organizations" class="nav-link" data-section="organizations">
@@ -88,19 +92,19 @@
                                 <div class="quick-action-item" id="notificationActionBtn">
                                     <div class="quick-action-icon notification">
                                         <i class="fas fa-bell"></i>
-                                        <span class="item-badge" id="notificationCount">5</span>
+                                        <span class="item-badge" id="notificationCount" style="display: none;">0</span>
                                     </div>
                                     <span class="quick-action-label">Notifications</span>
                                     <span class="quick-action-desc">Updates & alerts</span>
                                 </div>
                                 
-                                <!-- Payments Action -->
+                                <!-- Reservations Action -->
                                 <div class="quick-action-item" id="paymentsActionBtn">
                                     <div class="quick-action-icon payment">
-                                        <i class="fas fa-credit-card"></i>
-                                        <span class="item-badge" id="pendingPaymentCount">2</span>
+                                        <i class="fas fa-shopping-cart"></i>
+                                        <span class="item-badge" id="pendingPaymentCount" style="display: none;">0</span>
                                     </div>
-                                    <span class="quick-action-label">Payments</span>
+                                    <span class="quick-action-label">Reservations</span>
                                     <span class="quick-action-desc">Pending & history</span>
                                 </div>
                             </div>
@@ -119,55 +123,9 @@
                                     <button class="notif-tab" data-type="unread">Unread</button>
                                 </div>
                                 <div class="notification-list" id="notificationList">
-                                    <div class="notification-item unread" data-id="1">
-                                        <div class="notif-icon event">
-                                            <i class="fas fa-calendar-alt"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">New Event: Tech Innovation Summit</p>
-                                            <p class="notif-text">Computer Science Society posted a new event.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 2 hours ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item unread" data-id="2">
-                                        <div class="notif-icon payment">
-                                            <i class="fas fa-credit-card"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">Payment Reminder</p>
-                                            <p class="notif-text">Your payment for CSS T-Shirt is due Dec 1.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 5 hours ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item unread" data-id="3">
-                                        <div class="notif-icon announcement">
-                                            <i class="fas fa-bullhorn"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">Important: Enrollment Extended</p>
-                                            <p class="notif-text">Extended until December 15, 2025.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 1 day ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item" data-id="4">
-                                        <div class="notif-icon org">
-                                            <i class="fas fa-users"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">Membership Approved</p>
-                                            <p class="notif-text">Tech Innovation Hub membership approved!</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 2 days ago</span>
-                                        </div>
-                                    </div>
-                                    <div class="notification-item" data-id="5">
-                                        <div class="notif-icon comment">
-                                            <i class="fas fa-comment"></i>
-                                        </div>
-                                        <div class="notif-content">
-                                            <p class="notif-title">New Reply to Your Comment</p>
-                                            <p class="notif-text">John Doe replied to your comment.</p>
-                                            <span class="notif-time"><i class="fas fa-clock"></i> 3 days ago</span>
-                                        </div>
+                                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                                        <p>Loading notifications...</p>
                                     </div>
                                 </div>
                             </div>
@@ -219,14 +177,18 @@
                 </a>
                 <a href="#events" class="mobile-nav-link" data-section="events">
                     <i class="fas fa-calendar-alt"></i> Events
-                    <?php if(!empty($allEvents) && count($allEvents) > 0): ?>
-                        <span class="nav-badge" id="eventsMobileNavBadge"><?= count($allEvents) ?></span>
+                    <?php if(isset($newEventsCount) && $newEventsCount > 0): ?>
+                        <span class="nav-badge" id="eventsMobileNavBadge" style="display: flex;"><?= $newEventsCount ?></span>
+                    <?php else: ?>
+                        <span class="nav-badge" style="display: none;">0</span>
                     <?php endif; ?>
                 </a>
                 <a href="#announcements" class="mobile-nav-link" data-section="announcements">
                     <i class="fas fa-bullhorn"></i> Announcements
-                    <?php if(!empty($allAnnouncements) && count($allAnnouncements) > 0): ?>
-                        <span class="nav-badge" id="announcementsMobileNavBadge"><?= count($allAnnouncements) ?></span>
+                    <?php if(isset($newAnnouncementsCount) && $newAnnouncementsCount > 0): ?>
+                        <span class="nav-badge" id="announcementsMobileNavBadge" style="display: flex;"><?= $newAnnouncementsCount ?></span>
+                    <?php else: ?>
+                        <span class="nav-badge" style="display: none;">0</span>
                     <?php endif; ?>
                 </a>
                 <a href="#organizations" class="mobile-nav-link" data-section="organizations">
@@ -266,7 +228,7 @@
                                         <?php if(session()->get('photo')): ?>
                                             <img src="<?= esc(session()->get('photo')) ?>" alt="Profile" id="sidebarProfilePhoto">
                                         <?php else: ?>
-                                            <img src="" alt="Profile" id="sidebarProfilePhoto" style="display: none;">
+                                            <img src="" alt="Profile" style="display: none;">
                                             <div class="avatar-placeholder-lg" id="sidebarProfilePlaceholder">
                                                 <?= strtoupper(substr($profile['firstname'] ?? 'S', 0, 1) . substr($profile['lastname'] ?? 'T', 0, 1)) ?>
                                             </div>
@@ -304,28 +266,24 @@
                             <div class="student-sidebar-card">
                                 <h4 class="sidebar-card-title"><i class="fas fa-users"></i> My Organizations</h4>
                                 <div class="my-org-list">
-                                    <?php if(!empty($allJoinedOrganizations)): ?>
-                                        <?php foreach($allJoinedOrganizations as $joinedOrg): ?>
+                                    <?php if(!empty($allFollowedOrganizations)): ?>
+                                        <?php foreach($allFollowedOrganizations as $followedOrg): ?>
                                         <div class="my-org-item">
-                                            <?php if(!empty($joinedOrg['photo'])): ?>
-                                                <img src="<?= esc($joinedOrg['photo']) ?>" alt="<?= esc($joinedOrg['name']) ?>" class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                                            <?php if(!empty($followedOrg['photo'])): ?>
+                                                <img src="<?= esc($followedOrg['photo']) ?>" alt="<?= esc($followedOrg['name']) ?>" class="my-org-avatar" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
                                             <?php else: ?>
-                                                <div class="my-org-avatar <?= $joinedOrg['status'] === 'pending' ? 'pending' : '' ?>"><?= esc(strtoupper(substr($joinedOrg['acronym'], 0, 2))) ?></div>
+                                                <div class="my-org-avatar"><?= esc(strtoupper(substr($followedOrg['acronym'], 0, 2))) ?></div>
                                             <?php endif; ?>
                                             <div class="my-org-info">
-                                                <span class="my-org-name"><?= esc($joinedOrg['name']) ?></span>
-                                                <?php if($joinedOrg['status'] === 'pending'): ?>
-                                                <span class="my-org-status pending">Pending Approval</span>
-                                                <?php else: ?>
-                                                <span class="my-org-status active">Active Member</span>
-                                                <?php endif; ?>
+                                                <span class="my-org-name"><?= esc($followedOrg['name']) ?></span>
+                                                <span class="my-org-status active">Following</span>
                                             </div>
                                         </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="my-org-item">
                                             <div class="my-org-info" style="width: 100%; text-align: center; padding: 1rem;">
-                                                <span style="color: var(--gray-500); font-size: 0.875rem;">No organizations joined yet</span>
+                                                <span style="color: var(--gray-500); font-size: 0.875rem;">No organizations followed yet</span>
                                             </div>
                                         </div>
                                     <?php endif; ?>
@@ -354,11 +312,7 @@
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="sidebar-empty-state" style="padding: 1rem; text-align: center; color: var(--gray-500); font-size: 0.875rem;">
-                                            <?php if($hasJoinedOrg): ?>
-                                                No upcoming events from your organizations
-                                            <?php else: ?>
-                                                Join an organization to see upcoming events
-                                            <?php endif; ?>
+                                            No upcoming events yet
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -487,17 +441,17 @@
                                             <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠</div>
                                         </div>
                                     </div>
-                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')">
+                                    <button class="post-action comment-btn" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement', this)">
                                         <i class="far fa-comment"></i> Comment
                                         <?php if(($announcement['comment_count'] ?? 0) > 0): ?>
                                         <span class="comment-count"><?= $announcement['comment_count'] ?></span>
                                         <?php endif; ?>
                                     </button>
                                 </div>
-                                <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
-                                    <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
+                                <div class="comments-section" id="comments-feed-announcement-<?= $announcement['id'] ?>" style="display: none;">
+                                    <div class="comments-list" id="comments-list-feed-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
+                                        <input type="text" class="comment-input" id="comment-input-feed-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
                                         <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
@@ -529,7 +483,7 @@
                                 <div class="post-content">
                                     <p class="post-text">🎉 New event from <?= esc($event['org_acronym'] ?? 'Organization') ?>!</p>
                                 </div>
-                                <div class="event-preview-card">
+                                <div class="event-preview-card" data-event-id="<?= $event['id'] ?>" data-has-joined="<?= isset($event['has_joined']) && $event['has_joined'] ? 'true' : 'false' ?>" data-is-ongoing="<?= isset($event['is_ongoing']) && $event['is_ongoing'] ? 'true' : 'false' ?>" data-event-date="<?= $event['date'] ?>" data-event-time="<?= $event['time'] ?>" data-event-end-date="<?= $event['end_date'] ?? '' ?>" data-event-end-time="<?= $event['end_time'] ?? '' ?>">
                                     <div class="event-preview-banner" style="position: relative; overflow: hidden;">
                                         <?php if(!empty($event['image'])): ?>
                                             <img src="<?= base_url('uploads/events/' . $event['image']) ?>" alt="<?= esc($event['title']) ?>" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;">
@@ -547,7 +501,15 @@
                                         <p><i class="fas fa-users"></i> <?= $event['attendees'] ?> going</p>
                                         <div class="event-preview-actions">
                                             <?php if(isset($event['can_join']) && $event['can_join']): ?>
-                                                <?php if(isset($event['has_joined']) && $event['has_joined']): ?>
+                                                <?php if(isset($event['status']) && $event['status'] === 'ended'): ?>
+                                                    <button class="btn btn-secondary btn-sm" style="background-color: #6b7280; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2); cursor: default;" disabled>
+                                                        <i class="fas fa-check-circle"></i> <span>Ended</span>
+                                                    </button>
+                                                <?php elseif(isset($event['is_ongoing']) && $event['is_ongoing']): ?>
+                                                    <button class="btn btn-warning btn-sm" style="background-color: #f59e0b; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2); cursor: default;" disabled>
+                                                        <i class="fas fa-circle"></i> <span>Ongoing</span>
+                                                    </button>
+                                                <?php elseif(isset($event['has_joined']) && $event['has_joined']): ?>
                                                     <button class="btn btn-success btn-sm" onclick="joinEvent(<?= $event['id'] ?>)" style="background-color: #10b981; border: none; border-radius: 25px; padding: 0.5rem 1.25rem; font-weight: 500; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
                                                         <i class="fas fa-check"></i> <span>Joined</span>
                                                     </button>
@@ -641,40 +603,17 @@
 
                         <!-- Right Sidebar -->
                         <aside class="student-sidebar-right">
-                            <!-- Pending Payments -->
+                            <!-- Pending Reservations -->
                             <div class="student-sidebar-card payments-sidebar">
                                 <div class="sidebar-header-flex">
-                                    <h4 class="sidebar-card-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
-                                    <span class="pending-count">2</span>
+                                    <h4 class="sidebar-card-title"><i class="fas fa-shopping-cart"></i> Pending Reservations</h4>
+                                    <span class="pending-count" id="sidebarPendingCount" style="display: none;">0</span>
                                 </div>
-                                <div class="pending-payments-list">
-                                    <div class="pending-payment-item">
-                                        <div class="pp-icon">
-                                            <i class="fas fa-tshirt"></i>
-                                        </div>
-                                        <div class="pp-info">
-                                            <span class="pp-name">CSS Official T-Shirt x2</span>
-                                            <span class="pp-due">Due: Dec 1, 2025</span>
-                                        </div>
-                                        <span class="pp-amount">₱700</span>
-                                    </div>
-                                    <div class="pending-payment-item">
-                                        <div class="pp-icon">
-                                            <i class="fas fa-ticket-alt"></i>
-                                        </div>
-                                        <div class="pp-info">
-                                            <span class="pp-name">Tech Summit Registration</span>
-                                            <span class="pp-due">Due: Dec 3, 2025</span>
-                                        </div>
-                                        <span class="pp-amount">₱150</span>
-                                    </div>
-                                </div>
-                                <div class="pending-total">
-                                    <span>Total Pending</span>
-                                    <span class="total-value">₱850</span>
+                                <div class="pending-payments-list" id="pendingReservationsList">
+                                    <p style="text-align: center; color: #64748b; padding: 1rem;">No pending reservations</p>
                                 </div>
                                 <a href="#payments" class="btn btn-primary btn-block" onclick="switchSection('payments')">
-                                    <i class="fas fa-credit-card"></i> Pay Now
+                                    <i class="fas fa-shopping-cart"></i> View Reservations
                                 </a>
                             </div>
 
@@ -711,7 +650,7 @@
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="sidebar-empty-state" style="padding: 1rem; text-align: center; color: var(--gray-500); font-size: 0.875rem;">
-                                            No organizations available to join
+                                            No organizations available to follow
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -737,8 +676,8 @@
                                         <span>Announcements</span>
                                     </a>
                                     <a href="#payments" class="quick-link-item" onclick="switchSection('payments')">
-                                        <i class="fas fa-history"></i>
-                                        <span>Payment History</span>
+                                        <i class="fas fa-shopping-cart"></i>
+                                        <span>Reservations</span>
                                     </a>
                                 </div>
                             </div>
@@ -757,6 +696,8 @@
                             <select class="filter-select" id="eventFilter">
                                 <option value="all">All Events</option>
                                 <option value="upcoming">Upcoming</option>
+                                <option value="ongoing">Ongoing</option>
+                                <option value="ended">Ended</option>
                                 <option value="joined">Joined</option>
                             </select>
                         </div>
@@ -764,7 +705,7 @@
                     <div class="events-grid" id="eventsGrid">
                         <?php if(!empty($allEvents)): ?>
                             <?php foreach($allEvents as $event): ?>
-                            <div class="event-card" data-event-id="<?= $event['id'] ?>" data-has-joined="<?= isset($event['has_joined']) && $event['has_joined'] ? 'true' : 'false' ?>" data-event-date="<?= $event['date'] ?>">
+                            <div class="event-card" data-event-id="<?= $event['id'] ?>" data-has-joined="<?= isset($event['has_joined']) && $event['has_joined'] ? 'true' : 'false' ?>" data-is-ongoing="<?= isset($event['is_ongoing']) && $event['is_ongoing'] ? 'true' : 'false' ?>" data-status="<?= isset($event['status']) ? esc($event['status']) : 'upcoming' ?>" data-event-date="<?= $event['date'] ?>" data-event-time="<?= $event['time'] ?>" data-event-end-date="<?= $event['end_date'] ?? '' ?>" data-event-end-time="<?= $event['end_time'] ?? '' ?>">
                                 <div class="event-card-header">
                                     <span class="event-tag"><?= esc($event['org_type']) ?></span>
                                     <span class="event-fee free">Free</span>
@@ -797,7 +738,15 @@
                                 </div>
                                 <div class="event-card-footer">
                                     <?php if(isset($event['can_join']) && $event['can_join']): ?>
-                                        <?php if(isset($event['has_joined']) && $event['has_joined']): ?>
+                                        <?php if(isset($event['status']) && $event['status'] === 'ended'): ?>
+                                            <button class="btn-primary" style="background-color: #6b7280; border-color: #6b7280; border-radius: 20px; padding: 0.625rem 1.25rem; font-weight: 500; color: white; cursor: default;" disabled>
+                                                <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> Ended
+                                            </button>
+                                        <?php elseif(isset($event['is_ongoing']) && $event['is_ongoing']): ?>
+                                            <button class="btn-primary" style="background-color: #f59e0b; border-color: #f59e0b; border-radius: 20px; padding: 0.625rem 1.25rem; font-weight: 500; color: white; cursor: default;" disabled>
+                                                <i class="fas fa-circle" style="margin-right: 0.5rem;"></i> Ongoing
+                                            </button>
+                                        <?php elseif(isset($event['has_joined']) && $event['has_joined']): ?>
                                             <button class="btn-primary" onclick="joinEvent(<?= $event['id'] ?>)" style="background-color: #10b981; border-color: #10b981; border-radius: 20px; padding: 0.625rem 1.25rem; font-weight: 500; color: white;">
                                                 <i class="fas fa-check" style="margin-right: 0.5rem;"></i> Joined
                                             </button>
@@ -870,18 +819,22 @@
                                             <button class="btn-comment reaction-btn <?= ($announcement['user_reaction'] ?? null) ? 'reacted reaction-' . ($announcement['user_reaction'] ?? '') : '' ?>" 
                                                     onmouseenter="showReactionPicker(this)" 
                                                     onmouseleave="hideReactionPicker(this)"
-                                                    onclick="quickReact('announcement', <?= $announcement['id'] ?>, this, '<?= $announcement['user_reaction'] ?? '' ?>')"
+                                                    onclick="toggleReactionBreakdown(this); quickReact('announcement', <?= $announcement['id'] ?>, this, '<?= $announcement['user_reaction'] ?? '' ?>')"
                                                     style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
                                                 <span class="reaction-icon">
                                                     <?php 
-                                                    $userReaction = $announcement['user_reaction'] ?? null;
                                                     $reactionCounts = $announcement['reaction_counts'] ?? ['total' => 0];
-                                                    if ($userReaction):
-                                                        $icons = ['like' => '👍', 'love' => '❤️', 'care' => '🥰', 'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😠'];
-                                                        echo $icons[$userReaction] ?? '👍';
-                                                    else:
-                                                        echo '👍';
-                                                    endif;
+                                                    $reactionIcons = ['like' => '👍', 'love' => '❤️', 'care' => '🥰', 'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😠'];
+                                                    // Find the most common reaction
+                                                    $topReaction = 'like';
+                                                    $topCount = 0;
+                                                    foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType) {
+                                                        if (($reactionCounts[$reactionType] ?? 0) > $topCount) {
+                                                            $topCount = $reactionCounts[$reactionType];
+                                                            $topReaction = $reactionType;
+                                                        }
+                                                    }
+                                                    echo $reactionIcons[$topReaction] ?? '👍';
                                                     ?>
                                                 </span>
                                                 <?php if($reactionCounts['total'] > 0): ?>
@@ -897,8 +850,21 @@
                                                 <div class="reaction-option" data-reaction="sad" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'sad', this)">😢</div>
                                                 <div class="reaction-option" data-reaction="angry" onclick="setReaction('announcement', <?= $announcement['id'] ?>, 'angry', this)">😠</div>
                                             </div>
+                                            <?php if(($reactionCounts['total'] ?? 0) > 0): ?>
+                                            <div class="reaction-breakdown" style="display: none; position: absolute; bottom: 100%; left: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; margin-bottom: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; min-width: 200px;">
+                                                <?php foreach (['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'] as $reactionType): ?>
+                                                    <?php if(($reactionCounts[$reactionType] ?? 0) > 0): ?>
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;">
+                                                        <span><?= $reactionIcons[$reactionType] ?></span>
+                                                        <span style="text-transform: capitalize;"><?= $reactionType ?></span>
+                                                        <span style="margin-left: auto; font-weight: 600;"><?= $reactionCounts[$reactionType] ?></span>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <?php endif; ?>
                                         </div>
-                                        <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement')" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                                        <button class="btn-comment" onclick="toggleComments(<?= $announcement['id'] ?>, 'announcement', this)" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
                                             <i class="fas fa-comment"></i> Comment
                                             <?php if(($announcement['comment_count'] ?? 0) > 0): ?>
                                             <span class="comment-count"><?= $announcement['comment_count'] ?></span>
@@ -909,7 +875,7 @@
                                 <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
                                     <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
+                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') postComment(<?= $announcement['id'] ?>, 'announcement')">
                                         <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
@@ -951,7 +917,7 @@
                     <div class="orgs-grid">
                         <?php if(!empty($availableOrganizations)): ?>
                             <?php foreach($availableOrganizations as $org): ?>
-                            <div class="org-card">
+                            <div class="org-card" data-org-type="<?= strtolower(esc($org['type'])) ?>">
                                 <div class="org-card-header">
                                     <?php if(!empty($org['photo'])): ?>
                                         <img src="<?= esc($org['photo']) ?>" alt="<?= esc($org['name']) ?>" class="org-avatar large" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover;">
@@ -1098,62 +1064,26 @@
                     </div>
                 </section>
 
-                <!-- Payments Section -->
+                <!-- Reservations Section -->
                 <section class="content-section" id="payments">
                     <div class="section-header">
                         <div>
-                            <h1 class="section-title">Payments</h1>
-                            <p class="section-subtitle">Manage your pending payments and view history</p>
+                            <h1 class="section-title">Reservations</h1>
+                            <p class="section-subtitle">Manage your pending reservations and view history</p>
                         </div>
                     </div>
                     
                     <div class="payments-tabs">
-                        <button class="payment-tab active" data-tab="pending">Pending Payments</button>
-                        <button class="payment-tab" data-tab="history">Payment History</button>
+                        <button class="payment-tab active" data-tab="pending">Pending Reservations</button>
+                        <button class="payment-tab" data-tab="history">Reservation History</button>
                     </div>
 
                     <div class="payment-content active" id="pending-content">
-                        <div class="payment-cards">
-                            <div class="payment-card pending">
-                                <div class="payment-card-header">
-                                    <span class="payment-status pending"><i class="fas fa-clock"></i> Pending</span>
-                                    <span class="payment-id">ORD-6745ABC1</span>
-                                </div>
-                                <div class="payment-card-body">
-                                    <h3>CSS Official T-Shirt x2</h3>
-                                    <p class="payment-org"><i class="fas fa-building"></i> Computer Science Society</p>
-                                    <div class="payment-due">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>Due: December 1, 2025</span>
-                                    </div>
-                                </div>
-                                <div class="payment-card-footer">
-                                    <span class="payment-amount">₱700.00</span>
-                                    <button class="btn-primary" onclick="initiatePayment(1)">
-                                        <i class="fas fa-credit-card"></i> Pay Now
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="payment-card pending">
-                                <div class="payment-card-header">
-                                    <span class="payment-status pending"><i class="fas fa-clock"></i> Pending</span>
-                                    <span class="payment-id">ORD-6745ABC2</span>
-                                </div>
-                                <div class="payment-card-body">
-                                    <h3>Tech Summit 2025 Registration</h3>
-                                    <p class="payment-org"><i class="fas fa-building"></i> Computer Science Society</p>
-                                    <div class="payment-due">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span>Due: December 3, 2025</span>
-                                    </div>
-                                </div>
-                                <div class="payment-card-footer">
-                                    <span class="payment-amount">₱150.00</span>
-                                    <button class="btn-primary" onclick="initiatePayment(2)">
-                                        <i class="fas fa-credit-card"></i> Pay Now
-                                    </button>
-                                </div>
+                        <div class="payment-cards" id="pendingReservationsCards">
+                            <!-- Reservations will be loaded dynamically -->
+                            <div style="text-align: center; padding: 3rem; color: #64748b;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>Loading reservations...</p>
                             </div>
                         </div>
                     </div>
@@ -1174,31 +1104,10 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><span class="txn-id">TXN-9876DEF1</span></td>
-                                        <td>GEI Eco-Bag</td>
-                                        <td>Green Energy Initiative</td>
-                                        <td>₱150.00</td>
-                                        <td>Nov 15, 2025</td>
-                                        <td><span class="method-badge gcash">GCash</span></td>
-                                        <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="txn-id">TXN-9876DEF2</span></td>
-                                        <td>CSS Membership Fee</td>
-                                        <td>Computer Science Society</td>
-                                        <td>₱200.00</td>
-                                        <td>Nov 10, 2025</td>
-                                        <td><span class="method-badge cash">Cash</span></td>
-                                        <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="txn-id">TXN-9876DEF3</span></td>
-                                        <td>Business Workshop Registration</td>
-                                        <td>Business Administration Club</td>
-                                        <td>₱300.00</td>
-                                        <td>Nov 5, 2025</td>
-                                        <td><span class="method-badge bank">Bank Transfer</span></td>
-                                        <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
+                                        <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
+                                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                            <p>Loading reservation history...</p>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1627,10 +1536,422 @@
 
 
     <script>
-        const baseUrl = '<?= base_url() ?>';
+        const baseUrl = <?= json_encode(base_url()) ?>;
+        
+        // Global Search Functionality
+        function initializeGlobalSearch() {
+            const searchInput = document.getElementById('globalSearch');
+            if (!searchInput) {
+                return;
+            }
+
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim().toLowerCase();
+                
+                // Debounce search to avoid too many searches
+                searchTimeout = setTimeout(() => {
+                    performGlobalSearch(query);
+                }, 300);
+            });
+
+            // Clear search on Escape key
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    performGlobalSearch('');
+                }
+            });
+        }
+
+        function performGlobalSearch(query) {
+            if (!query) {
+                // Show all items when search is cleared
+                showAllItems();
+                return;
+            }
+
+            // Search in different sections
+            const eventsFound = searchEvents(query);
+            const announcementsFound = searchAnnouncements(query);
+            const feedPostsFound = searchFeedPosts(query); // Search in overview feed
+            const orgsFound = searchOrganizations(query);
+            const productsFound = searchProducts(query);
+
+            // Show general "not found" message if nothing is found in any section
+            const totalFound = eventsFound + announcementsFound + feedPostsFound + orgsFound + productsFound;
+            showGeneralNotFound(query, totalFound);
+        }
+
+        function showGeneralNotFound(query, totalFound) {
+            // Remove existing general not found message
+            const existing = document.querySelector('.general-empty-state-search');
+            if (existing) {
+                existing.remove();
+            }
+
+            // Show general "not found" message if nothing found in any section
+            if (totalFound === 0 && query) {
+                // Check which section is currently active
+                const activeSection = document.querySelector('.content-section.active, section.active');
+                if (activeSection) {
+                    const generalEmpty = document.createElement('div');
+                    generalEmpty.className = 'general-empty-state-search';
+                    generalEmpty.style.cssText = 'text-align: center; padding: 4rem 2rem; color: var(--gray-500); margin: 2rem 0;';
+                    generalEmpty.innerHTML = `
+                        <i class="fas fa-search" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--gray-600);">No results found</h3>
+                        <p style="font-size: 0.9375rem;">No events, announcements, organizations, or products found matching "<strong>${query}</strong>"</p>
+                    `;
+                    
+                    // Insert at the beginning of active section content
+                    // Try different selectors to find the content container
+                    let sectionContent = activeSection.querySelector('.org-posts-container') ||
+                                       activeSection.querySelector('.events-grid') ||
+                                       activeSection.querySelector('.orgs-grid') ||
+                                       activeSection.querySelector('.products-grid') ||
+                                       activeSection.querySelector('#announcementsList') ||
+                                       activeSection.querySelector('div:first-child');
+                    
+                    if (sectionContent) {
+                        sectionContent.insertBefore(generalEmpty, sectionContent.firstChild);
+                    } else {
+                        activeSection.insertBefore(generalEmpty, activeSection.firstChild);
+                    }
+                }
+            }
+        }
+
+        function showAllItems() {
+            // Show all events
+            const eventCards = document.querySelectorAll('.event-card');
+            eventCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Show all announcements
+            const announcementCards = document.querySelectorAll('.announcement-card, .feed-post.announcement-post');
+            announcementCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Show all feed posts (events and announcements in overview)
+            const feedPosts = document.querySelectorAll('.feed-post');
+            feedPosts.forEach(post => {
+                post.style.display = '';
+            });
+
+            // Show all organizations
+            const orgCards = document.querySelectorAll('.org-card');
+            orgCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Show all products
+            const productCards = document.querySelectorAll('.product-card');
+            productCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Hide empty states
+            const emptyStates = document.querySelectorAll('.empty-state-search, .general-empty-state-search');
+            emptyStates.forEach(state => {
+                state.remove();
+            });
+        }
+
+        function searchFeedPosts(query) {
+            // Search in feed posts (overview section)
+            const feedPosts = document.querySelectorAll('.feed-post');
+            let foundCount = 0;
+
+            feedPosts.forEach(post => {
+                // Skip if it's already handled by announcement search
+                if (post.classList.contains('announcement-post')) {
+                    return;
+                }
+
+                // Get title from event posts
+                const title = (post.querySelector('.event-preview-info h3')?.textContent || 
+                              post.querySelector('h3')?.textContent || '').toLowerCase();
+                // Get content
+                const content = (post.querySelector('.post-text')?.textContent || 
+                                post.querySelector('p')?.textContent || '').toLowerCase();
+                // Get org name
+                const orgName = (post.querySelector('.post-author-name')?.textContent || '').toLowerCase();
+                // Get location from event preview
+                const location = (post.querySelector('.event-preview-info p')?.textContent || '').toLowerCase();
+                
+                const matches = title.includes(query) || 
+                               content.includes(query) || 
+                               orgName.includes(query) ||
+                               location.includes(query);
+
+                if (matches) {
+                    post.style.display = '';
+                    foundCount++;
+                } else {
+                    post.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for feed posts (overview section)
+            const feedContainer = document.querySelector('.org-posts-container, .student-feed-main, #overview .student-feed-main');
+            if (feedContainer && query) {
+                let emptyState = feedContainer.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No posts found matching "<strong>' + query + '</strong>"</p>';
+                    feedContainer.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
+
+        function searchEvents(query) {
+            const eventCards = document.querySelectorAll('.event-card');
+            let foundCount = 0;
+
+            eventCards.forEach(card => {
+                // Get title from h3 in event-card-body
+                const title = (card.querySelector('.event-card-body h3')?.textContent || 
+                              card.querySelector('h3')?.textContent || '').toLowerCase();
+                // Get description from p in event-card-body
+                const description = (card.querySelector('.event-card-body p')?.textContent || '').toLowerCase();
+                // Get location from info-item with map icon
+                const locationItems = card.querySelectorAll('.info-item');
+                let location = '';
+                locationItems.forEach(item => {
+                    if (item.querySelector('.fa-map-marker-alt, .fa-location-dot')) {
+                        location = (item.querySelector('span')?.textContent || '').toLowerCase();
+                    }
+                });
+                // Get org name from event-org
+                const orgName = (card.querySelector('.event-org span')?.textContent || 
+                                card.querySelector('.event-org')?.textContent || '').toLowerCase();
+                
+                const matches = title.includes(query) || 
+                               description.includes(query) || 
+                               location.includes(query) || 
+                               orgName.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for events
+            const eventsGrid = document.querySelector('#eventsGrid');
+            if (eventsGrid && query) {
+                let emptyState = eventsGrid.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No events found matching "<strong>' + query + '</strong>"</p>';
+                    eventsGrid.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
+
+        function searchAnnouncements(query) {
+            const announcementCards = document.querySelectorAll('.announcement-card, .feed-post.announcement-post');
+            let foundCount = 0;
+
+            announcementCards.forEach(card => {
+                // Get title - could be in h3 or .post-title
+                const title = (card.querySelector('h3')?.textContent || 
+                              card.querySelector('.post-title')?.textContent || '').toLowerCase();
+                // Get content - could be in p or .post-text
+                const content = (card.querySelector('p')?.textContent || 
+                                card.querySelector('.post-text')?.textContent || '').toLowerCase();
+                // Get org name
+                const orgName = (card.querySelector('.announcement-author')?.textContent || 
+                                card.querySelector('.post-author-name')?.textContent || '').toLowerCase();
+                
+                const matches = title.includes(query) || 
+                               content.includes(query) || 
+                               orgName.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for announcements
+            const announcementsList = document.querySelector('#announcementsList');
+            if (announcementsList && query) {
+                let emptyState = announcementsList.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No announcements found matching "<strong>' + query + '</strong>"</p>';
+                    announcementsList.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
+
+        function searchOrganizations(query) {
+            const orgCards = document.querySelectorAll('.org-card');
+            let foundCount = 0;
+
+            orgCards.forEach(card => {
+                const name = (card.querySelector('h3')?.textContent || '').toLowerCase();
+                const description = (card.querySelector('.org-description')?.textContent || '').toLowerCase();
+                const type = (card.querySelector('.org-type')?.textContent || '').toLowerCase();
+                const acronym = (card.getAttribute('data-org-type') || '').toLowerCase();
+                
+                const matches = name.includes(query) || 
+                               description.includes(query) || 
+                               type.includes(query) || 
+                               acronym.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for organizations
+            const orgsGrid = document.querySelector('.orgs-grid');
+            if (orgsGrid && query) {
+                let emptyState = orgsGrid.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No organizations found matching "<strong>' + query + '</strong>"</p>';
+                    orgsGrid.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
+
+        function searchProducts(query) {
+            const productCards = document.querySelectorAll('.product-card');
+            let foundCount = 0;
+
+            productCards.forEach(card => {
+                const name = (card.querySelector('.product-name')?.textContent || 
+                             card.querySelector('h3')?.textContent || '').toLowerCase();
+                const description = (card.querySelector('.product-description')?.textContent || '').toLowerCase();
+                const price = (card.querySelector('.product-price')?.textContent || '').toLowerCase();
+                
+                const matches = name.includes(query) || 
+                               description.includes(query) || 
+                               price.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for products
+            const productsGrid = document.querySelector('.products-grid');
+            if (productsGrid && query) {
+                let emptyState = productsGrid.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No products found matching "<strong>' + query + '</strong>"</p>';
+                    productsGrid.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
         
         // Hide badges if user has already viewed the sections
+        // Make dropdownMenu accessible globally
+        let dropdownMenu = null;
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Get dropdownMenu reference
+            dropdownMenu = document.getElementById('dropdownMenu');
+            
+            // Initialize navigation first
+            const navLinks = document.querySelectorAll('.nav-link[data-section], .mobile-nav-link[data-section], .dropdown-item[data-section]');
+            
+            if (navLinks && navLinks.length > 0) {
+                navLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const sectionId = link.dataset.section;
+                        if (sectionId) {
+                            switchSection(sectionId);
+                        }
+                        if (typeof closeMobileMenu === 'function') {
+                            closeMobileMenu();
+                        }
+                        if (dropdownMenu) {
+                            dropdownMenu.classList.remove('active');
+                        }
+                    });
+                });
+            }
+            
+            // Load initial notification count
+            try {
+                fetch(baseUrl + 'student/notifications', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.notifications) {
+                        if (typeof updateNotificationCount === 'function') {
+                            updateNotificationCount(data.notifications);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notification count:', error);
+                });
+            } catch (e) {
+                console.error('Error in notification fetch:', e);
+            }
+            
+            // Initialize global search
+            if (typeof initializeGlobalSearch === 'function') {
+                initializeGlobalSearch();
+            }
+            
             // Hide events badge if already viewed
             const eventsBadgeViewed = localStorage.getItem('eventsBadgeViewed');
             if (eventsBadgeViewed === 'true') {
@@ -1655,6 +1976,39 @@
                 if (announcementsMobileNavBadge) {
                     announcementsMobileNavBadge.style.display = 'none';
                 }
+            }
+            
+            // Load pending reservations count and sidebar list on page load
+            if (typeof loadPendingReservations === 'function') {
+                fetch(baseUrl + 'student/payments/pending', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.pending_payments) {
+                        updatePendingReservationsCount(data.pending_payments.length);
+                        updateSidebarReservations(data.pending_payments);
+                    } else {
+                        updatePendingReservationsCount(0);
+                        updateSidebarReservations([]);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading pending reservations count:', error);
+                });
+            }
+            
+            // Initialize User Dropdown
+            const userBtn = document.getElementById('userBtn');
+            if (userBtn && dropdownMenu) {
+                userBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('active');
+                    const quickActionsDropdown = document.getElementById('quickActionsDropdown');
+                    if (quickActionsDropdown) {
+                        quickActionsDropdown.classList.remove('active');
+                    }
+                });
             }
         });
         
@@ -1708,86 +2062,269 @@
         const mobileNavOverlay = document.getElementById('mobileNavOverlay');
         const closeMobileNav = document.getElementById('closeMobileNav');
         
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileNav.classList.add('open');
-            mobileNavOverlay.classList.add('active');
-        });
+        if (mobileMenuBtn && mobileNav && mobileNavOverlay) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileNav.classList.add('open');
+                mobileNavOverlay.classList.add('active');
+            });
+        }
         
-        closeMobileNav.addEventListener('click', closeMobileMenu);
-        mobileNavOverlay.addEventListener('click', closeMobileMenu);
+        if (closeMobileNav) {
+            closeMobileNav.addEventListener('click', closeMobileMenu);
+        }
+        if (mobileNavOverlay) {
+            mobileNavOverlay.addEventListener('click', closeMobileMenu);
+        }
         
         function closeMobileMenu() {
-            mobileNav.classList.remove('open');
-            mobileNavOverlay.classList.remove('active');
+            if (mobileNav) {
+                mobileNav.classList.remove('open');
+            }
+            if (mobileNavOverlay) {
+                mobileNavOverlay.classList.remove('active');
+            }
         }
 
-        // User Dropdown
-        const userBtn = document.getElementById('userBtn');
-        const dropdownMenu = document.getElementById('dropdownMenu');
-        
-        userBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownMenu.classList.toggle('active');
-            quickActionsDropdown.classList.remove('active');
-        });
-        
-        // Quick Actions Dropdown
+        // Quick Actions Dropdown - Declare first
         const quickActionsBtn = document.getElementById('quickActionsBtn');
         const quickActionsDropdown = document.getElementById('quickActionsDropdown');
         const notificationPanel = document.getElementById('notificationPanel');
         const cartActionBtn = document.getElementById('cartActionBtn');
+        const cartSidebar = document.getElementById('cartSidebar');
+        const cartOverlay = document.getElementById('cartOverlay');
         const notificationActionBtn = document.getElementById('notificationActionBtn');
         const backToActions = document.getElementById('backToActions');
         const notifTabs = document.querySelectorAll('.notif-tab');
         
-        quickActionsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            quickActionsDropdown.classList.toggle('active');
-            dropdownMenu.classList.remove('active');
-            // Reset to main view when opening
-            notificationPanel.classList.remove('active');
-        });
+        if (quickActionsBtn && quickActionsDropdown) {
+            quickActionsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                quickActionsDropdown.classList.toggle('active');
+                if (dropdownMenu) {
+                    dropdownMenu.classList.remove('active');
+                }
+                // Reset to main view when opening
+                if (notificationPanel) {
+                    notificationPanel.classList.remove('active');
+                }
+                quickActionsDropdown.classList.remove('show-notifications');
+            });
+        }
         
         // Cart action - opens cart sidebar
-        cartActionBtn.addEventListener('click', () => {
-            quickActionsDropdown.classList.remove('active');
-            cartSidebar.classList.add('open');
-            cartOverlay.classList.add('active');
-        });
+        if (cartActionBtn && cartSidebar && cartOverlay) {
+            cartActionBtn.addEventListener('click', () => {
+                if (quickActionsDropdown) {
+                    quickActionsDropdown.classList.remove('active');
+                }
+                cartSidebar.classList.add('open');
+                cartOverlay.classList.add('active');
+            });
+        }
         
         // Notification action - shows notification panel
-        notificationActionBtn.addEventListener('click', () => {
-            notificationPanel.classList.add('active');
-        });
+        if (notificationActionBtn && notificationPanel && quickActionsDropdown) {
+            notificationActionBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notificationPanel.classList.add('active');
+                quickActionsDropdown.classList.add('show-notifications');
+            });
+        }
         
         // Payments action - navigates to payments section
         const paymentsActionBtn = document.getElementById('paymentsActionBtn');
-        paymentsActionBtn.addEventListener('click', () => {
-            quickActionsDropdown.classList.remove('active');
-            // Switch to payments tab
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelectorAll('.mobile-nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelectorAll('.dashboard-section').forEach(section => section.classList.remove('active'));
-            document.getElementById('payments').classList.add('active');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        if (paymentsActionBtn) {
+            paymentsActionBtn.addEventListener('click', () => {
+                switchSection('payments');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
         
         // Back button in notification panel
-        backToActions.addEventListener('click', () => {
-            notificationPanel.classList.remove('active');
-        });
+        if (backToActions && notificationPanel && quickActionsDropdown) {
+            backToActions.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notificationPanel.classList.remove('active');
+                quickActionsDropdown.classList.remove('show-notifications');
+            });
+        }
         
         // Notification tabs
-        notifTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                notifTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                filterNotifications(tab.dataset.type);
+        if (notifTabs && notifTabs.length > 0) {
+            notifTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    notifTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    filterNotifications(tab.dataset.type);
+                });
             });
-        });
+        }
         
+        // Load notifications from API
+        function loadNotifications() {
+            const notificationList = document.getElementById('notificationList');
+            if (!notificationList) return;
+            
+            fetch(baseUrl + 'student/notifications', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.notifications) {
+                    renderNotifications(data.notifications);
+                    updateNotificationCount(data.notifications);
+                } else {
+                    notificationList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><p>No notifications yet.</p></div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                notificationList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><p>Failed to load notifications.</p></div>';
+            });
+        }
+
+        function renderNotifications(notifications) {
+            const notificationList = document.getElementById('notificationList');
+            if (!notificationList) return;
+            
+            if (notifications.length === 0) {
+                notificationList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><p>No notifications yet.</p></div>';
+                return;
+            }
+            
+            const iconMap = {
+                'event': { class: 'event', icon: 'fa-calendar-alt' },
+                'announcement': { class: 'announcement', icon: 'fa-bullhorn' },
+                'org': { class: 'org', icon: 'fa-users' },
+                'comment': { class: 'comment', icon: 'fa-comment' },
+                'payment': { class: 'payment', icon: 'fa-credit-card' },
+                'product': { class: 'product', icon: 'fa-shopping-bag' }
+            };
+            
+            notificationList.innerHTML = notifications.map(notif => {
+                const iconInfo = iconMap[notif.icon] || { class: 'event', icon: 'fa-bell' };
+                const unreadClass = notif.unread ? 'unread' : '';
+                
+                // Determine navigation based on notification type
+                let clickHandler = '';
+                if (notif.type === 'event' && notif.id && notif.id.startsWith('event_')) {
+                    const eventId = notif.id.replace('event_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'event', ${eventId})"`;
+                } else if (notif.type === 'announcement' && notif.id && notif.id.startsWith('announcement_')) {
+                    const announcementId = notif.id.replace('announcement_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'announcement', ${announcementId})"`;
+                } else if (notif.type === 'org' && notif.id && notif.id.startsWith('org_')) {
+                    const orgId = notif.id.replace('org_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'org', ${orgId})"`;
+                } else if (notif.type === 'product' && notif.id && notif.id.startsWith('product_')) {
+                    const productId = notif.id.replace('product_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'product', ${productId})"`;
+                } else if (notif.type === 'event' && notif.id && notif.id.startsWith('event_new_')) {
+                    const eventId = notif.id.replace('event_new_', '');
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', 'event', ${eventId})"`;
+                } else {
+                    clickHandler = `onclick="handleNotificationClick('${notif.id}', '${notif.type}', null)"`;
+                }
+                
+                return `
+                    <div class="notification-item ${unreadClass}" data-id="${notif.id}" data-type="${notif.type}" style="cursor: pointer;" ${clickHandler}>
+                        <div class="notif-icon ${iconInfo.class}">
+                            <i class="fas ${iconInfo.icon}"></i>
+                        </div>
+                        <div class="notif-content">
+                            <p class="notif-title">${notif.title}</p>
+                            <p class="notif-text">${notif.text}</p>
+                            <span class="notif-time"><i class="fas fa-clock"></i> ${notif.time}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Handle notification click
+        function handleNotificationClick(notificationId, type, itemId) {
+            // Mark as read
+            markNotificationAsRead(notificationId);
+            
+            // Navigate based on type
+            if (type === 'event' && itemId) {
+                // Navigate to events section
+                switchSection('events');
+                // Optionally scroll to specific event or show event details
+                setTimeout(() => {
+                    showToast('Event notification clicked', 'info');
+                }, 100);
+            } else if (type === 'announcement' && itemId) {
+                // Navigate to announcements section
+                switchSection('announcements');
+                setTimeout(() => {
+                    showToast('Announcement notification clicked', 'info');
+                }, 100);
+            } else if (type === 'org' && itemId) {
+                // Navigate to organizations section
+                switchSection('organizations');
+                setTimeout(() => {
+                    showToast('Organization notification clicked', 'info');
+                }, 100);
+            } else if (type === 'product' && itemId) {
+                // Navigate to products section
+                switchSection('products');
+                setTimeout(() => {
+                    showToast('Product notification clicked', 'info');
+                }, 100);
+            } else {
+                // Default navigation
+                switchSection('overview');
+            }
+            
+            // Close notification panel
+            notificationPanel.classList.remove('active');
+            quickActionsDropdown.classList.remove('show-notifications');
+        }
+        
+        // Mark notification as read
+        function markNotificationAsRead(notificationId) {
+            fetch(baseUrl + 'student/notifications/read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `notification_id=${notificationId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove unread class from notification item
+                    const notifItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                    if (notifItem) {
+                        notifItem.classList.remove('unread');
+                        updateNotificationCountFromDOM();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
+
         function filterNotifications(type) {
             const items = document.querySelectorAll('.notification-item');
+            const tabs = document.querySelectorAll('.notif-tab');
+            
+            // Update tab active state
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-type') === type) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Filter items
             items.forEach(item => {
                 if (type === 'all') {
                     item.style.display = 'flex';
@@ -1797,27 +2334,89 @@
             });
         }
         
-        document.getElementById('markAllRead').addEventListener('click', () => {
-            document.querySelectorAll('.notification-item.unread').forEach(item => {
-                item.classList.remove('unread');
+        const markAllReadBtn = document.getElementById('markAllRead');
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', () => {
+                // Call API to mark all as read
+                fetch(baseUrl + 'student/notifications/read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'mark_all=true'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelectorAll('.notification-item.unread').forEach(item => {
+                            item.classList.remove('unread');
+                        });
+                        updateNotificationCountFromDOM();
+                        showToast('All notifications marked as read', 'success');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error marking all notifications as read:', error);
+                    // Still update UI even if API call fails
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+                    });
+                    updateNotificationCountFromDOM();
+                    showToast('All notifications marked as read', 'success');
+                });
             });
-            updateNotificationCount();
-            showToast('All notifications marked as read', 'success');
-        });
+        }
         
-        function updateNotificationCount() {
+        function updateNotificationCount(notifications) {
+            const unreadCount = notifications.filter(n => n.unread).length;
+            const notifBadge = document.getElementById('notificationCount');
+            const combinedBadge = document.getElementById('combinedBadge');
+            const cartCount = parseInt(document.getElementById('cartCount').textContent) || 0;
+            
+            if (notifBadge) {
+                notifBadge.textContent = unreadCount;
+                notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            }
+            
+            if (combinedBadge) {
+                const totalCount = unreadCount + cartCount;
+                combinedBadge.textContent = totalCount;
+                combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function updateNotificationCountFromDOM() {
             const unreadCount = document.querySelectorAll('.notification-item.unread').length;
             const notifBadge = document.getElementById('notificationCount');
             const combinedBadge = document.getElementById('combinedBadge');
             const cartCount = parseInt(document.getElementById('cartCount').textContent) || 0;
             
-            notifBadge.textContent = unreadCount;
-            notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            if (notifBadge) {
+                notifBadge.textContent = unreadCount;
+                notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            }
             
-            // Update combined badge
-            const totalCount = unreadCount + cartCount;
-            combinedBadge.textContent = totalCount;
-            combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
+            if (combinedBadge) {
+                const totalCount = unreadCount + cartCount;
+                combinedBadge.textContent = totalCount;
+                combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
+            }
+        }
+
+        // Load notifications when notification panel is opened (duplicate removed - already handled above)
+        
+        // Add click handlers to notification tabs
+        const notifTabsElements = document.querySelectorAll('.notif-tab');
+        if (notifTabsElements && notifTabsElements.length > 0) {
+            notifTabsElements.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const type = this.getAttribute('data-type');
+                    if (type) {
+                        filterNotifications(type);
+                    }
+                });
+            });
         }
         
         function updateCombinedBadge() {
@@ -1833,39 +2432,41 @@
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
-            if (!quickActionsDropdown.contains(e.target) && !quickActionsBtn.contains(e.target)) {
+            if (quickActionsDropdown && !quickActionsDropdown.contains(e.target) && quickActionsBtn && !quickActionsBtn.contains(e.target)) {
                 quickActionsDropdown.classList.remove('active');
+            }
+            if (notificationPanel && !notificationPanel.contains(e.target) && notificationActionBtn && !notificationActionBtn.contains(e.target)) {
                 notificationPanel.classList.remove('active');
             }
-            if (!dropdownMenu.contains(e.target) && !userBtn.contains(e.target)) {
+            const userBtn = document.getElementById('userBtn');
+            if (dropdownMenu && !dropdownMenu.contains(e.target) && userBtn && !userBtn.contains(e.target)) {
                 dropdownMenu.classList.remove('active');
             }
-        });
-
-        // Navigation
-        const navLinks = document.querySelectorAll('.nav-link[data-section], .mobile-nav-link[data-section], .dropdown-item[data-section]');
-        const sections = document.querySelectorAll('.content-section');
-        
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const sectionId = link.dataset.section;
-                switchSection(sectionId);
-                closeMobileMenu();
-                dropdownMenu.classList.remove('active');
-            });
         });
 
         function switchSection(sectionId) {
+            if (!sectionId) {
+                console.error('switchSection called without sectionId');
+                return;
+            }
+            
             // Update nav
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             document.querySelectorAll('.mobile-nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelector(`.nav-link[data-section="${sectionId}"]`)?.classList.add('active');
-            document.querySelector(`.mobile-nav-link[data-section="${sectionId}"]`)?.classList.add('active');
+            const activeNavLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+            const activeMobileNavLink = document.querySelector(`.mobile-nav-link[data-section="${sectionId}"]`);
+            if (activeNavLink) activeNavLink.classList.add('active');
+            if (activeMobileNavLink) activeMobileNavLink.classList.add('active');
             
-            // Update sections
-            sections.forEach(section => section.classList.remove('active'));
-            document.getElementById(sectionId)?.classList.add('active');
+            // Update sections - query DOM each time to ensure we get all sections
+            const allSections = document.querySelectorAll('.content-section');
+            allSections.forEach(section => section.classList.remove('active'));
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            } else {
+                console.error('Section not found:', sectionId);
+            }
             
             // Hide events badge when events section is viewed
             if (sectionId === 'events') {
@@ -1893,6 +2494,13 @@
                 }, 100);
             }
             
+            // Initialize organization filter if switching to organizations section
+            if (sectionId === 'organizations') {
+                setTimeout(() => {
+                    initializeOrgFilter();
+                }, 100);
+            }
+            
             // Hide announcements badge when announcements section is viewed
             if (sectionId === 'announcements') {
                 const announcementsNavBadge = document.getElementById('announcementsNavBadge');
@@ -1917,6 +2525,12 @@
                 }, 200);
             }
             
+            // Load reservations when payments section is activated
+            if (sectionId === 'payments') {
+                loadPendingReservations();
+                loadReservationHistory();
+            }
+            
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1931,22 +2545,199 @@
                 paymentContents.forEach(c => c.classList.remove('active'));
                 
                 tab.classList.add('active');
-                document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+                const contentId = `${tab.dataset.tab}-content`;
+                const content = document.getElementById(contentId);
+                if (content) {
+                    content.classList.add('active');
+                }
+                
+                // Load data when tab is clicked
+                if (tab.dataset.tab === 'pending') {
+                    loadPendingReservations();
+                } else if (tab.dataset.tab === 'history') {
+                    loadReservationHistory();
+                }
             });
         });
+        
+        // Load Pending Reservations
+        function loadPendingReservations() {
+            const container = document.getElementById('pendingReservationsCards');
+            if (!container) return;
+            
+            container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Loading reservations...</p></div>';
+            
+            fetch(baseUrl + 'student/payments/pending', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.pending_payments) {
+                    renderPendingReservations(data.pending_payments, container);
+                    updatePendingReservationsCount(data.pending_payments.length);
+                    updateSidebarReservations(data.pending_payments);
+                } else {
+                    container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No pending reservations</p></div>';
+                    updatePendingReservationsCount(0);
+                    updateSidebarReservations([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading pending reservations:', error);
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #ef4444;"><p>Error loading reservations. Please try again.</p></div>';
+            });
+        }
+        
+        // Update Pending Reservations Count
+        function updatePendingReservationsCount(count) {
+            const badge = document.getElementById('pendingPaymentCount');
+            const sidebarBadge = document.getElementById('sidebarPendingCount');
+            
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            if (sidebarBadge) {
+                if (count > 0) {
+                    sidebarBadge.textContent = count;
+                    sidebarBadge.style.display = 'inline-block';
+                } else {
+                    sidebarBadge.style.display = 'none';
+                }
+            }
+        }
+        
+        // Update Sidebar Reservations List
+        function updateSidebarReservations(reservations) {
+            const sidebarList = document.getElementById('pendingReservationsList');
+            if (!sidebarList) return;
+            
+            if (!reservations || reservations.length === 0) {
+                sidebarList.innerHTML = '<p style="text-align: center; color: #64748b; padding: 1rem;">No pending reservations</p>';
+                return;
+            }
+            
+            sidebarList.innerHTML = reservations.slice(0, 3).map(reservation => {
+                return `
+                    <div style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">
+                        <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 0.25rem;">
+                            ${reservation.product_name}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #64748b;">
+                            ${reservation.organization} • ₱${parseFloat(reservation.total_amount).toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            }).join('') + (reservations.length > 3 ? `<p style="text-align: center; color: #64748b; padding: 0.5rem; font-size: 0.75rem;">+${reservations.length - 3} more</p>` : '');
+        }
+        
+        // Load Reservation History
+        function loadReservationHistory() {
+            const container = document.getElementById('history-content');
+            if (!container) return;
+            
+            const tableBody = container.querySelector('tbody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Loading history...</p></td></tr>';
+            
+            fetch(baseUrl + 'student/payments/history', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.payment_history && data.payment_history.length > 0) {
+                    renderReservationHistory(data.payment_history, tableBody);
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-history" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No reservation history</p></td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading reservation history:', error);
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #ef4444;"><p>Error loading history. Please try again.</p></td></tr>';
+            });
+        }
+        
+        // Render Pending Reservations
+        function renderPendingReservations(reservations, container) {
+            if (!reservations || reservations.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No pending reservations</p></div>';
+                return;
+            }
+            
+            container.innerHTML = reservations.map(reservation => {
+                const imageUrl = reservation.product_image ? baseUrl + 'uploads/products/' + reservation.product_image : 'https://via.placeholder.com/100';
+                return `
+                    <div class="payment-card" style="background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="display: flex; gap: 1rem; align-items: start;">
+                            <img src="${imageUrl}" alt="${reservation.product_name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #1e293b;">${reservation.product_name}</h4>
+                                <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #64748b;">${reservation.organization}</p>
+                                <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: #64748b;">
+                                    <span>Qty: ${reservation.quantity}</span>
+                                    <span>Price: ₱${parseFloat(reservation.price).toFixed(2)}</span>
+                                </div>
+                                <div style="margin-top: 0.5rem; font-weight: 600; color: #1e293b;">
+                                    Total: ₱${parseFloat(reservation.total_amount).toFixed(2)}
+                                </div>
+                                <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #64748b;">
+                                    Reserved: ${new Date(reservation.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="status-badge pending" style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #fef3c7; color: #92400e;">
+                                    <i class="fas fa-clock"></i> Pending
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Render Reservation History
+        function renderReservationHistory(history, tableBody) {
+            tableBody.innerHTML = history.map(item => {
+                const methodClass = item.method.toLowerCase().replace(/\s+/g, '');
+                return `
+                    <tr>
+                        <td><span class="txn-id">${item.transaction_id}</span></td>
+                        <td>${item.description}</td>
+                        <td>${item.organization}</td>
+                        <td>₱${parseFloat(item.amount).toFixed(2)}</td>
+                        <td>${item.date}</td>
+                        <td><span class="method-badge ${methodClass}">${item.method}</span></td>
+                        <td><span class="status-badge completed"><i class="fas fa-check"></i> ${item.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
 
         // Cart Functionality
-        const cartSidebar = document.getElementById('cartSidebar');
-        const cartOverlay = document.getElementById('cartOverlay');
         const closeCart = document.getElementById('closeCart');
         let cart = [];
 
-        closeCart.addEventListener('click', closeCartSidebar);
-        cartOverlay.addEventListener('click', closeCartSidebar);
+        if (closeCart) {
+            closeCart.addEventListener('click', closeCartSidebar);
+        }
+        if (cartOverlay) {
+            cartOverlay.addEventListener('click', closeCartSidebar);
+        }
 
         function closeCartSidebar() {
-            cartSidebar.classList.remove('open');
-            cartOverlay.classList.remove('active');
+            if (cartSidebar) {
+                cartSidebar.classList.remove('open');
+            }
+            if (cartOverlay) {
+                cartOverlay.classList.remove('active');
+            }
         }
 
         function addToCart(productId) {
@@ -2046,8 +2837,189 @@
                         shouldShow = true;
                         break;
                     case 'upcoming':
-                        // Show events where date is today or in the future
-                        shouldShow = eventDate >= today;
+                        // Show events that haven't started yet (not ongoing)
+                        const isOngoingForUpcoming = card.getAttribute('data-is-ongoing') === 'true';
+                        if (isOngoingForUpcoming) {
+                            shouldShow = false; // Don't show ongoing events in upcoming
+                        } else {
+                            // Check if event has started based on date/time
+                            const startDate = card.getAttribute('data-event-date');
+                            const startTime = card.getAttribute('data-event-time');
+                            const endDate = card.getAttribute('data-event-end-date');
+                            const endTime = card.getAttribute('data-event-end-time');
+                            
+                            if (startDate && startTime) {
+                                // Parse time format
+                                let timeStr = startTime;
+                                if (timeStr.includes('AM') || timeStr.includes('PM')) {
+                                    const timeParts = timeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    timeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                
+                                const eventDateTime = startDate + ' ' + timeStr;
+                                const eventTimestamp = new Date(eventDateTime).getTime();
+                                const now = Date.now();
+                                
+                                // Event is upcoming if it hasn't started yet
+                                shouldShow = now < eventTimestamp;
+                            } else {
+                                // Fallback to date comparison if time is not available
+                                shouldShow = eventDate >= today;
+                            }
+                        }
+                        break;
+                    case 'ongoing':
+                        // Show only events that are currently ongoing
+                        const isOngoing = card.getAttribute('data-is-ongoing') === 'true';
+                        if (isOngoing) {
+                            shouldShow = true;
+                        } else {
+                            // Check if event is ongoing based on date/time
+                            const startDate = card.getAttribute('data-event-date');
+                            const startTime = card.getAttribute('data-event-time');
+                            const endDate = card.getAttribute('data-event-end-date');
+                            const endTime = card.getAttribute('data-event-end-time');
+                            
+                            if (startDate && startTime) {
+                                // Parse time format
+                                let timeStr = startTime;
+                                if (timeStr.includes('AM') || timeStr.includes('PM')) {
+                                    const timeParts = timeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    timeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                
+                                const eventDateTime = startDate + ' ' + timeStr;
+                                const eventTimestamp = new Date(eventDateTime).getTime();
+                                const now = Date.now();
+                                
+                                let endDateTime = null;
+                                if (endDate && endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(endDate + ' ' + endTimeStr).getTime();
+                                } else if (endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(startDate + ' ' + endTimeStr).getTime();
+                                } else if (endDate) {
+                                    endDateTime = new Date(endDate + ' 23:59:59').getTime();
+                                } else {
+                                    endDateTime = new Date(startDate + ' 23:59:59').getTime();
+                                }
+                                
+                                shouldShow = (now >= eventTimestamp && now <= endDateTime);
+                            } else {
+                                shouldShow = false;
+                            }
+                        }
+                        break;
+                    case 'ended':
+                        // Show only events that have ended
+                        const eventStatus = card.getAttribute('data-status');
+                        if (eventStatus === 'ended') {
+                            shouldShow = true;
+                        } else {
+                            // Fallback: check if event has ended based on date/time
+                            const startDate = card.getAttribute('data-event-date');
+                            const startTime = card.getAttribute('data-event-time');
+                            const endDate = card.getAttribute('data-event-end-date');
+                            const endTime = card.getAttribute('data-event-end-time');
+                            const now = Date.now();
+                            
+                            if (startDate) {
+                                let eventTimestamp;
+                                if (startTime) {
+                                    let startTimeStr = startTime;
+                                    if (startTimeStr.includes('AM') || startTimeStr.includes('PM')) {
+                                        const timeParts = startTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = startTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        startTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    eventTimestamp = new Date(startDate + ' ' + startTimeStr).getTime();
+                                } else {
+                                    eventTimestamp = new Date(startDate).getTime();
+                                }
+                                
+                                let endDateTime;
+                                if (endDate && endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(endDate + ' ' + endTimeStr).getTime();
+                                } else if (endTime) {
+                                    let endTimeStr = endTime;
+                                    if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                        const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                        let hour = parseInt(timeParts[0]);
+                                        const minute = parseInt(timeParts[1] || 0);
+                                        const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                        
+                                        if (period === 'PM' && hour !== 12) hour += 12;
+                                        if (period === 'AM' && hour === 12) hour = 0;
+                                        
+                                        endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                    }
+                                    endDateTime = new Date(startDate + ' ' + endTimeStr).getTime();
+                                } else if (endDate) {
+                                    endDateTime = new Date(endDate + ' 23:59:59').getTime();
+                                } else {
+                                    endDateTime = new Date(startDate + ' 23:59:59').getTime();
+                                }
+                                
+                                shouldShow = (now > endDateTime);
+                            } else {
+                                shouldShow = false;
+                            }
+                        }
                         break;
                     case 'joined':
                         // Show only events the student has joined
@@ -2207,6 +3179,82 @@
             }
         }
 
+        // Organization Filter Functions
+        function filterOrganizations(filterType) {
+            const orgCards = document.querySelectorAll('.org-card');
+            let visibleCount = 0;
+            
+            orgCards.forEach(card => {
+                const orgType = card.getAttribute('data-org-type') || '';
+                let shouldShow = false;
+                
+                switch(filterType) {
+                    case 'all':
+                        shouldShow = true;
+                        break;
+                    case 'academic':
+                        shouldShow = orgType === 'academic';
+                        break;
+                    case 'sports':
+                        shouldShow = orgType === 'sports';
+                        break;
+                    case 'cultural':
+                        shouldShow = orgType === 'cultural';
+                        break;
+                    case 'service':
+                        shouldShow = orgType === 'service';
+                        break;
+                    default:
+                        shouldShow = true;
+                }
+                
+                if (shouldShow) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show/hide empty state
+            const orgsGrid = document.querySelector('.orgs-grid');
+            const emptyState = orgsGrid ? orgsGrid.querySelector('.empty-state') : null;
+            
+            if (visibleCount === 0) {
+                if (!emptyState) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-state';
+                    emptyDiv.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyDiv.innerHTML = '<i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No organizations found for this filter.</p>';
+                    if (orgsGrid) {
+                        orgsGrid.appendChild(emptyDiv);
+                    }
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } else {
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            }
+        }
+
+        function initializeOrgFilter() {
+            const orgFilter = document.getElementById('orgFilter');
+            if (orgFilter) {
+                // Apply initial filter (defaults to 'all')
+                filterOrganizations(orgFilter.value || 'all');
+                
+                // Add event listener if not already added
+                orgFilter.removeEventListener('change', orgFilterChangeHandler);
+                orgFilter.addEventListener('change', orgFilterChangeHandler);
+            }
+        }
+
+        function orgFilterChangeHandler() {
+            filterOrganizations(this.value);
+        }
+
         // Event Functions
         function joinEvent(eventId) {
             const button = event.target.closest('button');
@@ -2227,20 +3275,38 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.has_joined) {
-                    // Update button to show joined state
-                    button.classList.remove('btn-primary');
-                    button.classList.add('btn-success');
-                    button.style.backgroundColor = '#10b981';
-                    button.style.border = 'none';
-                    button.style.borderRadius = '25px';
-                    button.style.padding = '0.5rem 1.25rem';
-                    button.style.fontWeight = '500';
-                    button.style.color = 'white';
-                    button.style.display = 'inline-flex';
-                    button.style.alignItems = 'center';
-                    button.style.gap = '0.5rem';
-                    button.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
-                    button.innerHTML = '<i class="fas fa-check"></i> <span>Joined</span>';
+                    // Check if event is ongoing - if so, show "Ongoing" instead of "Joined"
+                    if (data.is_ongoing) {
+                        button.classList.remove('btn-primary', 'btn-success');
+                        button.style.backgroundColor = '#f59e0b';
+                        button.style.border = 'none';
+                        button.style.borderRadius = '25px';
+                        button.style.padding = '0.5rem 1.25rem';
+                        button.style.fontWeight = '500';
+                        button.style.color = 'white';
+                        button.style.display = 'inline-flex';
+                        button.style.alignItems = 'center';
+                        button.style.gap = '0.5rem';
+                        button.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                        button.style.cursor = 'default';
+                        button.disabled = true;
+                        button.innerHTML = '<i class="fas fa-circle"></i> <span>Ongoing</span>';
+                    } else {
+                        // Update button to show joined state
+                        button.classList.remove('btn-primary');
+                        button.classList.add('btn-success');
+                        button.style.backgroundColor = '#10b981';
+                        button.style.border = 'none';
+                        button.style.borderRadius = '25px';
+                        button.style.padding = '0.5rem 1.25rem';
+                        button.style.fontWeight = '500';
+                        button.style.color = 'white';
+                        button.style.display = 'inline-flex';
+                        button.style.alignItems = 'center';
+                        button.style.gap = '0.5rem';
+                        button.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
+                        button.innerHTML = '<i class="fas fa-check"></i> <span>Joined</span>';
+                    }
                     
                     // Update attendees count if provided
                     if (data.attendees !== undefined) {
@@ -2254,6 +3320,31 @@
                     const eventCard = document.querySelector(`[data-event-id="${eventId}"]`);
                     if (eventCard) {
                         eventCard.setAttribute('data-has-joined', 'true');
+                        if (data.is_ongoing) {
+                            eventCard.setAttribute('data-is-ongoing', 'true');
+                        }
+                    }
+                    
+                    // Also update all buttons for this event across the page
+                    if (data.is_ongoing) {
+                        document.querySelectorAll(`button[onclick*="joinEvent(${eventId})"]`).forEach(btn => {
+                            if (btn.textContent.includes('Joined') || btn.textContent.includes('Join Event')) {
+                                btn.classList.remove('btn-primary', 'btn-success');
+                                btn.style.backgroundColor = '#f59e0b';
+                                btn.style.border = 'none';
+                                btn.style.borderRadius = '25px';
+                                btn.style.padding = '0.5rem 1.25rem';
+                                btn.style.fontWeight = '500';
+                                btn.style.color = 'white';
+                                btn.style.display = 'inline-flex';
+                                btn.style.alignItems = 'center';
+                                btn.style.gap = '0.5rem';
+                                btn.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                                btn.style.cursor = 'default';
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fas fa-circle"></i> <span>Ongoing</span>';
+                            }
+                        });
                     }
                     
                     // Refresh filter if active
@@ -2328,17 +3419,35 @@
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                                         <i class="fas fa-calendar" style="color: #06b6d4;"></i>
-                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Date</span>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Start Date</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.date_formatted || 'N/A'}</p>
                                 </div>
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                                         <i class="fas fa-clock" style="color: #06b6d4;"></i>
-                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Time</span>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Start Time</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.time || 'N/A'}</p>
                                 </div>
+                                ${event.end_date ? `
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-calendar-check" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">End Date</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.end_date_formatted || 'N/A'}</p>
+                                </div>
+                                ` : ''}
+                                ${event.end_time ? `
+                                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-clock" style="color: #06b6d4;"></i>
+                                        <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">End Time</span>
+                                    </div>
+                                    <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.end_time || 'N/A'}</p>
+                                </div>
+                                ` : ''}
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                                         <i class="fas fa-map-marker-alt" style="color: #06b6d4;"></i>
@@ -2399,7 +3508,15 @@
                         html += `
                             <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                                 ${event.can_join ? (
-                                    event.has_joined ? `
+                                    event.status === 'ended' ? `
+                                        <button class="btn-primary" disabled style="background-color: #6b7280; border-color: #6b7280; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
+                                            <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> Ended
+                                        </button>
+                                    ` : event.is_ongoing ? `
+                                        <button class="btn-primary" disabled style="background-color: #f59e0b; border-color: #f59e0b; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
+                                            <i class="fas fa-circle" style="margin-right: 0.5rem;"></i> Ongoing
+                                        </button>
+                                    ` : event.has_joined ? `
                                         <button class="btn-primary" disabled style="background-color: #10b981; border-color: #10b981; flex: 1; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: default; opacity: 1;">
                                             <i class="fas fa-check" style="margin-right: 0.5rem;"></i> Joined
                                         </button>
@@ -2678,21 +3795,81 @@
         }
 
         // Comment Functions
-        function toggleComments(postId, postType) {
-            const commentsSection = document.getElementById(`comments-${postType}-${postId}`);
-            const commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
+        function toggleComments(postId, postType, buttonElement) {
+            console.log('toggleComments called:', postId, postType);
             
-            if (commentsSection.style.display === 'none' || !commentsSection.style.display) {
-                commentsSection.style.display = 'block';
-                loadComments(postId, postType);
+            // Find the comments section relative to the clicked button to avoid duplicate ID issues
+            let commentsSection;
+            let commentsList;
+            
+            if (buttonElement) {
+                // Find the parent container (announcement-card or feed-post)
+                const parentCard = buttonElement.closest('.announcement-card, .feed-post');
+                if (parentCard) {
+                    // Try to find comments section within this specific card
+                    // First try the standard pattern, then try feed pattern
+                    commentsSection = parentCard.querySelector(`#comments-${postType}-${postId}`) ||
+                                    parentCard.querySelector(`#comments-feed-${postType}-${postId}`);
+                    commentsList = parentCard.querySelector(`#comments-list-${postType}-${postId}`) ||
+                                 parentCard.querySelector(`#comments-list-feed-${postType}-${postId}`);
+                }
+            }
+            
+            // Fallback to getElementById if not found via parent
+            if (!commentsSection) {
+                commentsSection = document.getElementById(`comments-${postType}-${postId}`) ||
+                                 document.getElementById(`comments-feed-${postType}-${postId}`);
+                commentsList = document.getElementById(`comments-list-${postType}-${postId}`) ||
+                             document.getElementById(`comments-list-feed-${postType}-${postId}`);
+            }
+            
+            console.log('Comments section element:', commentsSection);
+            console.log('Comments list element:', commentsList);
+            
+            if (!commentsSection) {
+                console.error('Comments section not found:', `comments-${postType}-${postId}`);
+                return;
+            }
+            
+            // Check current display state - check if it has 'open' class or if display is none
+            const isHidden = commentsSection.style.display === 'none' || 
+                            !commentsSection.classList.contains('open') ||
+                            (window.getComputedStyle(commentsSection).display === 'none');
+            
+            if (isHidden) {
+                // Show comments section - remove inline display style and add open class
+                commentsSection.style.removeProperty('display');
+                commentsSection.style.visibility = 'visible';
+                commentsSection.classList.add('open');
+                loadComments(postId, postType, commentsList);
             } else {
+                // Hide comments section - add inline display none and remove open class
                 commentsSection.style.display = 'none';
+                commentsSection.classList.remove('open');
             }
         }
 
-        function loadComments(postId, postType) {
-            const commentsList = document.getElementById(`comments-list-${postType}-${postId}`);
-            if (!commentsList) return;
+        function loadComments(postId, postType, commentsListElement) {
+            console.log('loadComments called:', postId, postType);
+            let commentsList = commentsListElement;
+            
+            // If commentsListElement not provided, try to find it (check both standard and feed patterns)
+            if (!commentsList) {
+                commentsList = document.getElementById(`comments-list-${postType}-${postId}`) ||
+                             document.getElementById(`comments-list-feed-${postType}-${postId}`);
+            }
+            
+            console.log('Comments list element:', commentsList);
+            
+            if (!commentsList) {
+                console.error('Comments list not found:', `comments-list-${postType}-${postId}`);
+                return;
+            }
+            
+            // Show loading state
+            commentsList.innerHTML = '<div style="text-align: center; padding: 1rem; color: #64748b;"><i class="fas fa-spinner fa-spin"></i> Loading comments...</div>';
+            
+            console.log('Fetching comments from:', baseUrl + `student/getComments?type=${postType}&post_id=${postId}`);
             
             fetch(baseUrl + `student/getComments?type=${postType}&post_id=${postId}`, {
                 method: 'GET',
@@ -2700,45 +3877,34 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Comments response:', data);
                 if (data.success) {
                     commentsList.innerHTML = '';
                     if (data.comments.length === 0) {
                         commentsList.innerHTML = '<p style="padding: 1rem; color: #64748b; text-align: center; font-size: 0.875rem;">No comments yet. Be the first to comment!</p>';
                     } else {
-                        // Show first 2 comments, hide the rest
-                        const totalComments = data.comments.length;
-                        const visibleComments = totalComments > 2 ? data.comments.slice(0, 2) : data.comments;
-                        const hiddenComments = totalComments > 2 ? data.comments.slice(2) : [];
-                        
-                        visibleComments.forEach(comment => {
+                        // Show ALL comments immediately (like organization dashboard)
+                        data.comments.forEach(comment => {
                             const commentDiv = createCommentElement(comment, postType, postId);
                             commentsList.appendChild(commentDiv);
                         });
-                        
-                        // Add "See more" button if there are more than 2 comments
-                        if (totalComments > 2) {
-                            const seeMoreBtn = document.createElement('button');
-                            seeMoreBtn.className = 'see-more-comments';
-                            seeMoreBtn.textContent = `See more comments (${hiddenComments.length} more)`;
-                            seeMoreBtn.style.cssText = 'width: 100%; padding: 0.75rem; margin-top: 0.5rem; background: transparent; border: 1px solid #e2e8f0; border-radius: 8px; color: #3b82f6; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s;';
-                            seeMoreBtn.onmouseenter = function() { this.style.backgroundColor = '#f1f5f9'; };
-                            seeMoreBtn.onmouseleave = function() { this.style.backgroundColor = 'transparent'; };
-                            seeMoreBtn.onclick = function() {
-                                hiddenComments.forEach(comment => {
-                                    const commentDiv = createCommentElement(comment, postType, postId);
-                                    commentsList.insertBefore(commentDiv, seeMoreBtn);
-                                });
-                                seeMoreBtn.remove();
-                            };
-                            commentsList.appendChild(seeMoreBtn);
-                        }
                     }
+                } else {
+                    console.error('Failed to load comments:', data.message);
+                    commentsList.innerHTML = '<p style="padding: 1rem; color: #ef4444; text-align: center; font-size: 0.875rem;">Error loading comments: ' + (data.message || 'Unknown error') + '</p>';
                 }
             })
             .catch(error => {
                 console.error('Error loading comments:', error);
+                console.error('Error details:', error.message, error.stack);
+                commentsList.innerHTML = '<p style="padding: 1rem; color: #ef4444; text-align: center; font-size: 0.875rem;">Error loading comments: ' + (error.message || 'Unknown error') + '</p>';
             });
         }
 
@@ -2777,7 +3943,7 @@
         function renderReplies(replies, postType, postId) {
             let html = '';
             replies.forEach(reply => {
-                const replyUserName = reply.user_name || 'User';
+                const replyUserName = reply.user_name || (reply.firstname && reply.lastname ? (reply.firstname + ' ' + reply.lastname) : 'User') || 'User';
                 const replyId = reply.id;
                 const hasNestedReplies = reply.replies && reply.replies.length > 0;
                 
@@ -2813,7 +3979,7 @@
             const commentDiv = document.createElement('div');
             commentDiv.className = 'comment-item';
             commentDiv.style.cssText = 'padding: 0.75rem; border-bottom: 1px solid #e2e8f0;';
-            const userName = comment.user_name || 'User';
+            const userName = comment.user_name || (comment.firstname && comment.lastname ? (comment.firstname + ' ' + comment.lastname) : 'User') || 'User';
             const commentId = comment.id;
             const hasReplies = comment.replies && comment.replies.length > 0;
             
@@ -2893,7 +4059,9 @@
         }
 
         function postComment(postId, postType) {
-            const input = document.getElementById(`comment-input-${postType}-${postId}`);
+            // Try to find comment input - check both standard and feed patterns
+            const input = document.getElementById(`comment-input-${postType}-${postId}`) ||
+                         document.getElementById(`comment-input-feed-${postType}-${postId}`);
             if (!input) return;
             
             const content = input.value.trim();
@@ -2918,15 +4086,21 @@
                     input.value = '';
                     loadComments(postId, postType);
                     // Update comment count in the button
-                    const commentBtn = document.querySelector(`button[onclick*="toggleComments(${postId}, '${postType}')"]`);
-                    if (commentBtn) {
-                        const countSpan = commentBtn.querySelector('span');
+                    const commentBtns = document.querySelectorAll(`button[onclick*="toggleComments(${postId}, '${postType}')"]`);
+                    commentBtns.forEach(commentBtn => {
+                        const countSpan = commentBtn.querySelector('.comment-count');
                         if (countSpan) {
-                            const currentText = countSpan.textContent.trim();
-                            const currentCount = parseInt(currentText) || 0;
-                            countSpan.textContent = `${currentCount + 1} ${currentCount === 0 ? 'Comment' : 'Comments'}`;
+                            const currentCount = parseInt(countSpan.textContent) || 0;
+                            countSpan.textContent = currentCount + 1;
+                        } else {
+                            // Create count span if it doesn't exist
+                            const newCountSpan = document.createElement('span');
+                            newCountSpan.className = 'comment-count';
+                            newCountSpan.textContent = '1';
+                            newCountSpan.style.cssText = 'margin-left: 0.5rem; background: #3b82f6; color: white; border-radius: 10px; padding: 0.125rem 0.5rem; font-size: 0.75rem; font-weight: 600;';
+                            commentBtn.appendChild(newCountSpan);
                         }
-                    }
+                    });
                 } else {
                     showToast(data.message || 'Failed to post comment', 'error');
                 }
@@ -2956,6 +4130,11 @@
                 if (picker) {
                     picker.style.display = 'flex';
                 }
+                // Also show reaction breakdown if it exists
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = 'block';
+                }
             }
         }
 
@@ -2970,6 +4149,21 @@
                             picker.style.display = 'none';
                         }
                     }, 200);
+                }
+                // Also hide reaction breakdown
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = 'none';
+                }
+            }
+        }
+        
+        function toggleReactionBreakdown(button) {
+            const wrapper = button.closest('.reaction-wrapper');
+            if (wrapper) {
+                const breakdown = wrapper.querySelector('.reaction-breakdown');
+                if (breakdown) {
+                    breakdown.style.display = breakdown.style.display === 'none' ? 'block' : 'none';
                 }
             }
         }
@@ -3013,6 +4207,7 @@
             const wrapper = button.closest('.reaction-wrapper');
             const reactionIcon = wrapper ? wrapper.querySelector('.reaction-icon') : null;
             const reactionCount = wrapper ? wrapper.querySelector('.reaction-count') : null;
+            const breakdown = wrapper ? wrapper.querySelector('.reaction-breakdown') : null;
             
             fetch(baseUrl + 'student/likePost', {
                 method: 'POST',
@@ -3031,16 +4226,43 @@
                         button.classList.add('reacted', 'reaction-' + data.reaction_type);
                         button.classList.remove('reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
                         button.classList.add('reaction-' + data.reaction_type);
-                        
-                        if (reactionIcon) {
-                            reactionIcon.textContent = reactionIcons[data.reaction_type] || '👍';
-                        }
                     } else {
                         // User removed reaction
                         button.classList.remove('reacted', 'reaction-like', 'reaction-love', 'reaction-care', 'reaction-haha', 'reaction-wow', 'reaction-sad', 'reaction-angry');
+                    }
+                    
+                    // Update reaction icon to show most common reaction
+                    if (data.counts) {
+                        const counts = data.counts;
+                        let topReaction = 'like';
+                        let topCount = 0;
+                        const reactionTypes = ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'];
+                        reactionTypes.forEach(type => {
+                            if ((counts[type] || 0) > topCount) {
+                                topCount = counts[type];
+                                topReaction = type;
+                            }
+                        });
                         
                         if (reactionIcon) {
-                            reactionIcon.textContent = '👍';
+                            reactionIcon.textContent = reactionIcons[topReaction] || '👍';
+                        }
+                        
+                        // Update reaction breakdown
+                        if (breakdown && counts.total > 0) {
+                            breakdown.innerHTML = '';
+                            reactionTypes.forEach(type => {
+                                if ((counts[type] || 0) > 0) {
+                                    const div = document.createElement('div');
+                                    div.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;';
+                                    div.innerHTML = `
+                                        <span>${reactionIcons[type]}</span>
+                                        <span style="text-transform: capitalize;">${type}</span>
+                                        <span style="margin-left: auto; font-weight: 600;">${counts[type]}</span>
+                                    `;
+                                    breakdown.appendChild(div);
+                                }
+                            });
                         }
                     }
                     
@@ -3063,6 +4285,9 @@
                     } else {
                         if (reactionCount) {
                             reactionCount.remove();
+                        }
+                        if (breakdown) {
+                            breakdown.style.display = 'none';
                         }
                     }
                     
@@ -3578,6 +4803,108 @@
                 const filter = activeFilter ? activeFilter.getAttribute('data-filter') : 'latest';
                 setTimeout(() => loadForumPosts(category, filter), 300);
             }
+            
+            // Periodically check and update ongoing status for events
+            function updateOngoingEvents() {
+                // Get all event cards with has_joined but not yet marked as ongoing
+                document.querySelectorAll('[data-event-id]').forEach(eventCard => {
+                    const eventId = eventCard.getAttribute('data-event-id');
+                    const hasJoined = eventCard.getAttribute('data-has-joined') === 'true';
+                    const isOngoing = eventCard.getAttribute('data-is-ongoing') === 'true';
+                    
+                    if (hasJoined && !isOngoing) {
+                        // Get event date and time from data attributes
+                        const startDate = eventCard.getAttribute('data-event-date');
+                        const startTime = eventCard.getAttribute('data-event-time');
+                        const endDate = eventCard.getAttribute('data-event-end-date');
+                        const endTime = eventCard.getAttribute('data-event-end-time');
+                        
+                        if (startDate && startTime) {
+                            // Parse time format (could be "8:00 AM" or "08:00")
+                            let timeStr = startTime;
+                            if (timeStr.includes('AM') || timeStr.includes('PM')) {
+                                const timeParts = timeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                let hour = parseInt(timeParts[0]);
+                                const minute = parseInt(timeParts[1] || 0);
+                                const period = timeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                
+                                if (period === 'PM' && hour !== 12) hour += 12;
+                                if (period === 'AM' && hour === 12) hour = 0;
+                                
+                                timeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                            }
+                            
+                            const eventDateTime = startDate + ' ' + timeStr;
+                            const eventTimestamp = new Date(eventDateTime).getTime();
+                            const now = Date.now();
+                            
+                            let endDateTime = null;
+                            if (endDate && endTime) {
+                                let endTimeStr = endTime;
+                                if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                    const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                endDateTime = new Date(endDate + ' ' + endTimeStr).getTime();
+                            } else if (endTime) {
+                                let endTimeStr = endTime;
+                                if (endTimeStr.includes('AM') || endTimeStr.includes('PM')) {
+                                    const timeParts = endTimeStr.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                    let hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    const period = endTimeStr.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                    
+                                    if (period === 'PM' && hour !== 12) hour += 12;
+                                    if (period === 'AM' && hour === 12) hour = 0;
+                                    
+                                    endTimeStr = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                                endDateTime = new Date(startDate + ' ' + endTimeStr).getTime();
+                            } else if (endDate) {
+                                endDateTime = new Date(endDate + ' 23:59:59').getTime();
+                            } else {
+                                endDateTime = new Date(startDate + ' 23:59:59').getTime();
+                            }
+                            
+                            if (now >= eventTimestamp && now <= endDateTime) {
+                                // Event is now ongoing - update all buttons
+                                eventCard.setAttribute('data-is-ongoing', 'true');
+                                const eventIdNum = eventCard.getAttribute('data-event-id');
+                                document.querySelectorAll(`button[onclick*="joinEvent(${eventIdNum})"]`).forEach(btn => {
+                                    if (btn.textContent.includes('Joined') && !btn.textContent.includes('Ongoing')) {
+                                        btn.classList.remove('btn-primary', 'btn-success');
+                                        btn.style.backgroundColor = '#f59e0b';
+                                        btn.style.border = 'none';
+                                        btn.style.borderRadius = '25px';
+                                        btn.style.padding = '0.5rem 1.25rem';
+                                        btn.style.fontWeight = '500';
+                                        btn.style.color = 'white';
+                                        btn.style.display = 'inline-flex';
+                                        btn.style.alignItems = 'center';
+                                        btn.style.gap = '0.5rem';
+                                        btn.style.boxShadow = '0 2px 4px rgba(245, 158, 11, 0.2)';
+                                        btn.style.cursor = 'default';
+                                        btn.disabled = true;
+                                        btn.innerHTML = '<i class="fas fa-circle"></i> <span>Ongoing</span>';
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Check every minute for ongoing events
+            setInterval(updateOngoingEvents, 60000);
+            // Also check immediately
+            updateOngoingEvents();
         });
     </script>
 

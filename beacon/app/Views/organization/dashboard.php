@@ -47,11 +47,11 @@
                     <i class="fas fa-box"></i>
                     <span>Products</span>
                 </a>
-                <a href="#payments" class="nav-link" data-section="payments">
-                    <i class="fas fa-credit-card"></i>
-                    <span>Payments</span>
+                <a href="#reservations" class="nav-link" data-section="reservations">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Reservations</span>
                     <?php if(($stats['pending_payments'] ?? 0) > 0): ?>
-                    <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
+                    <span class="nav-badge warning" id="reservationsBadge"><?= $stats['pending_payments'] ?></span>
                     <?php endif; ?>
                 </a>
                 <a href="#forum" class="nav-link" data-section="forum">
@@ -87,7 +87,7 @@
                                     <span class="quick-action-desc">Create an event</span>
                                 </div>
                             </button>
-                            <button class="quick-action-item" onclick="openModal('announcementModal')">
+                            <button class="quick-action-item" onclick="openAnnouncementModal()">
                                 <div class="quick-action-icon announcement">
                                     <i class="fas fa-bullhorn"></i>
                                 </div>
@@ -96,7 +96,7 @@
                                     <span class="quick-action-desc">Post an update</span>
                                 </div>
                             </button>
-                            <button class="quick-action-item" onclick="openModal('productModal')">
+                            <button class="quick-action-item" onclick="openProductModal()">
                                 <div class="quick-action-icon product">
                                     <i class="fas fa-box"></i>
                                 </div>
@@ -123,11 +123,11 @@
                         <div class="notification-list" id="notificationList">
                             <div class="notification-item unread" data-id="1">
                                 <div class="notif-icon payment">
-                                    <i class="fas fa-credit-card"></i>
+                                    <i class="fas fa-calendar-check"></i>
                                 </div>
                                 <div class="notif-content">
-                                    <p class="notif-title">New Payment Submitted</p>
-                                    <p class="notif-text">John Dela Cruz submitted payment for CSS T-Shirt</p>
+                                    <p class="notif-title">New Reservation Submitted</p>
+                                    <p class="notif-text">John Dela Cruz submitted reservation for CSS T-Shirt</p>
                                     <span class="notif-time"><i class="fas fa-clock"></i> 5 min ago</span>
                                 </div>
                             </div>
@@ -237,10 +237,10 @@
             <a href="#products" class="mobile-nav-link" data-section="products">
                 <i class="fas fa-box"></i> Products
             </a>
-            <a href="#payments" class="mobile-nav-link" data-section="payments">
-                <i class="fas fa-credit-card"></i> Payments
+            <a href="#reservations" class="mobile-nav-link" data-section="reservations">
+                <i class="fas fa-calendar-check"></i> Reservations
                 <?php if(($stats['pending_payments'] ?? 0) > 0): ?>
-                <span class="nav-badge warning"><?= $stats['pending_payments'] ?></span>
+                <span class="nav-badge warning" id="reservationsBadgeMobile"><?= $stats['pending_payments'] ?></span>
                 <?php endif; ?>
             </a>
             <a href="#forum" class="mobile-nav-link" data-section="forum">
@@ -303,6 +303,10 @@
                                     <span class="stat-num"><?= $stats['total_products'] ?? 0 ?></span>
                                     <span class="stat-text">PRODUCTS</span>
                                 </div>
+                                <div class="profile-stat" style="cursor: pointer;" onclick="viewFollowers()">
+                                    <span class="stat-num"><?= $stats['total_followers'] ?? 0 ?></span>
+                                    <span class="stat-text">FOLLOWERS</span>
+                                </div>
                             </div>
                             <div class="profile-actions">
                                 <button class="btn btn-outline-primary btn-sm" onclick="switchSection('settings')">
@@ -325,7 +329,7 @@
                                 <div class="qs-icon amber"><i class="fas fa-clock"></i></div>
                                 <div class="qs-info">
                                     <span class="qs-value"><?= $stats['pending_payments'] ?? 0 ?></span>
-                                    <span class="qs-label">Pending Payments</span>
+                                    <span class="qs-label">Pending Reservations</span>
                                 </div>
                             </div>
                             <div class="quick-stat-item">
@@ -340,8 +344,18 @@
                         <!-- Upcoming Events -->
                         <div class="sidebar-card">
                             <h4 class="sidebar-title"><i class="fas fa-calendar-alt"></i> Upcoming Events</h4>
-                            <?php if(!empty($recentEvents)): ?>
-                                <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
+                            <?php 
+                            // Filter only upcoming events
+                            $upcomingEvents = array_filter($recentEvents ?? [], function($event) {
+                                return isset($event['status']) && $event['status'] === 'upcoming';
+                            });
+                            // Sort by date (earliest first)
+                            usort($upcomingEvents, function($a, $b) {
+                                return strtotime($a['date'] . ' ' . ($a['time'] ?? '00:00:00')) - strtotime($b['date'] . ' ' . ($b['time'] ?? '00:00:00'));
+                            });
+                            ?>
+                            <?php if(!empty($upcomingEvents)): ?>
+                                <?php foreach(array_slice($upcomingEvents, 0, 2) as $event): ?>
                                 <div class="sidebar-event">
                                     <div class="se-date">
                                         <span class="se-day"><?= date('d', strtotime($event['date'])) ?></span>
@@ -393,7 +407,7 @@
                                         <?= strtoupper(substr($organization['acronym'] ?? 'ORG', 0, 2)) ?>
                                     <?php endif; ?>
                                 </div>
-                                <button class="create-post-input" onclick="openModal('announcementModal')">
+                                <button class="create-post-input" onclick="openAnnouncementModal()">
                                     What's on your mind, <?= $organization['acronym'] ?? 'Organization' ?>?
                                 </button>
                             </div>
@@ -402,21 +416,23 @@
                                     <i class="fas fa-calendar-plus text-primary"></i>
                                     <span>Event</span>
                                 </button>
-                                <button class="post-action-btn" onclick="openModal('announcementModal')">
+                                <button class="post-action-btn" onclick="openAnnouncementModal()">
                                     <i class="fas fa-bullhorn text-warning"></i>
                                     <span>Announcement</span>
                                 </button>
-                                <button class="post-action-btn" onclick="openModal('productModal')">
+                                <button class="post-action-btn" onclick="openProductModal()">
                                     <i class="fas fa-box text-purple"></i>
                                     <span>Product</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Feed Posts (Announcements) -->
-                        <?php if(!empty($recentAnnouncements)): ?>
-                            <?php foreach($recentAnnouncements as $announcement): ?>
-                            <div class="feed-post" data-announcement-id="<?= $announcement['id'] ?>">
+                        <!-- Feed Posts (Combined Announcements and Events from All Organizations) -->
+                        <?php if(!empty($allPosts)): ?>
+                            <?php foreach($allPosts as $post): ?>
+                                <?php if($post['type'] === 'announcement'): ?>
+                                    <?php $announcement = $post['data']; ?>
+                            <div class="feed-post announcement-post" data-announcement-id="<?= $announcement['id'] ?>">
                                 <div class="post-header">
                                     <div class="post-author-avatar">
                                         <?php if(!empty($announcement['org_photo'])): ?>
@@ -515,57 +531,61 @@
                                     </div>
                                 </div>
                             </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="feed-empty">
-                                <i class="fas fa-newspaper"></i>
-                                <h3>No posts yet</h3>
-                                <p>Create your first announcement to share with your members!</p>
-                                <button class="btn btn-primary" onclick="openModal('announcementModal')">
-                                    <i class="fas fa-plus"></i> Create Announcement
-                                </button>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Recent Events as Posts -->
-                        <?php if(!empty($recentEvents)): ?>
-                            <?php foreach(array_slice($recentEvents, 0, 2) as $event): ?>
-                            <div class="feed-post event-post" data-event-id="<?= $event['id'] ?>">
+                                <?php elseif($post['type'] === 'event'): ?>
+                                    <?php $event = $post['data']; ?>
+                            <div class="feed-post event-post-card">
                                 <div class="post-header">
-                                    <div class="post-author-avatar event-avatar">
+                                    <div class="post-author-avatar org">
                                         <?php if(!empty($event['org_photo'])): ?>
                                             <img src="<?= esc($event['org_photo']) ?>" alt="<?= esc($event['org_name'] ?? 'Organization') ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                                         <?php else: ?>
-                                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; color: white; font-weight: 600; font-size: 0.875rem;">
-                                                <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
-                                            </div>
+                                            <?= strtoupper(substr($event['org_acronym'] ?? 'ORG', 0, 2)) ?>
                                         <?php endif; ?>
                                     </div>
                                     <div class="post-author-info">
-                                        <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?> created an event</span>
+                                        <span class="post-author-name"><?= esc($event['org_name'] ?? 'Organization') ?></span>
                                         <span class="post-time">
                                             <i class="fas fa-clock"></i> <?= date('M d, Y', strtotime($event['created_at'] ?? $event['date'])) ?>
                                         </span>
                                     </div>
                                 </div>
-                                <div class="event-card-content">
-                                    <div class="event-banner">
-                                        <div class="event-banner-overlay">
+                                <div class="post-content">
+                                    <p class="post-text">🎉 New event from <?= esc($event['org_acronym'] ?? 'Organization') ?>!</p>
+                                </div>
+                                <div class="event-preview-card" data-event-id="<?= $event['id'] ?>" data-status="<?= isset($event['status']) ? esc($event['status']) : 'upcoming' ?>" data-event-date="<?= $event['date'] ?>" data-event-time="<?= $event['time'] ?>" data-event-end-date="<?= $event['end_date'] ?? '' ?>" data-event-end-time="<?= $event['end_time'] ?? '' ?>">
+                                    <div class="event-preview-banner" style="position: relative; overflow: hidden;">
+                                        <?php if(!empty($event['image'])): ?>
+                                            <img src="<?= base_url('uploads/events/' . $event['image']) ?>" alt="<?= esc($event['title']) ?>" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;">
+                                        <?php endif; ?>
+                                        <div class="event-preview-overlay" style="position: relative; z-index: 2;">
                                             <div class="event-date-badge">
                                                 <span class="edb-day"><?= date('d', strtotime($event['date'])) ?></span>
-                                                <span class="edb-month"><?= date('M', strtotime($event['date'])) ?></span>
+                                                <span class="edb-month"><?= strtoupper(date('M', strtotime($event['date']))) ?></span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="event-card-info">
-                                        <h3><?= esc($event['title']) ?></h3>
-                                        <p class="event-location"><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
-                                        <p class="event-attendees"><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
-                                        <p class="event-interested"><i class="fas fa-star"></i> <?= $event['interest_count'] ?? 0 ?> interested</p>
+                                    <div class="event-preview-info">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <h3 style="margin: 0; flex: 1;"><?= esc($event['title']) ?></h3>
+                                            <?php if(isset($event['status'])): ?>
+                                                <?php if($event['status'] === 'ended'): ?>
+                                                    <span class="event-status ended" style="background-color: #6c757d; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                        <i class="fas fa-check-circle"></i> Ended
+                                                    </span>
+                                                <?php elseif($event['status'] === 'ongoing'): ?>
+                                                    <span class="event-status ongoing" style="background-color: #3b82f6; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                        <i class="fas fa-circle"></i> Ongoing
+                                                    </span>
+                                                <?php elseif($event['status'] === 'upcoming'): ?>
+                                                    <span class="event-status upcoming" style="background-color: #10b981; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                        <i class="fas fa-clock"></i> Upcoming
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                        <p><i class="fas fa-map-marker-alt"></i> <?= esc($event['location']) ?></p>
+                                        <p><i class="fas fa-users"></i> <?= $event['attendees'] ?? 0 ?> going</p>
                                     </div>
-                                </div>
-                                <div class="post-stats">
-                                    <span><i class="fas fa-eye"></i> <?= $event['views'] ?? 0 ?> views</span>
                                 </div>
                                 <div class="post-actions">
                                     <div class="reaction-wrapper" data-post-type="event" data-post-id="<?= $event['id'] ?>">
@@ -629,7 +649,17 @@
                                     </div>
                                 </div>
                             </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="feed-empty">
+                                <i class="fas fa-newspaper"></i>
+                                <h3>No posts yet</h3>
+                                <p>Create your first announcement or event to share with your members!</p>
+                                <button class="btn btn-primary" onclick="openAnnouncementModal()">
+                                        <i class="fas fa-plus"></i> Create Announcement
+                                    </button>
+                            </div>
                         <?php endif; ?>
                     </div>
 
@@ -639,7 +669,7 @@
                         <div class="sidebar-card marketplace-card">
                             <div class="sidebar-header">
                                 <h4 class="sidebar-title"><i class="fas fa-store"></i> Our Products</h4>
-                                <button class="btn btn-sm btn-primary" onclick="openModal('productModal')">
+                                <button class="btn btn-sm btn-primary" onclick="openProductModal()">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -664,7 +694,7 @@
                                     <div class="sidebar-empty-full">
                                         <i class="fas fa-box-open"></i>
                                         <p>No products yet</p>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="openModal('productModal')">Add Product</button>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="openProductModal()">Add Product</button>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -704,9 +734,9 @@
                             <a href="#members" class="sidebar-link" onclick="switchSection('members')">Manage members <i class="fas fa-arrow-right"></i></a>
                         </div>
 
-                        <!-- Pending Payments -->
+                        <!-- Pending Reservations -->
                         <div class="sidebar-card">
-                            <h4 class="sidebar-title"><i class="fas fa-credit-card"></i> Pending Payments</h4>
+                            <h4 class="sidebar-title"><i class="fas fa-calendar-check"></i> Pending Reservations</h4>
                             <?php if(!empty($pendingPayments)): ?>
                                 <?php foreach(array_slice($pendingPayments, 0, 3) as $payment): ?>
                                 <div class="payment-request-item">
@@ -721,9 +751,9 @@
                                 </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <p class="sidebar-empty">No pending payments</p>
+                                <p class="sidebar-empty">No pending reservations</p>
                             <?php endif; ?>
-                            <a href="#payments" class="sidebar-link" onclick="switchSection('payments')">View all payments <i class="fas fa-arrow-right"></i></a>
+                            <a href="#reservations" class="sidebar-link" onclick="switchSection('reservations')">View all reservations <i class="fas fa-arrow-right"></i></a>
                         </div>
                     </aside>
                 </div>
@@ -825,7 +855,7 @@
                         <h1 class="section-title">Announcements</h1>
                         <p class="section-subtitle">Keep your members informed with important updates</p>
                     </div>
-                    <button class="btn btn-primary" onclick="openModal('announcementModal')">
+                    <button class="btn btn-primary" onclick="openAnnouncementModal()">
                         <i class="fas fa-plus"></i> New Announcement
                     </button>
                 </div>
@@ -861,7 +891,7 @@
                             <i class="fas fa-bullhorn"></i>
                             <h3>No Announcements</h3>
                             <p>Create announcements to keep members updated</p>
-                            <button class="btn btn-primary" onclick="openModal('announcementModal')">Create Announcement</button>
+                            <button class="btn btn-primary" onclick="openAnnouncementModal()">Create Announcement</button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -946,7 +976,7 @@
                         <h1 class="section-title">Products & Merchandise</h1>
                         <p class="section-subtitle">Manage your organization's products and inventory</p>
                     </div>
-                    <button class="btn btn-primary" onclick="openModal('productModal')">
+                    <button class="btn btn-primary" onclick="openProductModal()">
                         <i class="fas fa-plus"></i> Add Product
                     </button>
                 </div>
@@ -993,22 +1023,22 @@
                             <i class="fas fa-box-open"></i>
                             <h3>No Products Yet</h3>
                             <p>Create your first product to start selling merchandise</p>
-                            <button class="btn btn-primary" onclick="openModal('productModal')">Add Product</button>
+                            <button class="btn btn-primary" onclick="openProductModal()">Add Product</button>
                         </div>
                     <?php endif; ?>
                 </div>
             </section>
 
-            <!-- Payments Section -->
-            <section id="payments" class="dashboard-section">
+            <!-- Reservations Section -->
+            <section id="reservations" class="dashboard-section">
                 <div class="section-header">
                     <div>
-                        <h1 class="section-title">Payment Management</h1>
-                        <p class="section-subtitle">Review and confirm member payments</p>
+                        <h1 class="section-title">Reservation Management</h1>
+                        <p class="section-subtitle">Review and confirm member reservations</p>
                     </div>
                     <div class="section-tabs">
-                        <button class="tab-btn active" data-tab="pending-payments">Pending <span class="badge"><?= $stats['pending_payments'] ?? 0 ?></span></button>
-                        <button class="tab-btn" data-tab="confirmed-payments">Confirmed</button>
+                        <button class="tab-btn active" data-tab="pending-reservations">Pending <span class="badge"><?= $stats['pending_payments'] ?? 0 ?></span></button>
+                        <button class="tab-btn" data-tab="confirmed-reservations">Confirmed</button>
                     </div>
                 </div>
 
@@ -1053,7 +1083,7 @@
                         <div class="empty-state-large">
                             <i class="fas fa-check-circle"></i>
                             <h3>All Caught Up!</h3>
-                            <p>No pending payments to review</p>
+                            <p>No pending reservations to review</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1469,12 +1499,22 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Date *</label>
+                        <label>Start Date *</label>
                         <input type="date" name="date" id="event_date" class="form-input" required>
                     </div>
                     <div class="form-group">
-                        <label>Time *</label>
+                        <label>Start Time *</label>
                         <input type="time" name="time" id="event_time" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" name="end_date" id="event_end_date" class="form-input" placeholder="Leave empty if same day">
+                    </div>
+                    <div class="form-group">
+                        <label>End Time</label>
+                        <input type="time" name="end_time" id="event_end_time" class="form-input" placeholder="Leave empty if same day">
                     </div>
                 </div>
                 <div class="form-row">
@@ -1564,30 +1604,51 @@
         <div class="modal">
             <div class="modal-header">
                 <h3><i class="fas fa-bullhorn"></i> Create Announcement</h3>
-                <button class="modal-close" onclick="closeModal('announcementModal')">
+                <button class="modal-close" onclick="closeAnnouncementModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="announcementForm" class="modal-body" enctype="multipart/form-data">
+                <input type="hidden" id="announcement_id" name="announcement_id" value="">
                 <div class="form-group">
                     <label>Title *</label>
-                    <input type="text" name="title" class="form-input" required placeholder="Announcement title">
+                    <input type="text" id="announcement_title" name="title" class="form-input" required placeholder="Announcement title">
                 </div>
                 <div class="form-group">
                     <label>Content *</label>
-                    <textarea name="content" class="form-input" rows="5" required placeholder="Write your announcement..."></textarea>
+                    <textarea id="announcement_content" name="content" class="form-input" rows="5" required placeholder="Write your announcement..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>Priority</label>
-                    <select name="priority" class="form-input">
+                    <select id="announcement_priority" name="priority" class="form-input">
                         <option value="normal">Normal</option>
                         <option value="high">High Priority</option>
                     </select>
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('announcementModal')">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
+                <button class="btn btn-outline" onclick="closeAnnouncementModal()">Cancel</button>
+                <button type="button" id="announcementSubmitBtn" class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Followers Modal -->
+    <div class="modal-overlay" id="followersModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Followers</h3>
+                <button class="modal-close" onclick="closeModal('followersModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="followersList" style="max-height: 500px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                        <p style="margin-top: 1rem; color: #64748b;">Loading followers...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1596,42 +1657,44 @@
     <div class="modal-overlay" id="productModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-box"></i> Add New Product</h3>
-                <button class="modal-close" onclick="closeModal('productModal')">
+                <h3 id="productModalTitle"><i class="fas fa-box"></i> Add New Product</h3>
+                <button class="modal-close" onclick="closeProductModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="productForm" class="modal-body" enctype="multipart/form-data">
+                <input type="hidden" name="product_id" id="productId">
                 <div class="form-group">
                     <label>Product Name *</label>
-                    <input type="text" name="name" class="form-input" required placeholder="Product name">
+                    <input type="text" name="name" id="productName" class="form-input" required placeholder="Product name">
                 </div>
                 <div class="form-group">
                     <label>Description</label>
-                    <textarea name="description" class="form-input" rows="3" placeholder="Product description"></textarea>
+                    <textarea name="description" id="productDescription" class="form-input" rows="3" placeholder="Product description"></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Price (₱) *</label>
-                        <input type="number" name="price" class="form-input" required min="0" step="0.01" placeholder="0.00">
+                        <input type="number" name="price" id="productPrice" class="form-input" required min="0" step="0.01" placeholder="0.00">
                     </div>
                     <div class="form-group">
                         <label>Initial Stock *</label>
-                        <input type="number" name="stock" class="form-input" required min="0" placeholder="0">
+                        <input type="number" name="stock" id="productStock" class="form-input" required min="0" placeholder="0">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Sizes (comma separated)</label>
-                    <input type="text" name="sizes" class="form-input" placeholder="S, M, L, XL">
+                    <input type="text" name="sizes" id="productSizes" class="form-input" placeholder="S, M, L, XL">
                 </div>
                 <div class="form-group">
                     <label>Product Image</label>
-                    <input type="file" name="image" class="form-input" accept="image/*">
+                    <input type="file" name="image" id="productImage" class="form-input" accept="image/*">
+                    <small style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; display: block;">Leave empty to keep current image</small>
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitProduct()">Add Product</button>
+                <button class="btn btn-outline" onclick="closeProductModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="productSubmitBtn" onclick="submitProduct()">Add Product</button>
             </div>
         </div>
     </div>
@@ -1749,6 +1812,18 @@
                 section.classList.remove('active');
             });
             document.getElementById(sectionId).classList.add('active');
+
+            // Hide reservations badge when reservations section is viewed
+            if (sectionId === 'reservations') {
+                const reservationsBadge = document.getElementById('reservationsBadge');
+                const reservationsBadgeMobile = document.getElementById('reservationsBadgeMobile');
+                if (reservationsBadge) {
+                    reservationsBadge.style.display = 'none';
+                }
+                if (reservationsBadgeMobile) {
+                    reservationsBadgeMobile.style.display = 'none';
+                }
+            }
 
             // Load forum posts when forum section is activated
             if (sectionId === 'forum') {
@@ -2091,6 +2166,35 @@
                             }
                         }
                         document.getElementById('event_time').value = timeValue;
+                        
+                        // Set end date and end time
+                        document.getElementById('event_end_date').value = event.end_date || '';
+                        let endTimeValue = event.end_time || '';
+                        if (endTimeValue) {
+                            // Handle 12-hour format (with AM/PM)
+                            if (endTimeValue.includes('AM') || endTimeValue.includes('PM')) {
+                                const timeParts = endTimeValue.replace(/\s*(AM|PM)\s*/i, '').split(':');
+                                let hour = parseInt(timeParts[0]);
+                                const minute = parseInt(timeParts[1] || 0);
+                                const period = endTimeValue.toUpperCase().includes('PM') ? 'PM' : 'AM';
+                                
+                                if (period === 'PM' && hour !== 12) hour += 12;
+                                if (period === 'AM' && hour === 12) hour = 0;
+                                
+                                endTimeValue = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                            } else {
+                                // Handle 24-hour format (already in HH:MM or HH:MM:SS format)
+                                // Extract just HH:MM for the time input
+                                const timeParts = endTimeValue.split(':');
+                                if (timeParts.length >= 2) {
+                                    const hour = parseInt(timeParts[0]);
+                                    const minute = parseInt(timeParts[1] || 0);
+                                    endTimeValue = String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+                                }
+                            }
+                        }
+                        document.getElementById('event_end_time').value = endTimeValue;
+                        
                         document.getElementById('event_location').value = event.location || '';
                         document.getElementById('event_max_attendees').value = event.max_attendees || '';
                         document.getElementById('audience_type').value = event.audience_type || 'all';
@@ -2290,6 +2394,8 @@
         // Announcement Functions
         function submitAnnouncement() {
             const form = document.getElementById('announcementForm');
+            const announcementId = document.getElementById('announcement_id').value;
+            const isEdit = announcementId && announcementId !== '';
             
             // Validate required fields
             if (!form.checkValidity()) {
@@ -2300,27 +2406,30 @@
             const formData = new FormData(form);
 
             // Show loading state
-            const submitBtn = form.closest('.modal').querySelector('.btn-primary');
+            const submitBtn = document.getElementById('announcementSubmitBtn');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (isEdit ? 'Updating...' : 'Posting...');
 
-            fetch(baseUrl + 'organization/announcements/create', {
+            const url = isEdit 
+                ? baseUrl + 'organization/announcements/update/' + announcementId
+                : baseUrl + 'organization/announcements/create';
+
+            fetch(url, {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Announcement posted successfully!', 'success');
-                    closeModal('announcementModal');
-                    form.reset();
-                    // Reload page to show new announcement
+                    showToast(isEdit ? 'Announcement updated successfully!' : 'Announcement posted successfully!', 'success');
+                    closeAnnouncementModal();
+                    // Reload page to show updated/new announcement
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
                 } else {
-                    showToast(data.message || 'Failed to post announcement', 'error');
+                    showToast(data.message || (isEdit ? 'Failed to update announcement' : 'Failed to post announcement'), 'error');
                     if (data.errors) {
                         console.error('Validation errors:', data.errors);
                     }
@@ -2330,14 +2439,174 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('An error occurred while posting the announcement', 'error');
+                showToast('An error occurred while ' + (isEdit ? 'updating' : 'posting') + ' the announcement', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
         }
 
         function editAnnouncement(id) {
-            showToast('Edit announcement functionality coming soon', 'info');
+            if (!id) {
+                showToast('Invalid announcement ID', 'error');
+                return;
+            }
+
+            // Fetch announcement data
+            fetch(baseUrl + 'organization/announcements/get/' + id, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.announcement) {
+                    const announcement = data.announcement;
+                    
+                    // Populate form
+                    document.getElementById('announcement_id').value = announcement.announcement_id || announcement.id;
+                    document.getElementById('announcement_title').value = announcement.title || '';
+                    document.getElementById('announcement_content').value = announcement.content || '';
+                    document.getElementById('announcement_priority').value = announcement.priority || 'normal';
+                    
+                    // Update modal title and button
+                    const modalHeader = document.querySelector('#announcementModal .modal-header h3');
+                    if (modalHeader) {
+                        modalHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Edit Announcement';
+                    }
+                    const submitBtn = document.getElementById('announcementSubmitBtn');
+                    if (submitBtn) {
+                        submitBtn.textContent = 'Update Announcement';
+                    }
+                    
+                    // Open modal
+                    openModal('announcementModal');
+                } else {
+                    showToast(data.message || 'Failed to load announcement', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while loading the announcement', 'error');
+            });
+        }
+
+        function openAnnouncementModal() {
+            // Reset form before opening
+            document.getElementById('announcementForm').reset();
+            document.getElementById('announcement_id').value = '';
+            
+            // Reset modal title and button
+            const modalHeader = document.querySelector('#announcementModal .modal-header h3');
+            if (modalHeader) {
+                modalHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Create Announcement';
+            }
+            const submitBtn = document.getElementById('announcementSubmitBtn');
+            if (submitBtn) {
+                submitBtn.textContent = 'Post Announcement';
+            }
+            
+            openModal('announcementModal');
+        }
+
+        function closeAnnouncementModal() {
+            // Reset form
+            document.getElementById('announcementForm').reset();
+            document.getElementById('announcement_id').value = '';
+            
+            // Reset modal title and button
+            const modalHeader = document.querySelector('#announcementModal .modal-header h3');
+            if (modalHeader) {
+                modalHeader.innerHTML = '<i class="fas fa-bullhorn"></i> Create Announcement';
+            }
+            const submitBtn = document.getElementById('announcementSubmitBtn');
+            if (submitBtn) {
+                submitBtn.textContent = 'Post Announcement';
+            }
+            
+            closeModal('announcementModal');
+        }
+
+        function viewFollowers() {
+            const modal = document.getElementById('followersModal');
+            const followersList = document.getElementById('followersList');
+            
+            if (!modal || !followersList) {
+                showToast('Modal elements not found', 'error');
+                return;
+            }
+            
+            // Show loading state
+            followersList.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #64748b;"></i>
+                    <p style="margin-top: 1rem; color: #64748b;">Loading followers...</p>
+                </div>
+            `;
+            
+            // Open modal
+            openModal('followersModal');
+            
+            // Fetch followers
+            fetch(baseUrl + 'organization/followers', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.followers) {
+                    if (data.followers.length === 0) {
+                        followersList.innerHTML = `
+                            <div style="text-align: center; padding: 3rem; color: #64748b;">
+                                <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                                <p style="font-size: 1rem; font-weight: 500;">No followers yet</p>
+                                <p style="font-size: 0.875rem; margin-top: 0.5rem;">Share your organization to get more followers!</p>
+                            </div>
+                        `;
+                    } else {
+                        let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+                        data.followers.forEach(follower => {
+                            const name = follower.name || (follower.firstname + ' ' + follower.lastname) || 'Student';
+                            const photo = follower.photo || null;
+                            const yearLevel = follower.year_level || '';
+                            
+                            html += `
+                                <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #e2e8f0; transition: all 0.2s;" 
+                                     onmouseover="this.style.backgroundColor='#f8fafc'" 
+                                     onmouseout="this.style.backgroundColor='transparent'">
+                                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; flex-shrink: 0; overflow: hidden;">
+                                        ${photo ? `<img src="${photo}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;">` : name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-weight: 600; color: #1e293b; font-size: 0.9375rem; margin-bottom: 0.25rem;">${name}</div>
+                                        ${yearLevel ? `<div style="font-size: 0.8125rem; color: #64748b;">Year ${yearLevel}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        followersList.innerHTML = html;
+                    }
+                } else {
+                    followersList.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>${data.message || 'Failed to load followers'}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                followersList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>An error occurred while loading followers</p>
+                    </div>
+                `;
+            });
         }
 
         function deleteAnnouncement(id) {
@@ -2371,6 +2640,7 @@
         // Product Functions
         function submitProduct() {
             const form = document.getElementById('productForm');
+            const productId = document.getElementById('productId').value;
             
             // Validate required fields
             if (!form.checkValidity()) {
@@ -2384,24 +2654,28 @@
             const submitBtn = form.closest('.modal').querySelector('.btn-primary');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (productId ? 'Updating...' : 'Adding...');
 
-            fetch(baseUrl + 'organization/products/create', {
+            // Determine endpoint based on whether it's create or update
+            const endpoint = productId 
+                ? baseUrl + 'organization/products/update/' + productId
+                : baseUrl + 'organization/products/create';
+
+            fetch(endpoint, {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Product added successfully!', 'success');
-                    closeModal('productModal');
-                    form.reset();
-                    // Reload page to show new product
+                    showToast(productId ? 'Product updated successfully!' : 'Product added successfully!', 'success');
+                    closeProductModal();
+                    // Reload page to show updated/new product
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
                 } else {
-                    showToast(data.message || 'Failed to add product', 'error');
+                    showToast(data.message || (productId ? 'Failed to update product' : 'Failed to add product'), 'error');
                     if (data.errors) {
                         console.error('Validation errors:', data.errors);
                     }
@@ -2411,14 +2685,61 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('An error occurred while adding the product', 'error');
+                showToast('An error occurred while ' + (productId ? 'updating' : 'adding') + ' the product', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
         }
 
         function editProduct(id) {
-            showToast('Edit product functionality coming soon', 'info');
+            // Fetch product data
+            fetch(baseUrl + 'organization/products/get/' + id)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.product) {
+                        const product = data.product;
+                        
+                        // Populate form fields
+                        document.getElementById('productId').value = product.product_id;
+                        document.getElementById('productName').value = product.product_name || '';
+                        document.getElementById('productDescription').value = product.description || '';
+                        document.getElementById('productPrice').value = product.price || '';
+                        document.getElementById('productStock').value = product.stock || 0;
+                        document.getElementById('productSizes').value = product.sizes || '';
+                        document.getElementById('productImage').value = '';
+                        
+                        // Update modal title and button
+                        document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-box"></i> Edit Product';
+                        document.getElementById('productSubmitBtn').innerHTML = 'Update Product';
+                        
+                        // Open modal
+                        openModal('productModal');
+                    } else {
+                        showToast(data.message || 'Failed to load product', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('An error occurred while loading the product', 'error');
+                });
+        }
+        
+        function openProductModal() {
+            const form = document.getElementById('productForm');
+            form.reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-box"></i> Add New Product';
+            document.getElementById('productSubmitBtn').innerHTML = 'Add Product';
+            openModal('productModal');
+        }
+        
+        function closeProductModal() {
+            const form = document.getElementById('productForm');
+            form.reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-box"></i> Add New Product';
+            document.getElementById('productSubmitBtn').innerHTML = 'Add Product';
+            closeModal('productModal');
         }
 
         function updateStock(productId) {
@@ -2480,11 +2801,11 @@
             });
         }
 
-        // Payment Functions
+        // Reservation Functions
         function confirmPayment(paymentId, action) {
             const messages = {
-                approve: 'Payment confirmed successfully!',
-                reject: 'Payment rejected'
+                approve: 'Reservation confirmed successfully!',
+                reject: 'Reservation rejected'
             };
 
             fetch(baseUrl + 'organization/payments/confirm', {

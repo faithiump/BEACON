@@ -49,12 +49,43 @@ class Organization extends BaseController
         $forumPostModel = new ForumPostModel();
         $categoryCounts = $forumPostModel->getCategoryCounts();
 
+        // Get forum category counts
+        $forumPostModel = new ForumPostModel();
+        $categoryCounts = $forumPostModel->getCategoryCounts();
+
+        // Get all events and announcements from all organizations
+        $recentEvents = $this->getRecentEvents(null); // Show events from all organizations
+        $recentAnnouncements = $this->getRecentAnnouncements();
+        
+        // Combine announcements and events into a single feed (like student dashboard)
+        $allPosts = [];
+        foreach ($recentAnnouncements as $announcement) {
+            $allPosts[] = [
+                'type' => 'announcement',
+                'data' => $announcement,
+                'date' => strtotime($announcement['created_at'])
+            ];
+        }
+        foreach ($recentEvents as $event) {
+            $allPosts[] = [
+                'type' => 'event',
+                'data' => $event,
+                'date' => strtotime($event['created_at'] ?? $event['date'])
+            ];
+        }
+        
+        // Sort by date (newest first)
+        usort($allPosts, function($a, $b) {
+            return $b['date'] - $a['date'];
+        });
+        
         $data = [
             'title' => 'Organization Dashboard',
             'organization' => $this->getOrganizationData(),
             'stats' => $this->getDashboardStats(),
-            'recentEvents' => $this->getRecentEvents(),
-            'recentAnnouncements' => $this->getRecentAnnouncements(),
+            'recentEvents' => $recentEvents,
+            'recentAnnouncements' => $recentAnnouncements,
+            'allPosts' => $allPosts, // Combined feed for overview
             'pendingPayments' => $this->getPendingPayments(),
             'recentMembers' => $this->getRecentMembers(),
             'products' => $this->getRecentProducts(),
@@ -244,6 +275,9 @@ class Organization extends BaseController
         $totalMembers = 0;
         $pendingMembers = 0;
         
+        // Get followers count
+        $totalFollowers = 0;
+        
         if ($orgId) {
             // Get organization data to get organization name
             $orgModel = new OrganizationModel();
@@ -262,6 +296,11 @@ class Organization extends BaseController
                 if ($organization['current_members'] != $totalMembers) {
                     $orgModel->update($orgId, ['current_members' => $totalMembers]);
                 }
+                
+                // Get followers count
+                $followModel = new \App\Models\OrganizationFollowModel();
+                $followers = $followModel->getOrganizationFollowers($orgId);
+                $totalFollowers = count($followers);
             }
             
             $allEvents = $eventModel->getEventsByOrg($orgId);
@@ -277,13 +316,27 @@ class Organization extends BaseController
             $totalProducts = count($allProducts);
         }
 
+        // Get pending reservations count
+        $pendingReservationsCount = 0;
+        if ($orgId) {
+            try {
+                $reservationModel = new \App\Models\ReservationModel();
+                $pendingReservations = $reservationModel->getPendingReservations($orgId);
+                $pendingReservationsCount = count($pendingReservations);
+            } catch (\Exception $e) {
+                // If reservations table doesn't exist yet, default to 0
+                $pendingReservationsCount = 0;
+            }
+        }
+
         return [
             'total_members' => $totalMembers,
             'pending_members' => $pendingMembers,
             'total_events' => $totalEvents,
             'upcoming_events' => $upcomingEvents,
             'total_products' => $totalProducts,
-            'pending_payments' => 28,
+            'total_followers' => $totalFollowers,
+            'pending_payments' => $pendingReservationsCount,
             'total_revenue' => 45680,
             'announcements' => $totalAnnouncements,
         ];
@@ -291,8 +344,9 @@ class Organization extends BaseController
 
     /**
      * Get recent events from all active organizations
+     * For Events section, filter to show only current organization's events
      */
-    private function getRecentEvents()
+    private function getRecentEvents($orgIdOnly = null)
     {
         $eventModel = new EventModel();
         $organizationModel = new OrganizationModel();
@@ -300,8 +354,13 @@ class Organization extends BaseController
         $likeModel = new \App\Models\PostLikeModel();
         $commentModel = new \App\Models\PostCommentModel();
 
-        // Get all active organizations
-        $allOrganizations = $organizationModel->where('is_active', 1)->findAll();
+        // Get all active organizations or just the specified one
+        if ($orgIdOnly) {
+            $org = $organizationModel->find($orgIdOnly);
+            $allOrganizations = $org ? [$org] : [];
+        } else {
+            $allOrganizations = $organizationModel->where('is_active', 1)->findAll();
+        }
         
         // Get events from all active organizations
         $allEvents = [];
@@ -317,6 +376,117 @@ class Organization extends BaseController
             
             foreach ($orgEvents as $event) {
                 $eventId = $event['event_id'] ?? $event['id'];
+                
+                // Update event status in database based on current date/time
+                // Force update to ensure status is current
+                $eventModel->updateEventStatus($eventId);
+                
+                // Wait a moment to ensure database commit
+                usleep(100000); // 0.1 second delay
+                
+                // Refresh event data to get updated status from database
+                $db = \Config\Database::connect();
+                $event = $db->table('events')
+                    ->where('event_id', $eventId)
+                    ->get()
+                    ->getRowArray();
+                
+                // Double-check status is updated - recalculate if status seems incorrect
+                // This ensures status matches what's shown on student pages
+                $currentStatus = $event['status'] ?? 'upcoming';
+                
+                // Recalculate status to verify it's correct
+                // Use application timezone for accurate time comparison
+                date_default_timezone_set(config('App')->appTimezone);
+                $eventTime = $event['time'] ?? '00:00:00';
+                $eventTime = trim($eventTime);
+                $now = time();
+                
+                // Parse start time
+                if (stripos($eventTime, 'AM') !== false || stripos($eventTime, 'PM') !== false) {
+                    $eventDateTime = $event['date'] . ' ' . $eventTime;
+                    $eventTimestamp = strtotime($eventDateTime);
+                } else {
+                    if (substr_count($eventTime, ':') == 2) {
+                        $timeParts = explode(':', $eventTime);
+                        $eventTime = $timeParts[0] . ':' . $timeParts[1];
+                    }
+                    $eventDateTime = $event['date'] . ' ' . $eventTime;
+                    $eventTimestamp = strtotime($eventDateTime);
+                }
+                
+                // Parse end time
+                $endDateTime = null;
+                if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                    $endTime = trim($event['end_time']);
+                    if (stripos($endTime, 'AM') !== false || stripos($endTime, 'PM') !== false) {
+                        $endDateTime = strtotime($event['end_date'] . ' ' . $endTime);
+                    } else {
+                        if (substr_count($endTime, ':') == 2) {
+                            $timeParts = explode(':', $endTime);
+                            $endTime = $timeParts[0] . ':' . $timeParts[1];
+                        }
+                        $endDateTime = strtotime($event['end_date'] . ' ' . $endTime);
+                    }
+                } elseif (!empty($event['end_time'])) {
+                    $endTime = trim($event['end_time']);
+                    if (stripos($endTime, 'AM') !== false || stripos($endTime, 'PM') !== false) {
+                        $endDateTime = strtotime($event['date'] . ' ' . $endTime);
+                    } else {
+                        if (substr_count($endTime, ':') == 2) {
+                            $timeParts = explode(':', $endTime);
+                            $endTime = $timeParts[0] . ':' . $timeParts[1];
+                        }
+                        $endDateTime = strtotime($event['date'] . ' ' . $endTime);
+                    }
+                } elseif (!empty($event['end_date'])) {
+                    $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+                } else {
+                    $endDateTime = strtotime($event['date'] . ' 23:59:59');
+                }
+                
+                // Calculate expected status
+                $expectedStatus = 'upcoming';
+                if ($now > $endDateTime) {
+                    $expectedStatus = 'ended';
+                } elseif ($now >= $eventTimestamp && $now <= $endDateTime) {
+                    $expectedStatus = 'ongoing';
+                }
+                
+                // Always force update to ensure status is correct (regardless of current status)
+                // This ensures status matches what's shown on student pages
+                // Update status ALWAYS to ensure it's current
+                try {
+                    $updateResult = $db->query("UPDATE events SET status = ? WHERE event_id = ?", [$expectedStatus, $eventId]);
+                    if ($updateResult) {
+                        $currentStatus = $expectedStatus;
+                        log_message('debug', 'Force updated event ' . $eventId . ' status to ' . $expectedStatus . ' (was: ' . ($currentStatus ?? 'unknown') . ')');
+                    } else {
+                        log_message('warning', 'Failed to update event ' . $eventId . ' status to ' . $expectedStatus);
+                        // Try alternative update method
+                        try {
+                            $db->table('events')->where('event_id', $eventId)->update(['status' => $expectedStatus]);
+                            $currentStatus = $expectedStatus;
+                        } catch (\Exception $e2) {
+                            log_message('error', 'Alternative update also failed for event ' . $eventId . ': ' . $e2->getMessage());
+                        }
+                    }
+                } catch (\Exception $e) {
+                    log_message('error', 'Error updating event ' . $eventId . ' status: ' . $e->getMessage());
+                }
+                
+                // Refresh event data to get updated status
+                $event = $db->table('events')
+                    ->where('event_id', $eventId)
+                    ->get()
+                    ->getRowArray();
+                
+                // Use the status from database (should match expectedStatus after update)
+                if ($event && isset($event['status'])) {
+                    $currentStatus = $event['status'];
+                } else {
+                    $currentStatus = $expectedStatus;
+                }
                 
                 // Get reaction counts
                 $reactionCounts = $likeModel->getReactionCounts('event', $eventId);
@@ -349,6 +519,73 @@ class Organization extends BaseController
                     }
                 }
 
+                // Check if event is ongoing (date and time have arrived)
+                $isOngoing = false;
+                // Parse time - handle both 24-hour (08:00) and 12-hour (8:00 AM) formats
+                // Use the RAW time from database, not the formatted one
+                $eventTimeForCheck = $event['time'] ?? '00:00:00';
+                // If time doesn't have AM/PM and is in 24-hour format, convert for strtotime
+                if (strpos($eventTimeForCheck, 'AM') === false && strpos($eventTimeForCheck, 'PM') === false && strpos($eventTimeForCheck, ':') !== false) {
+                    // Time is in 24-hour format like "08:00" or "08:00:00"
+                    $timeParts = explode(':', $eventTimeForCheck);
+                    $hour = (int)$timeParts[0];
+                    $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                    $eventTimeForCheck = sprintf('%02d:%02d:00', $hour, $minute);
+                }
+                $eventDateTime = $event['date'] . ' ' . $eventTimeForCheck;
+                $eventTimestamp = strtotime($eventDateTime);
+                $now = time();
+                
+                // Determine end time
+                $endDateTime = null;
+                if (!empty($event['end_date']) && !empty($event['end_time'])) {
+                    $endTimeForCheck = $event['end_time'];
+                    if (strpos($endTimeForCheck, 'AM') === false && strpos($endTimeForCheck, 'PM') === false && strpos($endTimeForCheck, ':') !== false) {
+                        $timeParts = explode(':', $endTimeForCheck);
+                        $hour = (int)$timeParts[0];
+                        $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                        $endTimeForCheck = sprintf('%02d:%02d:00', $hour, $minute);
+                    }
+                    $endDateTime = strtotime($event['end_date'] . ' ' . $endTimeForCheck);
+                } elseif (!empty($event['end_time'])) {
+                    $endTimeForCheck = $event['end_time'];
+                    if (strpos($endTimeForCheck, 'AM') === false && strpos($endTimeForCheck, 'PM') === false && strpos($endTimeForCheck, ':') !== false) {
+                        $timeParts = explode(':', $endTimeForCheck);
+                        $hour = (int)$timeParts[0];
+                        $minute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+                        $endTimeForCheck = sprintf('%02d:%02d:00', $hour, $minute);
+                    }
+                    $endDateTime = strtotime($event['date'] . ' ' . $endTimeForCheck);
+                } elseif (!empty($event['end_date'])) {
+                    $endDateTime = strtotime($event['end_date'] . ' 23:59:59');
+                } else {
+                    $endDateTime = strtotime($event['date'] . ' 23:59:59');
+                }
+                
+                // Event is ongoing if current time is between start and end time
+                if ($now >= $eventTimestamp && $now <= $endDateTime) {
+                    $isOngoing = true;
+                }
+                
+                // Status is already updated in database by updateEventStatus() and force update above
+                // Use the currentStatus which is guaranteed to be correct after force update
+                // This ensures status matches what's shown on student pages
+                $eventStatus = $currentStatus ?? $expectedStatus ?? ($event['status'] ?? 'upcoming');
+                
+                // Final verification - get status directly from database one more time
+                $finalEvent = $db->table('events')
+                    ->where('event_id', $eventId)
+                    ->select('status')
+                    ->get()
+                    ->getRowArray();
+                
+                if ($finalEvent && isset($finalEvent['status'])) {
+                    $eventStatus = $finalEvent['status'];
+                }
+                
+                // Log for debugging
+                log_message('debug', 'Organization dashboard - Event ' . $eventId . ' final status: ' . $eventStatus);
+                
                 $allEvents[] = [
                     'id' => $eventId,
                     'org_id' => $org['id'],
@@ -365,7 +602,8 @@ class Organization extends BaseController
                     'student_access' => $studentAccessList,
                     'attendees' => $event['current_attendees'] ?? 0,
                     'max_attendees' => $event['max_attendees'],
-                    'status' => $event['status'] ?? 'upcoming',
+                    'status' => $eventStatus,
+                    'is_ongoing' => $isOngoing,
                     'image' => $event['image'] ?? null,
                     'created_at' => $event['created_at'],
                     'reaction_counts' => $reactionCounts,
@@ -486,39 +724,39 @@ class Organization extends BaseController
     }
 
     /**
-     * Get pending payments
+     * Get pending payments (reservations)
      */
     private function getPendingPayments()
     {
-        return [
-            [
-                'id' => 1,
-                'student_name' => 'John Dela Cruz',
-                'student_id' => 'STU-2024-001',
-                'product' => 'CSS T-Shirt (Large)',
-                'amount' => 450,
-                'submitted_at' => '2025-11-24 15:30:00',
-                'proof_image' => null,
-            ],
-            [
-                'id' => 2,
-                'student_name' => 'Maria Santos',
-                'student_id' => 'STU-2024-002',
-                'product' => 'Membership Fee',
-                'amount' => 250,
-                'submitted_at' => '2025-11-24 12:00:00',
-                'proof_image' => null,
-            ],
-            [
-                'id' => 3,
-                'student_name' => 'Pedro Garcia',
-                'student_id' => 'STU-2024-003',
-                'product' => 'CSS Hoodie (Medium)',
-                'amount' => 850,
-                'submitted_at' => '2025-11-23 18:45:00',
-                'proof_image' => null,
-            ],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return [];
+        }
+
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->getPendingReservations($orgId);
+
+        $formattedReservations = [];
+        foreach ($reservations as $reservation) {
+            $studentName = trim(($reservation['firstname'] ?? '') . ' ' . ($reservation['lastname'] ?? ''));
+            if (empty($studentName)) {
+                $studentName = 'Student';
+            }
+
+            $formattedReservations[] = [
+                'id' => $reservation['reservation_id'],
+                'student_name' => $studentName,
+                'student_id' => $reservation['student_number'] ?? 'N/A',
+                'product' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'amount' => (float)$reservation['total_amount'],
+                'submitted_at' => $reservation['created_at'],
+                'proof_image' => $reservation['proof_image'] ?? null,
+                'quantity' => $reservation['quantity'] ?? 1,
+                'payment_method' => $reservation['payment_method'] ?? null,
+            ];
+        }
+
+        return $formattedReservations;
     }
 
     /**
@@ -741,6 +979,92 @@ class Organization extends BaseController
         ]);
     }
 
+    /**
+     * Get announcement by ID (for editing)
+     */
+    public function getAnnouncement($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $announcementModel = new AnnouncementModel();
+        $announcement = $announcementModel->find($id);
+
+        // Verify announcement belongs to organization
+        if (!$announcement || $announcement['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Announcement not found or unauthorized']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'announcement' => $announcement
+        ]);
+    }
+
+    /**
+     * Get organization followers
+     */
+    public function getFollowers()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $followModel = new \App\Models\OrganizationFollowModel();
+        $followers = $followModel->getOrganizationFollowers($orgId);
+        
+        // Get student details for each follower
+        $studentModel = new \App\Models\StudentModel();
+        $userPhotoModel = new \App\Models\UserPhotoModel();
+        $formattedFollowers = [];
+        
+        foreach ($followers as $follow) {
+            $student = $studentModel->find($follow['student_id']);
+            if ($student) {
+                // Get student photo
+                $photo = null;
+                if (!empty($student['user_id'])) {
+                    $userPhoto = $userPhotoModel->where('user_id', $student['user_id'])->first();
+                    if ($userPhoto && !empty($userPhoto['photo_path'])) {
+                        $photo = base_url($userPhoto['photo_path']);
+                    }
+                }
+                
+                // Get user profile for name
+                $userProfileModel = new \App\Models\UserProfileModel();
+                $profile = $userProfileModel->where('user_id', $student['user_id'])->first();
+                
+                $formattedFollowers[] = [
+                    'student_id' => $student['id'],
+                    'student_number' => $student['student_number'] ?? '',
+                    'name' => ($profile ? ($profile['firstname'] . ' ' . $profile['lastname']) : '') ?: 'Student',
+                    'firstname' => $profile['firstname'] ?? '',
+                    'lastname' => $profile['lastname'] ?? '',
+                    'course' => $student['course'] ?? '',
+                    'year_level' => $student['year_level'] ?? '',
+                    'photo' => $photo,
+                    'followed_at' => $follow['created_at'] ?? ''
+                ];
+            }
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'followers' => $formattedFollowers
+        ]);
+    }
+
     // ==========================================
     // EVENT FUNCTIONS
     // ==========================================
@@ -754,7 +1078,9 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $events = $this->getRecentEvents();
+        // Get current organization ID to filter events
+        $orgId = $this->session->get('organization_id');
+        $events = $this->getRecentEvents($orgId);
         return $this->response->setJSON(['success' => true, 'data' => $events]);
     }
 
@@ -798,6 +1124,15 @@ class Organization extends BaseController
             }
         }
 
+        // Format end time for input field (HH:MM format)
+        $endTimeFormatted = $event['end_time'] ?? null;
+        if ($endTimeFormatted && strpos($endTimeFormatted, ':') !== false) {
+            $timeParts = explode(':', $endTimeFormatted);
+            $hour = $timeParts[0];
+            $minute = isset($timeParts[1]) ? $timeParts[1] : '00';
+            $endTimeFormatted = $hour . ':' . $minute;
+        }
+
         // Format response data
         $responseData = [
             'id' => $event['event_id'],
@@ -805,6 +1140,8 @@ class Organization extends BaseController
             'description' => $event['description'],
             'date' => $event['date'],
             'time' => $timeFormatted,
+            'end_date' => $event['end_date'] ?? null,
+            'end_time' => $endTimeFormatted,
             'location' => $event['venue'],
             'audience_type' => $event['audience_type'] ?? 'all',
             'department_access' => $event['department_access'] ?? null,
@@ -879,6 +1216,8 @@ class Organization extends BaseController
             'description' => $this->request->getPost('description'),
             'date' => $this->request->getPost('date'),
             'time' => $this->request->getPost('time'),
+            'end_date' => $this->request->getPost('end_date') ?: null,
+            'end_time' => $this->request->getPost('end_time') ?: null,
             'venue' => $this->request->getPost('location'),
             'audience_type' => $audienceType,
             'department_access' => $audienceType === 'department' ? $departmentAccess : null,
@@ -906,16 +1245,55 @@ class Organization extends BaseController
 
         // Save to database
         $eventModel = new EventModel();
-        if (!$eventModel->insert($eventData)) {
-            $errors = $eventModel->errors();
+        
+        // Debug: Log the event data being inserted
+        log_message('debug', 'Creating event with data: ' . json_encode($eventData));
+        
+        try {
+            if (!$eventModel->insert($eventData)) {
+                $errors = $eventModel->errors();
+                $errorMessage = 'Failed to create event';
+                
+                // Provide more detailed error message
+                if (!empty($errors)) {
+                    $errorDetails = [];
+                    foreach ($errors as $field => $error) {
+                        if (is_array($error)) {
+                            $errorDetails[] = $field . ': ' . implode(', ', $error);
+                        } else {
+                            $errorDetails[] = $field . ': ' . $error;
+                        }
+                    }
+                    $errorMessage .= '. ' . implode('; ', $errorDetails);
+                } else {
+                    $errorMessage .= '. Please check all required fields are filled correctly.';
+                }
+                
+                log_message('error', 'Event creation failed: ' . json_encode($errors));
+                
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'errors' => $errors,
+                    'validation_failed' => true
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Exception during event creation: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Failed to create event',
-                'errors' => $errors
+                'message' => 'Failed to create event: ' . $e->getMessage(),
+                'errors' => ['exception' => $e->getMessage()]
             ]);
         }
 
         $eventId = $eventModel->getInsertID();
+        
+        // Update event status based on current date/time (for newly created events)
+        // Use application timezone for accurate time comparison
+        date_default_timezone_set(config('App')->appTimezone);
+        $eventModel->updateEventStatus($eventId);
+        
         $createdEvent = $eventModel->find($eventId);
 
         // Format time
@@ -988,6 +1366,12 @@ class Organization extends BaseController
         }
         if ($this->request->getPost('time')) {
             $updateData['time'] = $this->request->getPost('time');
+        }
+        if ($this->request->getPost('end_date') !== null) {
+            $updateData['end_date'] = $this->request->getPost('end_date') ?: null;
+        }
+        if ($this->request->getPost('end_time') !== null) {
+            $updateData['end_time'] = $this->request->getPost('end_time') ?: null;
         }
         if ($this->request->getPost('location')) {
             $updateData['venue'] = $this->request->getPost('location');
@@ -1079,6 +1463,11 @@ class Organization extends BaseController
                 'errors' => $errors
             ]);
         }
+
+        // Update event status based on new date/time values
+        // Use application timezone for accurate time comparison
+        date_default_timezone_set(config('App')->appTimezone);
+        $eventModel->updateEventStatus($id);
 
         return $this->response->setJSON([
             'success' => true,
@@ -1808,6 +2197,132 @@ class Organization extends BaseController
     }
 
     /**
+     * Get product by ID (for editing)
+     */
+    public function getProduct($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $productModel = new ProductModel();
+        $product = $productModel->find($id);
+
+        // Verify product belongs to organization
+        if (!$product || $product['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Product not found or unauthorized']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'product' => $product
+        ]);
+    }
+
+    /**
+     * Update product
+     */
+    public function updateProduct($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $productModel = new ProductModel();
+        $product = $productModel->find($id);
+
+        // Verify product belongs to organization
+        if (!$product || $product['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Product not found or unauthorized']);
+        }
+
+        // Prepare product data
+        $productData = [
+            'product_name' => $this->request->getPost('name'),
+            'description' => $this->request->getPost('description') ?: null,
+            'price' => $this->request->getPost('price'),
+            'stock' => $this->request->getPost('stock') ? (int)$this->request->getPost('stock') : 0,
+            'sizes' => $this->request->getPost('sizes') ? trim($this->request->getPost('sizes')) : null,
+        ];
+
+        // Determine status based on stock
+        if ($productData['stock'] == 0) {
+            $productData['status'] = 'out_of_stock';
+        } elseif ($productData['stock'] <= 10) {
+            $productData['status'] = 'low_stock';
+        } else {
+            $productData['status'] = 'available';
+        }
+
+        // Handle image upload (only if new image is provided)
+        $image = $this->request->getFile('image');
+        if ($image && $image->isValid() && !$image->hasMoved()) {
+            $uploadPath = FCPATH . 'uploads/products/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
+            // Delete old image if exists
+            if (!empty($product['image']) && file_exists($uploadPath . $product['image'])) {
+                unlink($uploadPath . $product['image']);
+            }
+
+            $newName = $image->getRandomName();
+            if ($image->move($uploadPath, $newName)) {
+                $productData['image'] = $newName;
+            }
+        }
+
+        // Update product
+        if (!$productModel->update($id, $productData)) {
+            $errors = $productModel->errors();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to update product',
+                'errors' => $errors
+            ]);
+        }
+
+        $updatedProduct = $productModel->find($id);
+
+        // Format response data
+        $status = 'available';
+        if ($updatedProduct['stock'] == 0) {
+            $status = 'out_of_stock';
+        } elseif ($updatedProduct['stock'] <= 10) {
+            $status = 'low_stock';
+        }
+
+        $responseData = [
+            'id' => $updatedProduct['product_id'],
+            'name' => $updatedProduct['product_name'],
+            'description' => $updatedProduct['description'] ?? '',
+            'price' => (float)$updatedProduct['price'],
+            'stock' => (int)$updatedProduct['stock'],
+            'sold' => (int)($updatedProduct['sold'] ?? 0),
+            'sizes' => $updatedProduct['sizes'] ? explode(',', $updatedProduct['sizes']) : null,
+            'image' => $updatedProduct['image'] ?? null,
+            'status' => $status,
+        ];
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Product updated successfully',
+            'data' => $responseData
+        ]);
+    }
+
+    /**
      * Manage products (update, delete)
      */
     public function manageProducts()
@@ -1913,7 +2428,7 @@ class Organization extends BaseController
     }
 
     /**
-     * Confirm payment
+     * Confirm payment (reservation)
      */
     public function confirmPayment()
     {
@@ -1921,6 +2436,7 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
+        $orgId = $this->session->get('organization_id');
         $paymentId = $this->request->getPost('payment_id');
         $action = $this->request->getPost('action'); // approve, reject
 
@@ -1928,11 +2444,42 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
         }
 
-        // TODO: Update payment status in database
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservation = $reservationModel->find($paymentId);
+
+        // Verify reservation belongs to organization
+        if (!$reservation || $reservation['org_id'] != $orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Reservation not found or unauthorized']);
+        }
+
+        // Update status
+        $status = $action === 'approve' ? 'confirmed' : 'rejected';
+        if (!$reservationModel->updateReservationStatus($paymentId, $status)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Failed to update reservation status']);
+        }
+
+        // If approved, update product stock and sold count
+        if ($action === 'approve') {
+            $productModel = new ProductModel();
+            $product = $productModel->find($reservation['product_id']);
+            
+            if ($product) {
+                $newStock = max(0, $product['stock'] - $reservation['quantity']);
+                $newSold = ($product['sold'] ?? 0) + $reservation['quantity'];
+                
+                $productModel->update($reservation['product_id'], [
+                    'stock' => $newStock,
+                    'sold' => $newSold
+                ]);
+                
+                // Update product status based on new stock
+                $productModel->updateProductStatus($reservation['product_id']);
+            }
+        }
 
         $messages = [
-            'approve' => 'Payment confirmed successfully',
-            'reject' => 'Payment rejected',
+            'approve' => 'Reservation confirmed successfully',
+            'reject' => 'Reservation rejected',
         ];
 
         return $this->response->setJSON([
@@ -1950,11 +2497,30 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        // Sample data
-        $history = [
-            ['id' => 1, 'student_name' => 'John Doe', 'product' => 'CSS T-Shirt', 'amount' => 450, 'status' => 'confirmed', 'confirmed_at' => '2025-11-20'],
-            ['id' => 2, 'student_name' => 'Jane Smith', 'product' => 'Membership Fee', 'amount' => 250, 'status' => 'confirmed', 'confirmed_at' => '2025-11-19'],
-        ];
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservations = $reservationModel->getConfirmedReservations($orgId);
+
+        $history = [];
+        foreach ($reservations as $reservation) {
+            $studentName = trim(($reservation['firstname'] ?? '') . ' ' . ($reservation['lastname'] ?? ''));
+            if (empty($studentName)) {
+                $studentName = 'Student';
+            }
+
+            $history[] = [
+                'id' => $reservation['reservation_id'],
+                'student_name' => $studentName,
+                'product' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'amount' => (float)$reservation['total_amount'],
+                'status' => $reservation['status'],
+                'confirmed_at' => $reservation['updated_at']
+            ];
+        }
 
         return $this->response->setJSON(['success' => true, 'data' => $history]);
     }
