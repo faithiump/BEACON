@@ -1025,7 +1025,12 @@
                                     <div class="product-footer">
                                         <span class="product-price">₱<?= esc($product['price']) ?></span>
                                         <button class="btn-add-cart" 
-                                                onclick="createReservation(<?= $product['id'] ?>)" 
+                                                data-product-id="<?= $product['id'] ?>"
+                                                data-product-name="<?= esc($product['name'], 'attr') ?>"
+                                                data-product-stock="<?= $product['stock'] ?>"
+                                                data-product-price="<?= $product['price'] ?>"
+                                                data-product-org="<?= esc($product['org_name'], 'attr') ?>"
+                                                onclick="openReservationModalFromButton(this)" 
                                                 <?= $product['status'] === 'out_of_stock' || $product['stock'] <= 0 ? 'disabled' : '' ?>
                                                 title="<?= $product['status'] === 'out_of_stock' || $product['stock'] <= 0 ? 'Out of Stock' : 'Reserve Product' ?>">
                                             <i class="fas fa-calendar-check"></i> Reserve
@@ -1091,11 +1096,12 @@
                                         <th>Date</th>
                                         <th>Method</th>
                                         <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
+                                        <td colspan="8" style="text-align: center; padding: 3rem; color: #64748b;">
                                             <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
                                             <p>Loading reservation history...</p>
                                         </td>
@@ -1478,6 +1484,59 @@
                         </div>
                     <?php endif; ?>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservation Modal -->
+    <div class="modal-overlay" id="reservationModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-check"></i> Reserve Product</h3>
+                <button class="modal-close" onclick="closeReservationModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="reservationProductInfo" style="margin-bottom: 1.5rem;">
+                    <h4 id="reservationProductName" style="margin-bottom: 0.5rem; color: var(--gray-900);"></h4>
+                    <p id="reservationProductOrg" style="color: var(--gray-600); font-size: 0.9375rem; margin-bottom: 0.5rem;"></p>
+                    <p style="color: var(--gray-500); font-size: 0.875rem;">
+                        <span id="reservationProductPrice" style="font-weight: 600; color: var(--primary-500);"></span> per item
+                    </p>
+                    <p id="reservationStockInfo" style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.5rem;"></p>
+                </div>
+                <div class="form-group">
+                    <label for="reservationQuantity">Quantity <span style="color: var(--gray-500); font-weight: normal;">(Available: <span id="reservationMaxStock">0</span>)</span></label>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+                        <button type="button" class="btn-quantity" id="decreaseQuantity" onclick="changeQuantity(-1)" style="width: 40px; height: 40px; border-radius: var(--border-radius); border: 1px solid var(--gray-300); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: var(--gray-700);">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" 
+                               id="reservationQuantity" 
+                               name="quantity" 
+                               value="1" 
+                               min="1" 
+                               max="1"
+                               style="width: 80px; text-align: center; padding: 0.625rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius); font-size: 1rem; font-weight: 600;"
+                               onchange="validateQuantity()">
+                        <button type="button" class="btn-quantity" id="increaseQuantity" onclick="changeQuantity(1)" style="width: 40px; height: 40px; border-radius: var(--border-radius); border: 1px solid var(--gray-300); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: var(--gray-700);">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--gray-50); border-radius: var(--border-radius);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: var(--gray-700);">Total Amount:</span>
+                        <span id="reservationTotalAmount" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-500);">₱0.00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid var(--gray-200);">
+                <button type="button" class="btn btn-secondary" onclick="closeReservationModal()" style="padding: 0.625rem 1.25rem;">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmReservationBtn" onclick="confirmReservation()" style="padding: 0.625rem 1.25rem;">
+                    <i class="fas fa-calendar-check"></i> Confirm Reservation
+                </button>
             </div>
         </div>
     </div>
@@ -2597,7 +2656,7 @@
             const tableBody = container.querySelector('tbody');
             if (!tableBody) return;
             
-            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Loading history...</p></td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Loading history...</p></td></tr>';
             
             fetch(baseUrl + 'student/payments/history', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -2607,12 +2666,12 @@
                 if (data.success && data.payment_history && data.payment_history.length > 0) {
                     renderReservationHistory(data.payment_history, tableBody);
                 } else {
-                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-history" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No reservation history</p></td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-history" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No reservation history</p></td></tr>';
                 }
             })
             .catch(error => {
                 console.error('Error loading reservation history:', error);
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: #ef4444;"><p>Error loading history. Please try again.</p></td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 3rem; color: #ef4444;"><p>Error loading history. Please try again.</p></td></tr>';
             });
         }
         
@@ -2658,6 +2717,7 @@
         function renderReservationHistory(history, tableBody) {
             tableBody.innerHTML = history.map(item => {
                 const methodClass = item.method.toLowerCase().replace(/\s+/g, '');
+                const statusClass = item.status_raw === 'confirmed' || item.status_raw === 'completed' ? 'completed' : 'pending';
                 return `
                     <tr>
                         <td><span class="txn-id">${item.transaction_id}</span></td>
@@ -2666,19 +2726,220 @@
                         <td>₱${parseFloat(item.amount).toFixed(2)}</td>
                         <td>${item.date}</td>
                         <td><span class="method-badge ${methodClass}">${item.method}</span></td>
-                        <td><span class="status-badge completed"><i class="fas fa-check"></i> ${item.status}</span></td>
+                        <td><span class="status-badge ${statusClass}"><i class="fas fa-check"></i> ${item.status}</span></td>
+                        <td>
+                            <button class="btn-icon danger" onclick="deleteReservation(${item.id}, '${item.transaction_id}')" title="Delete Reservation" style="padding: 0.5rem; border: none; background: transparent; color: #ef4444; cursor: pointer; border-radius: 4px; transition: all 0.2s;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
             }).join('');
         }
         
-
-        // Direct Reservation Functionality
-        function createReservation(productId) {
-            // Show confirmation dialog
-            if (!confirm('Do you want to reserve this product? The organization will review your reservation.')) {
+        // Delete Reservation
+        function deleteReservation(reservationId, transactionId) {
+            if (!confirm(`Are you sure you want to delete reservation ${transactionId}? This action cannot be undone.`)) {
                 return;
             }
+            
+            fetch(baseUrl + 'student/reservations/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `reservation_id=${reservationId}`
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        console.error('Non-JSON response:', text.substring(0, 200));
+                        throw new Error('Server returned non-JSON response');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Reservation deleted successfully', 'success');
+                    // Reload reservation history
+                    loadReservationHistory();
+                } else {
+                    showToast(data.message || 'Failed to delete reservation', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting reservation:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        }
+        
+
+        // Reservation Modal Variables
+        let currentReservationProduct = {
+            id: null,
+            name: '',
+            org: '',
+            stock: 0,
+            price: 0
+        };
+
+        // Open Reservation Modal from Button
+        function openReservationModalFromButton(button) {
+            console.log('openReservationModalFromButton called', button);
+            if (!button) {
+                console.error('Button element not found');
+                return;
+            }
+            
+            const productId = parseInt(button.getAttribute('data-product-id'));
+            const productName = button.getAttribute('data-product-name');
+            const stock = parseInt(button.getAttribute('data-product-stock'));
+            const price = parseFloat(button.getAttribute('data-product-price'));
+            const orgName = button.getAttribute('data-product-org');
+            
+            console.log('Product data:', { productId, productName, stock, price, orgName });
+            
+            if (!productId || !productName || !stock || !price) {
+                console.error('Missing product data');
+                return;
+            }
+            
+            openReservationModal(productId, productName, stock, price, orgName);
+        }
+
+        // Open Reservation Modal
+        function openReservationModal(productId, productName, stock, price, orgName) {
+            console.log('openReservationModal called', { productId, productName, stock, price, orgName });
+            
+            const modal = document.getElementById('reservationModal');
+            if (!modal) {
+                console.error('Reservation modal not found in DOM');
+                return;
+            }
+            
+            currentReservationProduct = {
+                id: productId,
+                name: productName,
+                org: orgName,
+                stock: stock,
+                price: parseFloat(price)
+            };
+
+            // Update modal content
+            const productNameEl = document.getElementById('reservationProductName');
+            const productOrgEl = document.getElementById('reservationProductOrg');
+            const productPriceEl = document.getElementById('reservationProductPrice');
+            const maxStockEl = document.getElementById('reservationMaxStock');
+            const quantityEl = document.getElementById('reservationQuantity');
+            
+            if (productNameEl) productNameEl.textContent = productName;
+            if (productOrgEl) productOrgEl.textContent = orgName;
+            if (productPriceEl) productPriceEl.textContent = '₱' + price.toFixed(2);
+            if (maxStockEl) maxStockEl.textContent = stock;
+            if (quantityEl) {
+                quantityEl.value = 1;
+                quantityEl.max = stock;
+            }
+            
+            // Update stock info
+            const stockInfo = document.getElementById('reservationStockInfo');
+            if (stockInfo) {
+                if (stock <= 10) {
+                    stockInfo.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Only ' + stock + ' left in stock';
+                    stockInfo.style.color = 'var(--warning)';
+                } else {
+                    stockInfo.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> ' + stock + ' available';
+                    stockInfo.style.color = 'var(--success)';
+                }
+            }
+
+            // Calculate initial total
+            calculateReservationTotal();
+
+            // Show modal
+            console.log('Showing modal');
+            modal.classList.add('active');
+            console.log('Modal active class added');
+        }
+
+        // Close Reservation Modal
+        function closeReservationModal() {
+            const modal = document.getElementById('reservationModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            currentReservationProduct = {
+                id: null,
+                name: '',
+                org: '',
+                stock: 0,
+                price: 0
+            };
+        }
+
+        // Change Quantity
+        function changeQuantity(change) {
+            const quantityInput = document.getElementById('reservationQuantity');
+            let currentQuantity = parseInt(quantityInput.value) || 1;
+            const maxStock = currentReservationProduct.stock;
+            
+            currentQuantity += change;
+            
+            if (currentQuantity < 1) {
+                currentQuantity = 1;
+            } else if (currentQuantity > maxStock) {
+                currentQuantity = maxStock;
+            }
+            
+            quantityInput.value = currentQuantity;
+            calculateReservationTotal();
+        }
+
+        // Validate Quantity
+        function validateQuantity() {
+            const quantityInput = document.getElementById('reservationQuantity');
+            let quantity = parseInt(quantityInput.value) || 1;
+            const maxStock = currentReservationProduct.stock;
+            
+            if (quantity < 1) {
+                quantity = 1;
+            } else if (quantity > maxStock) {
+                quantity = maxStock;
+                showToast('Maximum available stock is ' + maxStock, 'warning');
+            }
+            
+            quantityInput.value = quantity;
+            calculateReservationTotal();
+        }
+
+        // Calculate Reservation Total
+        function calculateReservationTotal() {
+            const quantity = parseInt(document.getElementById('reservationQuantity').value) || 1;
+            const total = quantity * currentReservationProduct.price;
+            document.getElementById('reservationTotalAmount').textContent = '₱' + total.toFixed(2);
+        }
+
+        // Confirm Reservation
+        function confirmReservation() {
+            const quantity = parseInt(document.getElementById('reservationQuantity').value) || 1;
+            
+            if (quantity < 1) {
+                showToast('Please enter a valid quantity', 'error');
+                return;
+            }
+
+            if (quantity > currentReservationProduct.stock) {
+                showToast('Quantity exceeds available stock', 'error');
+                return;
+            }
+
+            // Disable button during request
+            const confirmBtn = document.getElementById('confirmReservationBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
             fetch(baseUrl + 'student/reserve', {
                 method: 'POST',
@@ -2686,12 +2947,24 @@
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: `product_id=${productId}&quantity=1`
+                body: `product_id=${currentReservationProduct.id}&quantity=${quantity}`
             })
-            .then(response => response.json())
+            .then(response => {
+                // Check if response is actually JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        console.error('Non-JSON response received:', text.substring(0, 200));
+                        throw new Error('Server returned non-JSON response. Check console for details.');
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showToast(data.message || 'Reservation created successfully! Waiting for organization approval.', 'success');
+                    closeReservationModal();
+                    
                     // Reload pending reservations count if function exists
                     if (typeof updatePendingReservationsCount === 'function') {
                         setTimeout(() => {
@@ -2709,13 +2982,24 @@
                     }
                 } else {
                     showToast(data.message || 'Failed to create reservation. Please try again.', 'error');
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Confirm Reservation';
                 }
             })
             .catch(error => {
                 console.error('Error creating reservation:', error);
-                showToast('An error occurred. Please try again.', 'error');
+                showToast(error.message || 'An error occurred. Please try again.', 'error');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Confirm Reservation';
             });
         }
+
+        // Close modal when clicking overlay
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'reservationModal') {
+                closeReservationModal();
+            }
+        });
 
         // Event Filter Functions
         const eventFilter = document.getElementById('eventFilter');
@@ -4693,7 +4977,6 @@
         // Initialize Forum on Page Load
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
-            loadCartItems();
             updateCombinedBadge();
             
             // Update category counts on page load

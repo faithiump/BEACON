@@ -125,6 +125,7 @@ $routes->get('student/products', 'Student::viewProducts');
 $routes->post('student/reserve', 'Student::reserveProduct');
 $routes->get('student/payments/pending', 'Student::viewPendingPayments');
 $routes->get('student/payments/history', 'Student::viewPaymentHistory');
+$routes->post('student/reservations/delete', 'Student::deleteReservation');
 $routes->get('student/profile/edit', 'Student::editUserInfo');
 $routes->post('student/profile/edit', 'Student::editUserInfo');
 $routes->post('student/updateProfile', 'Student::updateProfile');

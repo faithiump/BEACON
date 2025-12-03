@@ -2133,6 +2133,32 @@ body {
     font-size: 1rem;
 }
 
+/* Reservation Modal Quantity Controls */
+.btn-quantity {
+    transition: all 0.2s;
+}
+
+.btn-quantity:hover:not(:disabled) {
+    background: var(--gray-50) !important;
+    border-color: var(--primary-500) !important;
+    color: var(--primary-500) !important;
+}
+
+.btn-quantity:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.btn-quantity:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#reservationQuantity:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
 /* ==============================================
    Payments Section
    ============================================== */

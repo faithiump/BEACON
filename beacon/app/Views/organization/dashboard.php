@@ -747,6 +747,9 @@
                                     <div class="pr-info">
                                         <span class="pr-name"><?= esc($payment['student_name']) ?></span>
                                         <span class="pr-product"><?= esc($payment['product']) ?></span>
+                                        <?php if(isset($payment['quantity']) && $payment['quantity'] > 0): ?>
+                                        <span class="pr-quantity" style="font-size: 0.75rem; color: var(--gray-500); display: block; margin-top: 0.25rem;">Quantity: <?= $payment['quantity'] ?></span>
+                                        <?php endif; ?>
                                     </div>
                                     <span class="pr-amount">₱<?= number_format($payment['amount']) ?></span>
                                 </div>
@@ -1043,7 +1046,8 @@
                     </div>
                 </div>
 
-                <div class="payments-grid">
+                <!-- Pending Reservations Tab -->
+                <div class="payments-grid" id="pending-reservations-content">
                     <?php if(!empty($pendingPayments)): ?>
                         <?php foreach($pendingPayments as $payment): ?>
                         <div class="payment-card">
@@ -1062,6 +1066,12 @@
                                     <i class="fas fa-shopping-bag"></i>
                                     <span><?= esc($payment['product']) ?></span>
                                 </div>
+                                <?php if(isset($payment['quantity']) && $payment['quantity'] > 0): ?>
+                                <div class="payment-quantity" style="margin-top: 0.5rem; color: var(--gray-600); font-size: 0.875rem;">
+                                    <i class="fas fa-box" style="margin-right: 0.5rem;"></i>
+                                    Quantity: <strong><?= $payment['quantity'] ?></strong>
+                                </div>
+                                <?php endif; ?>
                                 <div class="payment-amount-large">₱<?= number_format($payment['amount']) ?></div>
                                 <?php if(!empty($payment['proof_image'])): ?>
                                 <div class="payment-proof">
@@ -1087,6 +1097,14 @@
                             <p>No pending reservations to review</p>
                         </div>
                     <?php endif; ?>
+                </div>
+
+                <!-- Confirmed Reservations Tab -->
+                <div class="payments-grid" id="confirmed-reservations-content" style="display: none;">
+                    <div style="text-align: center; padding: 3rem; color: #64748b;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Loading confirmed reservations...</p>
+                    </div>
                 </div>
             </section>
 
@@ -2816,10 +2834,19 @@
             })
             .then(response => response.json())
             .then(data => {
-                showToast(messages[action], action === 'reject' ? 'warning' : 'success');
+                if (data.success) {
+                    showToast(messages[action], action === 'reject' ? 'warning' : 'success');
+                    // Reload pending reservations
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showToast(data.message || 'Action failed', 'error');
+                }
             })
-            .catch(() => {
-                showToast(messages[action], action === 'reject' ? 'warning' : 'success');
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
             });
         }
 
@@ -3137,9 +3164,102 @@
                 
                 // Filter content based on tab
                 const tabType = this.dataset.tab;
-                // Add filtering logic here
+                
+                // Handle reservations section tabs
+                if (tabType === 'pending-reservations' || tabType === 'confirmed-reservations') {
+                    const pendingContent = document.getElementById('pending-reservations-content');
+                    const confirmedContent = document.getElementById('confirmed-reservations-content');
+                    
+                    if (tabType === 'pending-reservations') {
+                        if (pendingContent) pendingContent.style.display = 'grid';
+                        if (confirmedContent) confirmedContent.style.display = 'none';
+                    } else if (tabType === 'confirmed-reservations') {
+                        if (pendingContent) pendingContent.style.display = 'none';
+                        if (confirmedContent) {
+                            confirmedContent.style.display = 'grid';
+                            // Load confirmed reservations if not loaded yet
+                            if (confirmedContent.querySelector('.payment-card') === null && 
+                                !confirmedContent.querySelector('.empty-state-large')) {
+                                loadConfirmedReservations();
+                            }
+                        }
+                    }
+                }
             });
         });
+        
+        // Load Confirmed Reservations
+        function loadConfirmedReservations() {
+            const container = document.getElementById('confirmed-reservations-content');
+            if (!container) return;
+            
+            container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i><p>Loading confirmed reservations...</p></div>';
+            
+            fetch(baseUrl + 'organization/payments/history', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.length > 0) {
+                    renderConfirmedReservations(data.data, container);
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state-large">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>No Confirmed Reservations</h3>
+                            <p>Confirmed reservations will appear here</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading confirmed reservations:', error);
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #ef4444;"><p>Error loading confirmed reservations. Please try again.</p></div>';
+            });
+        }
+        
+        // Render Confirmed Reservations
+        function renderConfirmedReservations(reservations, container) {
+            container.innerHTML = reservations.map(reservation => {
+                const studentName = reservation.student_name || 'Student';
+                const studentInitial = studentName.charAt(0).toUpperCase();
+                const confirmedDate = reservation.confirmed_at ? new Date(reservation.confirmed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+                
+                return `
+                    <div class="payment-card">
+                        <div class="payment-card-header">
+                            <div class="payer-info">
+                                <div class="payer-avatar">${studentInitial}</div>
+                                <div>
+                                    <h4>${studentName}</h4>
+                                    <span>${reservation.id ? 'RES-' + String(reservation.id).padStart(8, '0') : 'N/A'}</span>
+                                </div>
+                            </div>
+                            <span class="payment-time">${confirmedDate}</span>
+                        </div>
+                        <div class="payment-card-body">
+                            <div class="payment-product">
+                                <i class="fas fa-shopping-bag"></i>
+                                <span>${reservation.product || 'Product'}</span>
+                            </div>
+                            ${reservation.quantity && reservation.quantity > 0 ? `
+                            <div class="payment-quantity" style="margin-top: 0.5rem; color: var(--gray-600); font-size: 0.875rem;">
+                                <i class="fas fa-box" style="margin-right: 0.5rem;"></i>
+                                Quantity: <strong>${reservation.quantity}</strong>
+                            </div>
+                            ` : ''}
+                            <div class="payment-amount-large">₱${parseFloat(reservation.amount || 0).toFixed(2)}</div>
+                        </div>
+                        <div class="payment-card-footer">
+                            <span class="status-badge completed" style="margin: 0 auto; display: inline-block;">
+                                <i class="fas fa-check"></i> ${reservation.status || 'Confirmed'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
 
         // Global Search Functionality
         function initializeGlobalSearch() {

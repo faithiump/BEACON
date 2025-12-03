@@ -2729,9 +2729,12 @@ class Student extends BaseController
      */
     public function reserveProduct()
     {
-        $authCheck = $this->checkAuth();
-        if ($authCheck !== true) {
-            return $authCheck;
+        // Check authentication for AJAX requests
+        if (!session()->get('isLoggedIn') || session()->get('role') !== 'student') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Please login to access this page.'
+            ]);
         }
 
         $userId = session()->get('user_id');
@@ -2787,7 +2790,9 @@ class Student extends BaseController
             ];
             
             if (!$reservationModel->insert($reservationData)) {
-                throw new \Exception('Failed to create reservation');
+                $errors = $reservationModel->errors();
+                $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Failed to create reservation';
+                throw new \Exception($errorMsg);
             }
             
             $db->transComplete();
@@ -2803,6 +2808,7 @@ class Student extends BaseController
             
         } catch (\Exception $e) {
             $db->transRollback();
+            log_message('error', 'Reservation error: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -2894,13 +2900,15 @@ class Student extends BaseController
         foreach ($reservations as $reservation) {
             $orgName = $reservation['organization_acronym'] ?? $reservation['organization_name'] ?? 'Organization';
             $paymentHistory[] = [
+                'id' => $reservation['reservation_id'],
                 'transaction_id' => 'RES-' . str_pad($reservation['reservation_id'], 8, '0', STR_PAD_LEFT),
                 'description' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
                 'organization' => $orgName,
                 'amount' => (float)$reservation['total_amount'],
                 'date' => date('M d, Y', strtotime($reservation['updated_at'])),
                 'method' => $reservation['payment_method'] ?? 'N/A',
-                'status' => ucfirst($reservation['status'])
+                'status' => ucfirst($reservation['status']),
+                'status_raw' => $reservation['status']
             ];
         }
 
@@ -2909,6 +2917,58 @@ class Student extends BaseController
         }
 
         return view('student/payment-history', ['paymentHistory' => $paymentHistory]);
+    }
+
+    /**
+     * Delete Reservation
+     */
+    public function deleteReservation()
+    {
+        // Check authentication for AJAX requests
+        if (!session()->get('isLoggedIn') || session()->get('role') !== 'student') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Please login to access this page.'
+            ]);
+        }
+
+        $userId = session()->get('user_id');
+        $student = $this->studentModel->where('user_id', $userId)->first();
+        
+        if (!$student) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Student not found']);
+        }
+
+        $reservationId = $this->request->getPost('reservation_id');
+
+        if (empty($reservationId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Reservation ID is required']);
+        }
+
+        $reservationModel = new \App\Models\ReservationModel();
+        $reservation = $reservationModel->find($reservationId);
+
+        if (!$reservation) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Reservation not found']);
+        }
+
+        // Verify reservation belongs to student
+        if ($reservation['student_id'] != $student['id']) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized to delete this reservation']);
+        }
+
+        // Delete reservation
+        if ($reservationModel->delete($reservationId)) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Reservation deleted successfully'
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to delete reservation'
+            ]);
+        }
     }
 
     /**

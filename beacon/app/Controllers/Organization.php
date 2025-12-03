@@ -747,7 +747,7 @@ class Organization extends BaseController
                 'id' => $reservation['reservation_id'],
                 'student_name' => $studentName,
                 'student_id' => $reservation['student_number'] ?? 'N/A',
-                'product' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'product' => $reservation['product_name'],
                 'amount' => (float)$reservation['total_amount'],
                 'submitted_at' => $reservation['created_at'],
                 'proof_image' => $reservation['proof_image'] ?? null,
@@ -2452,29 +2452,72 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Reservation not found or unauthorized']);
         }
 
-        // Update status
-        $status = $action === 'approve' ? 'confirmed' : 'rejected';
-        if (!$reservationModel->updateReservationStatus($paymentId, $status)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Failed to update reservation status']);
-        }
+        // Use database transaction for data consistency
+        $db = \Config\Database::connect();
+        $db->transStart();
+        
+        try {
+            // Update status
+            $status = $action === 'approve' ? 'confirmed' : 'rejected';
+            if (!$reservationModel->updateReservationStatus($paymentId, $status)) {
+                throw new \Exception('Failed to update reservation status');
+            }
 
-        // If approved, update product stock and sold count
-        if ($action === 'approve') {
-            $productModel = new ProductModel();
-            $product = $productModel->find($reservation['product_id']);
-            
-            if ($product) {
-                $newStock = max(0, $product['stock'] - $reservation['quantity']);
-                $newSold = ($product['sold'] ?? 0) + $reservation['quantity'];
+            // If approved, update product stock and sold count
+            if ($action === 'approve') {
+                $productModel = new ProductModel();
+                $product = $productModel->find($reservation['product_id']);
                 
-                $productModel->update($reservation['product_id'], [
+                if (!$product) {
+                    throw new \Exception('Product not found');
+                }
+                
+                // Check if product belongs to organization
+                if ($product['org_id'] != $orgId) {
+                    throw new \Exception('Product does not belong to this organization');
+                }
+                
+                // Calculate new stock and sold count
+                $reservedQuantity = (int)$reservation['quantity'];
+                $currentStock = (int)$product['stock'];
+                $currentSold = (int)($product['sold'] ?? 0);
+                
+                // Validate stock availability
+                if ($currentStock < $reservedQuantity) {
+                    throw new \Exception('Insufficient stock. Available: ' . $currentStock . ', Requested: ' . $reservedQuantity);
+                }
+                
+                $newStock = max(0, $currentStock - $reservedQuantity);
+                $newSold = $currentSold + $reservedQuantity;
+                
+                // Update product stock and sold count
+                $updateResult = $productModel->update($reservation['product_id'], [
                     'stock' => $newStock,
                     'sold' => $newSold
                 ]);
                 
+                if (!$updateResult) {
+                    throw new \Exception('Failed to update product stock');
+                }
+                
                 // Update product status based on new stock
                 $productModel->updateProductStatus($reservation['product_id']);
             }
+            
+            // Complete transaction
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaction failed');
+            }
+            
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Reservation confirmation error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
 
         $messages = [
@@ -2515,7 +2558,8 @@ class Organization extends BaseController
             $history[] = [
                 'id' => $reservation['reservation_id'],
                 'student_name' => $studentName,
-                'product' => $reservation['product_name'] . ($reservation['quantity'] > 1 ? ' (x' . $reservation['quantity'] . ')' : ''),
+                'product' => $reservation['product_name'],
+                'quantity' => $reservation['quantity'] ?? 1,
                 'amount' => (float)$reservation['total_amount'],
                 'status' => $reservation['status'],
                 'confirmed_at' => $reservation['updated_at']
