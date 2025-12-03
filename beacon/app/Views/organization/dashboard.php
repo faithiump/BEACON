@@ -1420,7 +1420,7 @@
                             <option value="semester">This Semester</option>
                             <option value="year">This Year</option>
                         </select>
-                        <button class="btn btn-primary" onclick="generateReport()">
+                        <button class="btn btn-primary" id="exportReportBtn" onclick="generateReport(event)">
                             <i class="fas fa-download"></i> Export Report
                         </button>
                     </div>
@@ -1804,7 +1804,11 @@
         function switchSection(sectionId) {
             // Load reports when reports section is shown
             if (sectionId === 'reports') {
-                loadReports();
+                // Initialize listeners if not already done
+                setTimeout(() => {
+                    initReportListeners();
+                    loadReports();
+                }, 100);
             }
             // Update nav links
             document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
@@ -2839,89 +2843,196 @@
         }
 
         // Report Functions
-        // Load reports when section is shown
-        document.addEventListener('DOMContentLoaded', function() {
-            const reportPeriod = document.getElementById('reportPeriod');
-            if (reportPeriod) {
-                reportPeriod.addEventListener('change', function() {
-                    loadReports();
-                });
-            }
-        });
-
         function loadReports() {
-            const period = document.getElementById('reportPeriod').value;
+            const reportPeriod = document.getElementById('reportPeriod');
+            if (!reportPeriod) {
+                console.error('Report period selector not found');
+                return;
+            }
+            
+            const period = reportPeriod.value;
+            
+            // Show loading state (only for dynamic values, not initial static values)
+            const dynamicValues = ['newMembersValue', 'totalAttendeesValue', 'totalReservationsValue'];
+            dynamicValues.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.textContent && !el.textContent.includes('...')) {
+                    el.dataset.originalValue = el.textContent;
+                    el.textContent = '...';
+                }
+            });
             
             fetch(baseUrl + `organization/reports?type=overview&period=${period}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success && data.data) {
-                    updateReportCards(data.data);
+                    // Check if data.data exists (nested structure)
+                    const reportData = data.data.data || data.data;
+                    updateReportCards(reportData);
+                } else {
+                    showToast('Failed to load report data', 'error');
+                    // Restore original values
+                    reportCards.forEach(card => {
+                        if (card.dataset.originalValue) {
+                            card.textContent = card.dataset.originalValue;
+                        }
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error loading reports:', error);
+                showToast('Error loading reports. Please try again.', 'error');
+                // Restore original values
+                reportCards.forEach(card => {
+                    if (card.dataset.originalValue) {
+                        card.textContent = card.dataset.originalValue;
+                    }
+                });
             });
         }
 
-        function updateReportCards(reportData) {
-            // Update Membership card
-            const totalMembersEl = document.querySelector('.report-card:nth-child(1) .report-stat:nth-child(1) .report-value');
-            const newMembersEl = document.getElementById('newMembersValue');
-            if (totalMembersEl && reportData.members) {
-                totalMembersEl.textContent = reportData.members.total || 0;
-            }
-            if (newMembersEl && reportData.members) {
-                const newCount = reportData.members.new || 0;
-                newMembersEl.textContent = '+' + newCount;
-                newMembersEl.className = 'report-value ' + (newCount > 0 ? 'text-success' : '');
-            }
-
-            // Update Events card
-            const totalEventsEl = document.querySelector('.report-card:nth-child(2) .report-stat:nth-child(1) .report-value');
-            const totalAttendeesEl = document.getElementById('totalAttendeesValue');
-            if (totalEventsEl && reportData.events) {
-                totalEventsEl.textContent = reportData.events.total || 0;
-            }
-            if (totalAttendeesEl && reportData.events) {
-                totalAttendeesEl.textContent = (reportData.events.total_attendees || 0).toLocaleString();
-            }
-
-            // Update Products card
-            const activeProductsEl = document.querySelector('.report-card:nth-child(3) .report-stat:nth-child(1) .report-value');
-            const totalReservationsEl = document.getElementById('totalReservationsValue');
-            if (activeProductsEl && reportData.products) {
-                activeProductsEl.textContent = reportData.products.total || 0;
-            }
-            if (totalReservationsEl && reportData.reservations !== undefined) {
-                totalReservationsEl.textContent = (reportData.reservations.total || 0).toLocaleString();
+        // Initialize report period change listener
+        function initReportListeners() {
+            const reportPeriod = document.getElementById('reportPeriod');
+            if (reportPeriod) {
+                // Remove existing listener if any
+                const newReportPeriod = reportPeriod.cloneNode(true);
+                reportPeriod.parentNode.replaceChild(newReportPeriod, reportPeriod);
+                
+                // Add new listener
+                newReportPeriod.addEventListener('change', function() {
+                    loadReports();
+                });
             }
         }
 
-        function generateReport() {
-            const period = document.getElementById('reportPeriod').value;
+        // Initialize on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initReportListeners);
+        } else {
+            initReportListeners();
+        }
+
+        function updateReportCards(reportData) {
+            console.log('Updating report cards with data:', reportData);
+            
+            // Update Membership card
+            const membershipCard = document.querySelector('.report-card:nth-child(1)');
+            if (membershipCard) {
+                const totalMembersEl = membershipCard.querySelector('.report-stat:nth-child(1) .report-value');
+                const newMembersEl = document.getElementById('newMembersValue');
+                
+                if (totalMembersEl && reportData.members) {
+                    totalMembersEl.textContent = reportData.members.total || 0;
+                    delete totalMembersEl.dataset.originalValue;
+                }
+                if (newMembersEl && reportData.members) {
+                    const newCount = reportData.members.new || 0;
+                    newMembersEl.textContent = '+' + newCount;
+                    newMembersEl.className = 'report-value ' + (newCount > 0 ? 'text-success' : '');
+                }
+            }
+
+            // Update Events card
+            const eventsCard = document.querySelector('.report-card:nth-child(2)');
+            if (eventsCard) {
+                const totalEventsEl = eventsCard.querySelector('.report-stat:nth-child(1) .report-value');
+                const totalAttendeesEl = document.getElementById('totalAttendeesValue');
+                
+                if (totalEventsEl && reportData.events) {
+                    totalEventsEl.textContent = reportData.events.total || 0;
+                    delete totalEventsEl.dataset.originalValue;
+                }
+                if (totalAttendeesEl && reportData.events) {
+                    totalAttendeesEl.textContent = (reportData.events.total_attendees || 0).toLocaleString();
+                }
+            }
+
+            // Update Products card
+            const productsCard = document.querySelector('.report-card:nth-child(3)');
+            if (productsCard) {
+                const activeProductsEl = productsCard.querySelector('.report-stat:nth-child(1) .report-value');
+                const totalReservationsEl = document.getElementById('totalReservationsValue');
+                
+                if (activeProductsEl && reportData.products) {
+                    activeProductsEl.textContent = reportData.products.total || 0;
+                    delete activeProductsEl.dataset.originalValue;
+                }
+                if (totalReservationsEl && reportData.reservations !== undefined) {
+                    totalReservationsEl.textContent = (reportData.reservations.total || 0).toLocaleString();
+                }
+            }
+        }
+
+        function generateReport(clickEvent) {
+            const reportPeriod = document.getElementById('reportPeriod');
+            if (!reportPeriod) {
+                showToast('Report period selector not found', 'error');
+                return;
+            }
+            
+            const period = reportPeriod.value;
+            const exportBtn = clickEvent?.target || document.getElementById('exportReportBtn') || document.querySelector('button[onclick*="generateReport"]');
+            
+            // Disable button and show loading state
+            if (exportBtn) {
+                exportBtn.disabled = true;
+                const originalHTML = exportBtn.innerHTML;
+                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+                
+                // Store original HTML for restoration
+                exportBtn.dataset.originalHTML = originalHTML;
+            }
+            
             showToast('Generating report...', 'info');
             
             fetch(baseUrl + `organization/reports?type=overview&period=${period}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success && data.data) {
-                    exportReport(data.data, period);
+                    // Check if data.data exists (nested structure)
+                    const reportData = data.data.data || data.data;
+                    console.log('Exporting report with data:', reportData);
+                    exportReport(reportData, period);
+                    if (exportBtn) {
+                        exportBtn.disabled = false;
+                        exportBtn.innerHTML = '<i class="fas fa-download"></i> Export Report';
+                    }
                 } else {
                     showToast('Failed to generate report', 'error');
+                    if (exportBtn) {
+                        exportBtn.disabled = false;
+                        exportBtn.innerHTML = '<i class="fas fa-download"></i> Export Report';
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error generating report:', error);
-                showToast('Error generating report', 'error');
+                showToast('Error generating report. Please try again.', 'error');
+                if (exportBtn) {
+                    exportBtn.disabled = false;
+                    exportBtn.innerHTML = '<i class="fas fa-download"></i> Export Report';
+                }
             });
         }
 
         function exportReport(reportData, period) {
+            console.log('exportReport called with:', reportData);
+            
             // Create report content
             const orgName = document.querySelector('.logo-text')?.textContent || 'Organization';
             const periodLabels = {
@@ -2938,31 +3049,47 @@
             reportContent += `==========================================\n\n`;
             
             // Membership
-            if (reportData.members) {
+            if (reportData && reportData.members) {
                 reportContent += `MEMBERSHIP\n`;
                 reportContent += `Total Members: ${reportData.members.total || 0}\n`;
                 reportContent += `New Members: ${reportData.members.new || 0}\n\n`;
+            } else {
+                reportContent += `MEMBERSHIP\n`;
+                reportContent += `Total Members: 0\n`;
+                reportContent += `New Members: 0\n\n`;
             }
             
             // Events
-            if (reportData.events) {
+            if (reportData && reportData.events) {
                 reportContent += `EVENTS\n`;
                 reportContent += `Total Events: ${reportData.events.total || 0}\n`;
                 reportContent += `Upcoming Events: ${reportData.events.upcoming || 0}\n`;
                 reportContent += `Total Attendees: ${reportData.events.total_attendees || 0}\n\n`;
+            } else {
+                reportContent += `EVENTS\n`;
+                reportContent += `Total Events: 0\n`;
+                reportContent += `Upcoming Events: 0\n`;
+                reportContent += `Total Attendees: 0\n\n`;
             }
             
             // Products
-            if (reportData.products) {
+            if (reportData && reportData.products) {
                 reportContent += `PRODUCTS\n`;
-                reportContent += `Active Products: ${reportData.products.total || 0}\n`;
+                reportContent += `Active Products: ${reportData.products.total || 0}\n\n`;
+            } else {
+                reportContent += `PRODUCTS\n`;
+                reportContent += `Active Products: 0\n\n`;
             }
             
             // Reservations
-            if (reportData.reservations) {
+            if (reportData && reportData.reservations) {
                 reportContent += `RESERVATIONS\n`;
                 reportContent += `Total Reservations: ${reportData.reservations.total || 0}\n`;
                 reportContent += `Reservations in Period: ${reportData.reservations.in_period || 0}\n\n`;
+            } else {
+                reportContent += `RESERVATIONS\n`;
+                reportContent += `Total Reservations: 0\n`;
+                reportContent += `Reservations in Period: 0\n\n`;
             }
             
             // Create and download file

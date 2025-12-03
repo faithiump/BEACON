@@ -2675,10 +2675,10 @@ class Organization extends BaseController
         // Members
         $totalMembers = count($membershipModel->getActiveMemberships($orgId));
         $newMembers = $db->table('student_organization_memberships')
-            ->where('organization_id', $orgId)
+            ->where('org_id', $orgId)
             ->where('status', 'active')
-            ->where('created_at >=', $startDate)
-            ->where('created_at <=', $endDate)
+            ->where('joined_at >=', $startDate)
+            ->where('joined_at <=', $endDate)
             ->countAllResults();
 
         // Events
@@ -2798,10 +2798,10 @@ class Organization extends BaseController
 
         $totalMembers = count($membershipModel->getActiveMemberships($orgId));
         $newMembers = $db->table('student_organization_memberships')
-            ->where('organization_id', $orgId)
+            ->where('org_id', $orgId)
             ->where('status', 'active')
-            ->where('created_at >=', $startDate)
-            ->where('created_at <=', $endDate)
+            ->where('joined_at >=', $startDate)
+            ->where('joined_at <=', $endDate)
             ->countAllResults();
 
         $activeMembers = $totalMembers;
@@ -2811,7 +2811,7 @@ class Organization extends BaseController
         $membersByCourse = $db->table('student_organization_memberships')
             ->select('students.department, COUNT(*) as count')
             ->join('students', 'students.id = student_organization_memberships.student_id')
-            ->where('student_organization_memberships.organization_id', $orgId)
+            ->where('student_organization_memberships.org_id', $orgId)
             ->where('student_organization_memberships.status', 'active')
             ->groupBy('students.department')
             ->get()
