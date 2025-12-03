@@ -6,10 +6,7 @@ $pending_organizations = $pending_organizations ?? [];
 ?>
 <div class="admin-topbar">
     <div class="topbar-left">
-        <button class="search-btn" id="searchBtn">
-            <i class="fas fa-search"></i>
-        </button>
-        <input type="text" class="topbar-search" placeholder="Search..." id="topbarSearch">
+        <h2 class="topbar-title">Admin Dashboard</h2>
     </div>
     
     <div class="topbar-right">
@@ -45,74 +42,21 @@ $pending_organizations = $pending_organizations ?? [];
                 </div>
             </div>
         </div>
-        
-        <div class="message-wrapper">
-            <button class="topbar-icon-btn">
-                <i class="fas fa-envelope"></i>
-                <span class="icon-badge">4</span>
-            </button>
-        </div>
-        
-        <div class="user-menu">
-            <button class="user-avatar-btn" id="userMenuBtn">
-                <div class="user-avatar">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-            </button>
-            <div class="user-dropdown" id="userDropdown">
-                <div class="user-info">
-                    <div class="user-name"><?= esc(session()->get('admin_user')) ?></div>
-                    <div class="user-role">Administrator</div>
-                </div>
-                <div class="user-menu-items">
-                    <a href="#" class="user-menu-item">
-                        <i class="fas fa-user"></i> Profile
-                    </a>
-                    <a href="#" class="user-menu-item">
-                        <i class="fas fa-cog"></i> Settings
-                    </a>
-                    <a href="<?= base_url('admin/logout') ?>" class="user-menu-item">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
-<link rel="stylesheet" href="<?= base_url('assets/css/admin-topbar.css') ?>" type="text/css">
+<link rel="stylesheet" href="<?= base_url('assets/css/admin/topbar.css') ?>" type="text/css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const notificationBtn = document.getElementById('notificationBtn');
     const notificationDropdown = document.getElementById('notificationDropdown');
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userDropdown = document.getElementById('userDropdown');
-    const searchBtn = document.getElementById('searchBtn');
-    const topbarSearch = document.getElementById('topbarSearch');
     
     // Notification dropdown
     if (notificationBtn && notificationDropdown) {
         notificationBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             notificationDropdown.classList.toggle('active');
-            if (userDropdown) userDropdown.classList.remove('active');
-        });
-    }
-    
-    // User menu dropdown
-    if (userMenuBtn && userDropdown) {
-        userMenuBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userDropdown.classList.toggle('active');
-            if (notificationDropdown) notificationDropdown.classList.remove('active');
-        });
-    }
-    
-    // Search toggle
-    if (searchBtn && topbarSearch) {
-        searchBtn.addEventListener('click', function() {
-            topbarSearch.focus();
         });
     }
     
@@ -120,9 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (notificationDropdown && !notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
             notificationDropdown.classList.remove('active');
-        }
-        if (userDropdown && !userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-            userDropdown.classList.remove('active');
         }
     });
 });

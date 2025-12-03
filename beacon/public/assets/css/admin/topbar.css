@@ -1,4 +1,8 @@
 /* Admin Top Bar Styles */
+* {
+    font-family: Helvetica, Arial, sans-serif;
+}
+
 .admin-topbar {
     position: fixed;
     top: 0;
@@ -22,9 +26,18 @@
 .topbar-left {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     flex: 1;
-    max-width: 500px;
+    max-width: 600px;
+}
+
+.topbar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-weight: bold;
+    color: #1e293b;
+    margin: 0;
+    white-space: nowrap;
 }
 
 .search-btn {

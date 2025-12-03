@@ -7,13 +7,13 @@
     <div class="sidebar-header">
         <a href="<?= base_url('admin/dashboard') ?>" class="sidebar-logo" id="sidebarToggle">
             <img src="<?= base_url('assets/images/beacon-logo-v4.png') ?>" alt="BEACON" class="logo-icon">
-            <img src="<?= base_url('assets/images/beacon-logo-text-v1.png') ?>" alt="BEACON" class="logo-text">
+            <img src="<?= base_url('assets/images/beacon-logo-text-v2.png') ?>" alt="BEACON" class="logo-text">
         </a>
     </div>
     
     <nav class="sidebar-nav">
         <ul class="nav-menu">
-            <li class="nav-item active" data-tooltip="Dashboard">
+            <li class="nav-item" data-tooltip="Dashboard">
                 <a href="<?= base_url('admin/dashboard') ?>" class="nav-link">
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
@@ -77,7 +77,7 @@
     </nav>
 </aside>
 
-<link rel="stylesheet" href="<?= base_url('assets/css/admin-sidebar.css') ?>" type="text/css">
+<link rel="stylesheet" href="<?= base_url('assets/css/admin/sidebar.css') ?>" type="text/css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -142,34 +142,45 @@ document.addEventListener('DOMContentLoaded', function() {
         const linkTab = linkParams.get('tab');
         const linkSection = linkParams.get('section');
         
-        // Check if paths match
+        // Check if paths match exactly
         const pathMatch = currentPath === linkPath;
         
-        // Check if tab and section match (for dashboard links)
-        let tabMatch = true;
-        let sectionMatch = true;
-        
-        if (linkTab) {
-            tabMatch = currentTab === linkTab;
-        }
-        
-        if (linkSection) {
-            sectionMatch = currentSection === linkSection;
-        } else if (currentSection && linkTab) {
-            // If link doesn't have section but current URL does, don't match
-            sectionMatch = false;
-        }
-        
-        // Mark as active if path matches and tab/section conditions are met
-        if (pathMatch && tabMatch && sectionMatch) {
-            link.classList.add('active');
-            const navItem = link.closest('.nav-item');
-            if (navItem) {
-                navItem.classList.add('active');
-                // If it's in a submenu, open the parent group
-                const parentGroup = navItem.closest('.nav-group');
-                if (parentGroup) {
-                    parentGroup.classList.add('open');
+        // For dashboard link, only match if we're exactly on dashboard with no other params
+        if (linkPath.includes('/admin/dashboard')) {
+            if (currentPath === '/admin/dashboard' && !currentTab && !currentSection) {
+                link.classList.add('active');
+                const navItem = link.closest('.nav-item');
+                if (navItem) {
+                    navItem.classList.add('active');
+                }
+            }
+        } else {
+            // For other links, check if tab and section match
+            let tabMatch = true;
+            let sectionMatch = true;
+            
+            if (linkTab) {
+                tabMatch = currentTab === linkTab;
+            }
+            
+            if (linkSection) {
+                sectionMatch = currentSection === linkSection;
+            } else if (currentSection && linkTab) {
+                // If link doesn't have section but current URL does, don't match
+                sectionMatch = false;
+            }
+            
+            // Mark as active if path matches and tab/section conditions are met
+            if (pathMatch && tabMatch && sectionMatch) {
+                link.classList.add('active');
+                const navItem = link.closest('.nav-item');
+                if (navItem) {
+                    navItem.classList.add('active');
+                    // If it's in a submenu, open the parent group
+                    const parentGroup = navItem.closest('.nav-group');
+                    if (parentGroup) {
+                        parentGroup.classList.add('open');
+                    }
                 }
             }
         }

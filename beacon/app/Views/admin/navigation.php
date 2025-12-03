@@ -69,7 +69,7 @@ $pending_organizations = $pending_organizations ?? [];
     </div>
 </nav>
 
-<link rel="stylesheet" href="<?= base_url('assets/css/navigation-admin.css') ?>" type="text/css">
+<link rel="stylesheet" href="<?= base_url('assets/css/admin/navigation.css') ?>" type="text/css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

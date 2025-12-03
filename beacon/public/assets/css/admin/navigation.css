@@ -1,4 +1,8 @@
 /* Admin Navigation Styles */
+* {
+    font-family: Helvetica, Arial, sans-serif;
+}
+
 .admin-nav {
     position: fixed !important;
     top: 0;
