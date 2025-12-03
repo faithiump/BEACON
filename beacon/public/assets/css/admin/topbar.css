@@ -161,7 +161,7 @@
 }
 
 .notification-count {
-    background: #7c3aed;
+    background: #35283f;
     color: #ffffff;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
@@ -207,7 +207,7 @@
 
 .notification-icon.organization {
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .notification-content {
@@ -250,7 +250,7 @@
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     color: #ffffff;
     display: flex;
     align-items: center;

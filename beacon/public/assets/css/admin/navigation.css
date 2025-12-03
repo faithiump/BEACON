@@ -65,7 +65,7 @@
     border-radius: 10px;
     border: none;
     background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    color: #35283f;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -131,7 +131,7 @@
 }
 
 .notification-count {
-    background: #667eea;
+    background: #35283f;
     color: #ffffff;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
@@ -169,7 +169,7 @@
 
 .notification-icon.organization {
     background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    color: #35283f;
 }
 
 .notification-content {
@@ -201,7 +201,7 @@
 }
 
 .view-all-link {
-    color: #667eea;
+    color: #35283f;
     text-decoration: none;
     font-size: 0.875rem;
     font-weight: 600;
@@ -249,7 +249,7 @@
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     color: #ffffff;
     display: flex;
     align-items: center;

@@ -88,7 +88,7 @@
 }
 
 .notification-btn:hover {
-    background: rgba(124, 58, 237, 0.2);
+    background: rgba(53, 40, 63, 0.2);
     transform: translateY(-2px);
 }
 
@@ -148,7 +148,7 @@
 
 .notification-count {
     font-size: 0.85rem;
-    color: #7c3aed;
+    color: #35283f;
     font-weight: 600;
     background: rgba(55, 20, 80, 0.1);
     padding: 0.25rem 0.75rem;
@@ -186,12 +186,12 @@
 
 .notification-icon.student {
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .notification-icon.organization {
-    background: rgba(168, 85, 247, 0.1);
-    color: #a855f7;
+    background: rgba(53, 40, 63, 0.1);
+    color: #35283f;
 }
 
 .notification-content {
@@ -224,7 +224,7 @@
 }
 
 .view-all-link {
-    color: #7c3aed;
+    color: #35283f;
     text-decoration: none;
     font-weight: 600;
     font-size: 0.9rem;
@@ -232,7 +232,7 @@
 }
 
 .view-all-link:hover {
-    color: #764ba2;
+    color: #35283f;
 }
 
 /* Admin Profile */
@@ -241,7 +241,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    background: rgba(124, 58, 237, 0.05);
+    background: rgba(53, 40, 63, 0.05);
     border-radius: 12px;
 }
 
@@ -266,7 +266,7 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -352,7 +352,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
     flex-shrink: 0;
     font-size: 1rem;
 }
@@ -461,7 +461,6 @@
 }
 
 .stat-card-green {
-    border-left: 4px solid #22c55e;
 }
 
 .stat-card-green .stat-icon-large {
@@ -470,7 +469,6 @@
 }
 
 .stat-card-purple {
-    border-left: 4px solid #35283f;
 }
 
 .stat-card-purple .stat-icon-large {
@@ -479,7 +477,6 @@
 }
 
 .stat-card-blue {
-    border-left: 4px solid #35283f;
 }
 
 .stat-card-blue .stat-icon-large {
@@ -488,7 +485,6 @@
 }
 
 .stat-card-orange {
-    border-left: 4px solid #f59e0b;
 }
 
 .stat-card-orange .stat-icon-large {
@@ -523,12 +519,12 @@
 
 .stat-icon.students {
     background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    color: #6d28d9;
+    color: #35283f;
 }
 
 .stat-icon.organizations {
     background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .stat-icon.pending {
@@ -636,7 +632,7 @@
 }
 
 .card-header h2 i {
-    color: #7c3aed;
+    color: #35283f;
     font-size: 1rem;
 }
 
@@ -644,9 +640,9 @@
     padding: 0.45rem 1rem;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #6d28d9;
+    color: #35283f;
     background: #fff;
-    border: 1.5px solid rgba(109, 40, 217, 0.35);
+    border: 1.5px solid rgba(53, 40, 63, 0.35);
     border-radius: 999px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -662,9 +658,9 @@
 }
 
 .btn-view-all:hover {
-    background: rgba(109, 40, 217, 0.05);
+    background: rgba(53, 40, 63, 0.05);
     transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(109, 40, 217, 0.15);
+    box-shadow: 0 8px 16px rgba(53, 40, 63, 0.15);
 }
 
 .btn-view-all:active {
@@ -733,12 +729,12 @@
 
 .approval-avatar.student {
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .approval-avatar.organization {
-    background: rgba(168, 85, 247, 0.1);
-    color: #a855f7;
+    background: rgba(53, 40, 63, 0.1);
+    color: #35283f;
 }
 
 .approval-info {
@@ -807,7 +803,7 @@
     display: block;
     text-align: center;
     padding: 0.75rem;
-    color: #7c3aed;
+    color: #35283f;
     text-decoration: none;
     font-weight: 600;
     font-size: 0.9rem;
@@ -816,7 +812,7 @@
 }
 
 .view-all-btn:hover {
-    background: rgba(124, 58, 237, 0.05);
+    background: rgba(53, 40, 63, 0.05);
 }
 
 /* Quick Actions */
@@ -844,14 +840,14 @@
 .action-item:hover {
     background: rgba(55, 20, 80, 0.1);
     transform: translateY(-2px);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .action-icon {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -897,7 +893,7 @@
 
 .activity-icon.info {
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .activity-icon.warning {
@@ -1068,12 +1064,12 @@
     left: 50%;
     right: 50%;
     height: 3px;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     transform: translateX(-50%) scaleX(0);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 3px 3px 0 0;
     width: 0;
-    box-shadow: 0 -2px 8px rgba(124, 58, 237, 0.3);
+    box-shadow: 0 -2px 8px rgba(53, 40, 63, 0.3);
 }
 
 .tab-btn::after {
@@ -1083,7 +1079,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(53, 40, 63, 0.05) 0%, rgba(53, 40, 63, 0.05) 100%);
     border-radius: 12px 12px 0 0;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -1105,7 +1101,7 @@
 }
 
 .tab-btn.active {
-    color: #6d28d9;
+    color: #35283f;
     background: #f5f3ff;
     transform: translateY(0);
     font-weight: 600;
@@ -1115,7 +1111,7 @@
     transform: translateX(-50%) scaleX(1);
     width: 100%;
     height: 4px;
-    box-shadow: 0 -2px 12px rgba(124, 58, 237, 0.4);
+    box-shadow: 0 -2px 12px rgba(53, 40, 63, 0.4);
 }
 
 .tab-btn.active::after {
@@ -1131,13 +1127,13 @@
 
 .tab-btn:hover i {
     transform: scale(1.15) translateY(-1px);
-    filter: drop-shadow(0 2px 4px rgba(124, 58, 237, 0.3));
+    filter: drop-shadow(0 2px 4px rgba(53, 40, 63, 0.3));
 }
 
 .tab-btn.active i {
     transform: scale(1.2);
-    filter: drop-shadow(0 2px 6px rgba(124, 58, 237, 0.4));
-    color: #7c3aed;
+    filter: drop-shadow(0 2px 6px rgba(53, 40, 63, 0.4));
+    color: #35283f;
 }
 
 .tab-content {
@@ -1200,7 +1196,7 @@
 
 .btn-action.view {
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
     padding: 0.5rem 1rem;
     width: auto;
     height: auto;
@@ -1211,6 +1207,21 @@
 
 .btn-action.view:hover {
     background: rgba(55, 20, 80, 0.2);
+}
+
+.btn-action.download {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4c51bf;
+    padding: 0.5rem 1rem;
+    width: auto;
+    height: auto;
+    font-size: 0.85rem;
+    font-weight: 600;
+    gap: 0.5rem;
+}
+
+.btn-action.download:hover {
+    background: rgba(99, 102, 241, 0.2);
 }
 
 .btn-action.edit {
@@ -1310,12 +1321,12 @@
 
 .role-badge.student {
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .role-badge.organization {
-    background: rgba(168, 85, 247, 0.1);
-    color: #a855f7;
+    background: rgba(53, 40, 63, 0.1);
+    color: #35283f;
 }
 
 /* Comments List */
@@ -1347,7 +1358,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     color: #ffffff;
     font-size: 1rem;
 }
@@ -1363,7 +1374,7 @@
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -1417,7 +1428,7 @@
     padding: 1.25rem;
     background: #f8fafc;
     border-radius: 12px;
-    border-left: 4px solid #7c3aed;
+    border-left: 4px solid #35283f;
 }
 
 .activity-stat-item h4 {
@@ -1443,7 +1454,7 @@
 .org-tag {
     padding: 0.35rem 0.75rem;
     background: rgba(55, 20, 80, 0.1);
-    color: #7c3aed;
+    color: #35283f;
     border-radius: 8px;
     font-size: 0.8rem;
     font-weight: 500;
@@ -1538,7 +1549,7 @@
 
 .alert-item.info {
     background: rgba(55, 20, 80, 0.15);
-    border-left: 4px solid #7c3aed;
+    border-left: 4px solid #35283f;
 }
 
 .alert-item i {
@@ -1552,7 +1563,7 @@
 }
 
 .alert-item.info i {
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .alert-item p {
@@ -1603,7 +1614,7 @@
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     border-radius: 4px;
     transition: width 0.3s ease;
 }
@@ -1611,7 +1622,7 @@
 .compliance-progress span {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #7c3aed;
+    color: #35283f;
     min-width: 45px;
 }
 

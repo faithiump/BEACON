@@ -1111,11 +1111,18 @@ class Login extends BaseController
         
         // For PDF files, serve directly with inline display
         if ($extension === 'pdf') {
-            $this->response->setHeader('Content-Type', 'application/pdf');
-            $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
-            $this->response->setHeader('Content-Length', filesize($filePath));
-            $this->response->setHeader('Cache-Control', 'private, max-age=3600');
-            return $this->response->sendFile($filePath);
+            // Clear any previous output
+            ob_clean();
+            
+            // Set headers directly to ensure they're sent
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline; filename="' . addslashes($file['file_name']) . '"');
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: private, max-age=3600');
+            
+            // Read and output file content
+            readfile($filePath);
+            exit;
         }
 
         // For DOC/DOCX files, try to serve directly first
@@ -1178,12 +1185,19 @@ class Login extends BaseController
 
         // Serve the file
         $mimeType = $file['mime_type'] ?? mime_content_type($filePath);
-        $this->response->setHeader('Content-Type', $mimeType);
-        $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
-        $this->response->setHeader('Content-Length', filesize($filePath));
-        $this->response->setHeader('Cache-Control', 'private, max-age=3600');
         
-        return $this->response->sendFile($filePath);
+        // Clear any previous output
+        ob_clean();
+        
+        // Set headers directly to ensure they're sent
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="' . addslashes($file['file_name']) . '"');
+        header('Content-Length: ' . filesize($filePath));
+        header('Cache-Control: private, max-age=3600');
+        
+        // Read and output file content
+        readfile($filePath);
+        exit;
     }
 
     /**
