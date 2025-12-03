@@ -442,8 +442,8 @@
                                 <div class="comments-section" id="comments-feed-announcement-<?= $announcement['id'] ?>" style="display: none;">
                                     <div class="comments-list" id="comments-list-feed-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-feed-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment...">
-                                        <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
+                                        <input type="text" class="comment-input" id="comment-input-feed-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') { const btn = this.closest('.comment-input-wrapper').querySelector('.btn-send'); postComment(<?= $announcement['id'] ?>, 'announcement', btn); }">
+                                        <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement', this)"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -570,8 +570,8 @@
                                 <div class="comments-section" id="comments-event-<?= $event['id'] ?>" style="display: none;">
                                     <div class="comments-list" id="comments-list-event-<?= $event['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-event-<?= $event['id'] ?>" placeholder="Write a comment...">
-                                        <button class="btn-send" onclick="postComment(<?= $event['id'] ?>, 'event')"><i class="fas fa-paper-plane"></i></button>
+                                        <input type="text" class="comment-input" id="comment-input-event-<?= $event['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') { const btn = this.closest('.comment-input-wrapper').querySelector('.btn-send'); postComment(<?= $event['id'] ?>, 'event', btn); }">
+                                        <button class="btn-send" onclick="postComment(<?= $event['id'] ?>, 'event', this)"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -866,8 +866,8 @@
                                 <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
                                     <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') postComment(<?= $announcement['id'] ?>, 'announcement')">
-                                        <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement')"><i class="fas fa-paper-plane"></i></button>
+                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') { const btn = this.closest('.comment-input-wrapper').querySelector('.btn-send'); postComment(<?= $announcement['id'] ?>, 'announcement', btn); }">
+                                        <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement', this)"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -2141,6 +2141,10 @@
                 e.stopPropagation();
                 notificationPanel.classList.add('active');
                 quickActionsDropdown.classList.add('show-notifications');
+                // Load notifications when panel opens
+                if (typeof loadNotifications === 'function') {
+                    loadNotifications();
+                }
             });
         }
         
@@ -2262,44 +2266,52 @@
             // Mark as read
             markNotificationAsRead(notificationId);
             
+            // Close notification panel first
+            if (notificationPanel) {
+                notificationPanel.classList.remove('active');
+            }
+            if (quickActionsDropdown) {
+                quickActionsDropdown.classList.remove('show-notifications');
+            }
+            
             // Navigate based on type
             if (type === 'event' && itemId) {
                 // Navigate to events section
-                switchSection('events');
-                // Optionally scroll to specific event or show event details
-                setTimeout(() => {
-                    showToast('Event notification clicked', 'info');
-                }, 100);
+                if (typeof switchSection === 'function') {
+                    switchSection('events');
+                }
             } else if (type === 'announcement' && itemId) {
                 // Navigate to announcements section
-                switchSection('announcements');
-                setTimeout(() => {
-                    showToast('Announcement notification clicked', 'info');
-                }, 100);
+                if (typeof switchSection === 'function') {
+                    switchSection('announcements');
+                }
             } else if (type === 'org' && itemId) {
                 // Navigate to organizations section
-                switchSection('organizations');
-                setTimeout(() => {
-                    showToast('Organization notification clicked', 'info');
-                }, 100);
+                if (typeof switchSection === 'function') {
+                    switchSection('organizations');
+                }
             } else if (type === 'product' && itemId) {
-                // Navigate to products section
-                switchSection('products');
-                setTimeout(() => {
-                    showToast('Product notification clicked', 'info');
-                }, 100);
+                // Navigate to shop section
+                if (typeof switchSection === 'function') {
+                    switchSection('shop');
+                }
+            } else if (type === 'reservation' || type === 'payment') {
+                // Navigate to reservations section
+                if (typeof switchSection === 'function') {
+                    switchSection('payments');
+                }
             } else {
                 // Default navigation
-                switchSection('overview');
+                if (typeof switchSection === 'function') {
+                    switchSection('overview');
+                }
             }
-            
-            // Close notification panel
-            notificationPanel.classList.remove('active');
-            quickActionsDropdown.classList.remove('show-notifications');
         }
         
         // Mark notification as read
         function markNotificationAsRead(notificationId) {
+            if (!notificationId) return;
+            
             fetch(baseUrl + 'student/notifications/read', {
                 method: 'POST',
                 headers: {
@@ -2367,6 +2379,10 @@
                         });
                         updateNotificationCountFromDOM();
                         showToast('All notifications marked as read', 'success');
+                        // Reload notifications to refresh the list
+                        if (typeof loadNotifications === 'function') {
+                            setTimeout(() => loadNotifications(), 500);
+                        }
                     }
                 })
                 .catch(error => {
@@ -4247,16 +4263,35 @@
             });
         }
 
-        function postComment(postId, postType) {
+        function postComment(postId, postType, buttonElement) {
             // Try to find comment input - check both standard and feed patterns
-            const input = document.getElementById(`comment-input-${postType}-${postId}`) ||
-                         document.getElementById(`comment-input-feed-${postType}-${postId}`);
-            if (!input) return;
+            let input = null;
             
-            const content = input.value.trim();
+            // If buttonElement is provided, find the input relative to it
+            if (buttonElement) {
+                const commentsSection = buttonElement.closest('.comments-section');
+                if (commentsSection) {
+                    input = commentsSection.querySelector('.comment-input');
+                }
+            }
+            
+            // Fallback: try to find by ID
+            if (!input) {
+                input = document.getElementById(`comment-input-${postType}-${postId}`) ||
+                       document.getElementById(`comment-input-feed-${postType}-${postId}`);
+            }
+            
+            if (!input) {
+                console.error('Comment input not found for', postType, postId);
+                showToast('Comment input not found', 'error');
+                return;
+            }
+            
+            const content = (input.value || '').trim();
             
             if (!content) {
                 showToast('Please enter a comment', 'error');
+                input.focus();
                 return;
             }
 
@@ -4273,7 +4308,37 @@
                 if (data.success) {
                     showToast(data.message, 'success');
                     input.value = '';
-                    loadComments(postId, postType);
+                    
+                    // Find the comments list element relative to the button/input
+                    let commentsList = null;
+                    if (buttonElement) {
+                        const commentsSection = buttonElement.closest('.comments-section');
+                        if (commentsSection) {
+                            commentsList = commentsSection.querySelector('.comments-list');
+                        }
+                    }
+                    
+                    // Fallback: try to find by ID
+                    if (!commentsList) {
+                        commentsList = document.getElementById(`comments-list-${postType}-${postId}`) ||
+                                     document.getElementById(`comments-list-feed-${postType}-${postId}`);
+                    }
+                    
+                    // Ensure comments section is visible
+                    if (commentsList) {
+                        const commentsSection = commentsList.closest('.comments-section');
+                        if (commentsSection) {
+                            commentsSection.style.display = 'block';
+                        }
+                    }
+                    
+                    // Reload comments with the found element
+                    if (commentsList) {
+                        loadComments(postId, postType, commentsList);
+                    } else {
+                        loadComments(postId, postType);
+                    }
+                    
                     // Update comment count in the button
                     const commentBtns = document.querySelectorAll(`button[onclick*="toggleComments(${postId}, '${postType}')"]`);
                     commentBtns.forEach(commentBtn => {

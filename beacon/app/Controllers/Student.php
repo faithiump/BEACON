@@ -3042,7 +3042,7 @@ class Student extends BaseController
                 }
             }
 
-            // 2. New Announcements (posted in last 7 days)
+            // 2. New and Updated Announcements (posted or updated in last 7 days)
             $announcementModel = new AnnouncementModel();
             $membershipModel = new StudentOrganizationMembershipModel();
             $orgFollowModel = new \App\Models\OrganizationFollowModel();
@@ -3056,6 +3056,7 @@ class Student extends BaseController
             $allOrgIds = !empty($orgIds) || !empty($followedOrgIds) ? array_unique(array_merge($orgIds, $followedOrgIds)) : [];
             
             if (!empty($allOrgIds)) {
+                // Get new announcements (created in last 7 days)
                 $recentAnnouncements = $announcementModel
                     ->whereIn('org_id', $allOrgIds)
                     ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
@@ -3069,7 +3070,7 @@ class Student extends BaseController
                     $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
                     
                     $notifications[] = [
-                        'id' => 'announcement_' . $announcement['id'],
+                        'id' => 'announcement_' . $announcement['announcement_id'],
                         'type' => 'announcement',
                         'icon' => 'announcement',
                         'title' => $announcement['priority'] === 'high' ? 'Important: ' . $announcement['title'] : 'New Announcement: ' . $announcement['title'],
@@ -3079,10 +3080,37 @@ class Student extends BaseController
                         'unread' => true
                     ];
                 }
+                
+                // Get updated announcements (updated in last 7 days, but not created in last 7 days)
+                $updatedAnnouncements = $announcementModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->where('created_at <', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('updated_at', 'DESC')
+                    ->limit(5)
+                    ->findAll();
+                
+                foreach ($updatedAnnouncements as $announcement) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($announcement['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'announcement_updated_' . $announcement['announcement_id'],
+                        'type' => 'announcement',
+                        'icon' => 'announcement',
+                        'title' => 'Updated Announcement: ' . $announcement['title'],
+                        'text' => $orgName . ' updated an announcement: ' . (strlen($announcement['content']) > 50 ? substr($announcement['content'], 0, 50) . '...' : $announcement['content']),
+                        'time' => $this->formatTimeAgo($announcement['updated_at']),
+                        'created_at' => $announcement['updated_at'],
+                        'unread' => true
+                    ];
+                }
             }
 
-            // 3. New Events (posted in last 7 days from followed organizations)
+            // 3. New and Updated Events (posted or updated in last 7 days from followed organizations)
             if (!empty($allOrgIds)) {
+                // Get new events (created in last 7 days)
                 $recentEvents = $eventModel
                     ->whereIn('org_id', $allOrgIds)
                     ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
@@ -3103,6 +3131,32 @@ class Student extends BaseController
                         'text' => $orgName . ' created a new event: ' . $event['event_name'],
                         'time' => $this->formatTimeAgo($event['created_at']),
                         'created_at' => $event['created_at'],
+                        'unread' => true
+                    ];
+                }
+                
+                // Get updated events (updated in last 7 days, but not created in last 7 days)
+                $updatedEvents = $eventModel
+                    ->whereIn('org_id', $allOrgIds)
+                    ->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->where('created_at <', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('updated_at', 'DESC')
+                    ->limit(5)
+                    ->findAll();
+                
+                foreach ($updatedEvents as $event) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($event['org_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'event_updated_' . $event['event_id'],
+                        'type' => 'event',
+                        'icon' => 'event',
+                        'title' => 'Event Updated: ' . $event['event_name'],
+                        'text' => $orgName . ' updated an event: ' . $event['event_name'],
+                        'time' => $this->formatTimeAgo($event['updated_at']),
+                        'created_at' => $event['updated_at'],
                         'unread' => true
                     ];
                 }
@@ -3193,6 +3247,75 @@ class Student extends BaseController
                         'text' => $replyUserName . ' replied to your comment.',
                         'time' => $this->formatTimeAgo($reply['created_at']),
                         'created_at' => $reply['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // 7. Organization Posts (Forum posts from followed organizations)
+            if (!empty($allOrgIds)) {
+                $forumPostModel = new ForumPostModel();
+                $recentPosts = $forumPostModel
+                    ->whereIn('organization_id', $allOrgIds)
+                    ->where('author_type', 'organization')
+                    ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(10)
+                    ->findAll();
+                
+                foreach ($recentPosts as $post) {
+                    $orgModel = new OrganizationModel();
+                    $org = $orgModel->find($post['organization_id']);
+                    $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                    
+                    $notifications[] = [
+                        'id' => 'post_' . $post['id'],
+                        'type' => 'announcement',
+                        'icon' => 'announcement',
+                        'title' => 'New Post: ' . $post['title'],
+                        'text' => $orgName . ' posted: ' . (strlen($post['content']) > 50 ? substr($post['content'], 0, 50) . '...' : $post['content']),
+                        'time' => $this->formatTimeAgo($post['created_at']),
+                        'created_at' => $post['created_at'],
+                        'unread' => true
+                    ];
+                }
+            }
+
+            // 8. Reservation Status Updates
+            $reservationModel = new \App\Models\ReservationModel();
+            $reservations = $reservationModel
+                ->where('student_id', $student['id'])
+                ->whereIn('status', ['confirmed', 'rejected'])
+                ->where('updated_at >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+                ->orderBy('updated_at', 'DESC')
+                ->limit(10)
+                ->findAll();
+            
+            foreach ($reservations as $reservation) {
+                $orgModel = new OrganizationModel();
+                $org = $orgModel->find($reservation['org_id']);
+                $orgName = $org ? ($org['organization_acronym'] ?? $org['organization_name'] ?? 'Organization') : 'Organization';
+                
+                if ($reservation['status'] === 'confirmed') {
+                    $notifications[] = [
+                        'id' => 'reservation_confirmed_' . $reservation['reservation_id'],
+                        'type' => 'payment',
+                        'icon' => 'payment',
+                        'title' => 'Reservation Confirmed',
+                        'text' => $orgName . ' confirmed your reservation for ' . $reservation['product_name'],
+                        'time' => $this->formatTimeAgo($reservation['updated_at']),
+                        'created_at' => $reservation['updated_at'],
+                        'unread' => true
+                    ];
+                } elseif ($reservation['status'] === 'rejected') {
+                    $notifications[] = [
+                        'id' => 'reservation_rejected_' . $reservation['reservation_id'],
+                        'type' => 'payment',
+                        'icon' => 'payment',
+                        'title' => 'Reservation Rejected',
+                        'text' => $orgName . ' rejected your reservation for ' . $reservation['product_name'],
+                        'time' => $this->formatTimeAgo($reservation['updated_at']),
+                        'created_at' => $reservation['updated_at'],
                         'unread' => true
                     ];
                 }
