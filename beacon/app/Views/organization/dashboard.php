@@ -320,10 +320,10 @@
                         <div class="sidebar-card">
                             <h4 class="sidebar-title"><i class="fas fa-chart-line"></i> Quick Stats</h4>
                             <div class="quick-stat-item">
-                                <div class="qs-icon emerald"><i class="fas fa-peso-sign"></i></div>
+                                <div class="qs-icon emerald"><i class="fas fa-calendar-check"></i></div>
                                 <div class="qs-info">
-                                    <span class="qs-value">₱<?= number_format($stats['total_revenue'] ?? 0) ?></span>
-                                    <span class="qs-label">Total Revenue</span>
+                                    <span class="qs-value"><?= number_format($stats['total_reservations'] ?? 0) ?></span>
+                                    <span class="qs-label">Total Reservations</span>
                                 </div>
                             </div>
                             <div class="quick-stat-item">
@@ -1437,24 +1437,8 @@
                                 <span class="report-label">Total Members</span>
                             </div>
                             <div class="report-stat">
-                                <span class="report-value text-success">+24</span>
+                                <span class="report-value text-success" id="newMembersValue">0</span>
                                 <span class="report-label">New This Month</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="report-card">
-                        <div class="report-header">
-                            <h3><i class="fas fa-peso-sign"></i> Financial</h3>
-                        </div>
-                        <div class="report-stats">
-                            <div class="report-stat">
-                                <span class="report-value">₱<?= number_format($stats['total_revenue'] ?? 0) ?></span>
-                                <span class="report-label">Total Revenue</span>
-                            </div>
-                            <div class="report-stat">
-                                <span class="report-value text-warning">₱8,500</span>
-                                <span class="report-label">Pending Collections</span>
                             </div>
                         </div>
                     </div>
@@ -1469,7 +1453,7 @@
                                 <span class="report-label">Total Events</span>
                             </div>
                             <div class="report-stat">
-                                <span class="report-value">1,250</span>
+                                <span class="report-value" id="totalAttendeesValue">0</span>
                                 <span class="report-label">Total Attendees</span>
                             </div>
                         </div>
@@ -1485,8 +1469,8 @@
                                 <span class="report-label">Active Products</span>
                             </div>
                             <div class="report-stat">
-                                <span class="report-value">215</span>
-                                <span class="report-label">Items Sold</span>
+                                <span class="report-value" id="totalReservationsValue"><?= $stats['total_reservations'] ?? 0 ?></span>
+                                <span class="report-label">Total Reservations</span>
                             </div>
                         </div>
                     </div>
@@ -1818,6 +1802,10 @@
         });
 
         function switchSection(sectionId) {
+            // Load reports when reports section is shown
+            if (sectionId === 'reports') {
+                loadReports();
+            }
             // Update nav links
             document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
                 link.classList.remove('active');
@@ -2851,18 +2839,144 @@
         }
 
         // Report Functions
+        // Load reports when section is shown
+        document.addEventListener('DOMContentLoaded', function() {
+            const reportPeriod = document.getElementById('reportPeriod');
+            if (reportPeriod) {
+                reportPeriod.addEventListener('change', function() {
+                    loadReports();
+                });
+            }
+        });
+
+        function loadReports() {
+            const period = document.getElementById('reportPeriod').value;
+            
+            fetch(baseUrl + `organization/reports?type=overview&period=${period}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    updateReportCards(data.data);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading reports:', error);
+            });
+        }
+
+        function updateReportCards(reportData) {
+            // Update Membership card
+            const totalMembersEl = document.querySelector('.report-card:nth-child(1) .report-stat:nth-child(1) .report-value');
+            const newMembersEl = document.getElementById('newMembersValue');
+            if (totalMembersEl && reportData.members) {
+                totalMembersEl.textContent = reportData.members.total || 0;
+            }
+            if (newMembersEl && reportData.members) {
+                const newCount = reportData.members.new || 0;
+                newMembersEl.textContent = '+' + newCount;
+                newMembersEl.className = 'report-value ' + (newCount > 0 ? 'text-success' : '');
+            }
+
+            // Update Events card
+            const totalEventsEl = document.querySelector('.report-card:nth-child(2) .report-stat:nth-child(1) .report-value');
+            const totalAttendeesEl = document.getElementById('totalAttendeesValue');
+            if (totalEventsEl && reportData.events) {
+                totalEventsEl.textContent = reportData.events.total || 0;
+            }
+            if (totalAttendeesEl && reportData.events) {
+                totalAttendeesEl.textContent = (reportData.events.total_attendees || 0).toLocaleString();
+            }
+
+            // Update Products card
+            const activeProductsEl = document.querySelector('.report-card:nth-child(3) .report-stat:nth-child(1) .report-value');
+            const totalReservationsEl = document.getElementById('totalReservationsValue');
+            if (activeProductsEl && reportData.products) {
+                activeProductsEl.textContent = reportData.products.total || 0;
+            }
+            if (totalReservationsEl && reportData.reservations !== undefined) {
+                totalReservationsEl.textContent = (reportData.reservations.total || 0).toLocaleString();
+            }
+        }
+
         function generateReport() {
             const period = document.getElementById('reportPeriod').value;
             showToast('Generating report...', 'info');
             
-            fetch(baseUrl + `organization/reports?type=overview&period=${period}`)
+            fetch(baseUrl + `organization/reports?type=overview&period=${period}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
             .then(response => response.json())
             .then(data => {
-                showToast('Report generated! Download starting...', 'success');
+                if (data.success && data.data) {
+                    exportReport(data.data, period);
+                } else {
+                    showToast('Failed to generate report', 'error');
+                }
             })
-            .catch(() => {
-                showToast('Report feature coming soon', 'info');
+            .catch(error => {
+                console.error('Error generating report:', error);
+                showToast('Error generating report', 'error');
             });
+        }
+
+        function exportReport(reportData, period) {
+            // Create report content
+            const orgName = document.querySelector('.logo-text')?.textContent || 'Organization';
+            const periodLabels = {
+                'week': 'This Week',
+                'month': 'This Month',
+                'semester': 'This Semester',
+                'year': 'This Year'
+            };
+            
+            let reportContent = `BEACON - Organization Report\n`;
+            reportContent += `Organization: ${orgName}\n`;
+            reportContent += `Period: ${periodLabels[period] || period}\n`;
+            reportContent += `Generated: ${new Date().toLocaleString()}\n\n`;
+            reportContent += `==========================================\n\n`;
+            
+            // Membership
+            if (reportData.members) {
+                reportContent += `MEMBERSHIP\n`;
+                reportContent += `Total Members: ${reportData.members.total || 0}\n`;
+                reportContent += `New Members: ${reportData.members.new || 0}\n\n`;
+            }
+            
+            // Events
+            if (reportData.events) {
+                reportContent += `EVENTS\n`;
+                reportContent += `Total Events: ${reportData.events.total || 0}\n`;
+                reportContent += `Upcoming Events: ${reportData.events.upcoming || 0}\n`;
+                reportContent += `Total Attendees: ${reportData.events.total_attendees || 0}\n\n`;
+            }
+            
+            // Products
+            if (reportData.products) {
+                reportContent += `PRODUCTS\n`;
+                reportContent += `Active Products: ${reportData.products.total || 0}\n`;
+            }
+            
+            // Reservations
+            if (reportData.reservations) {
+                reportContent += `RESERVATIONS\n`;
+                reportContent += `Total Reservations: ${reportData.reservations.total || 0}\n`;
+                reportContent += `Reservations in Period: ${reportData.reservations.in_period || 0}\n\n`;
+            }
+            
+            // Create and download file
+            const blob = new Blob([reportContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BEACON_Report_${orgName.replace(/\s+/g, '_')}_${period}_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showToast('Report exported successfully!', 'success');
         }
 
         // Organization Info Form

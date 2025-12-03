@@ -318,14 +318,21 @@ class Organization extends BaseController
 
         // Get pending reservations count
         $pendingReservationsCount = 0;
+        $totalReservationsCount = 0;
         if ($orgId) {
             try {
                 $reservationModel = new \App\Models\ReservationModel();
                 $pendingReservations = $reservationModel->getPendingReservations($orgId);
                 $pendingReservationsCount = count($pendingReservations);
+                
+                // Get total reservations count (all statuses)
+                $totalReservationsCount = $reservationModel
+                    ->where('org_id', $orgId)
+                    ->countAllResults();
             } catch (\Exception $e) {
                 // If reservations table doesn't exist yet, default to 0
                 $pendingReservationsCount = 0;
+                $totalReservationsCount = 0;
             }
         }
 
@@ -337,6 +344,7 @@ class Organization extends BaseController
             'total_products' => $totalProducts,
             'total_followers' => $totalFollowers,
             'pending_payments' => $pendingReservationsCount,
+            'total_reservations' => $totalReservationsCount,
             'total_revenue' => 45680,
             'announcements' => $totalAnnouncements,
         ];
@@ -2582,62 +2590,294 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Organization not found']);
+        }
+
         $type = $this->request->getGet('type') ?? 'overview'; // overview, financial, members, events
         $period = $this->request->getGet('period') ?? 'month'; // week, month, semester, year
+
+        // Calculate date range based on period
+        $dateRanges = $this->getDateRangeForPeriod($period);
+        $startDate = $dateRanges['start'];
+        $endDate = $dateRanges['end'];
 
         $summary = [
             'period' => $period,
             'type' => $type,
             'generated_at' => date('Y-m-d H:i:s'),
+            'start_date' => $startDate,
+            'end_date' => $endDate,
             'data' => []
         ];
 
         switch ($type) {
             case 'financial':
-                $summary['data'] = [
-                    'total_revenue' => 45680,
-                    'total_expenses' => 12500,
-                    'net_income' => 33180,
-                    'pending_collections' => 8500,
-                    'breakdown' => [
-                        ['category' => 'Merchandise', 'amount' => 32000],
-                        ['category' => 'Membership Fees', 'amount' => 10680],
-                        ['category' => 'Event Fees', 'amount' => 3000],
-                    ]
-                ];
+                $summary['data'] = $this->getFinancialReport($orgId, $startDate, $endDate);
                 break;
             case 'members':
-                $summary['data'] = [
-                    'total_members' => 156,
-                    'new_members' => 24,
-                    'active_members' => 142,
-                    'inactive_members' => 14,
-                    'by_course' => [
-                        ['course' => 'BSCS', 'count' => 89],
-                        ['course' => 'BSIT', 'count' => 45],
-                        ['course' => 'BSIS', 'count' => 22],
-                    ]
-                ];
+                $summary['data'] = $this->getMembersReport($orgId, $startDate, $endDate);
                 break;
             case 'events':
-                $summary['data'] = [
-                    'total_events' => 24,
-                    'completed_events' => 21,
-                    'upcoming_events' => 3,
-                    'total_attendees' => 1250,
-                    'avg_attendance' => 52,
-                ];
+                $summary['data'] = $this->getEventsReport($orgId, $startDate, $endDate);
                 break;
             default: // overview
-                $summary['data'] = [
-                    'members' => ['total' => 156, 'new' => 24],
-                    'events' => ['total' => 24, 'upcoming' => 3],
-                    'revenue' => ['total' => 45680, 'pending' => 8500],
-                    'products' => ['total' => 15, 'sold' => 215],
-                ];
+                $summary['data'] = $this->getOverviewReport($orgId, $startDate, $endDate);
         }
 
         return $this->response->setJSON(['success' => true, 'data' => $summary]);
+    }
+
+    /**
+     * Get date range for period
+     */
+    private function getDateRangeForPeriod($period)
+    {
+        $endDate = date('Y-m-d 23:59:59');
+        
+        switch ($period) {
+            case 'week':
+                $startDate = date('Y-m-d 00:00:00', strtotime('-7 days'));
+                break;
+            case 'month':
+                $startDate = date('Y-m-d 00:00:00', strtotime('first day of this month'));
+                break;
+            case 'semester':
+                $month = (int)date('m');
+                if ($month >= 1 && $month <= 6) {
+                    $startDate = date('Y-01-01 00:00:00');
+                } else {
+                    $startDate = date('Y-07-01 00:00:00');
+                }
+                break;
+            case 'year':
+                $startDate = date('Y-01-01 00:00:00');
+                break;
+            default:
+                $startDate = date('Y-m-d 00:00:00', strtotime('-30 days'));
+        }
+        
+        return ['start' => $startDate, 'end' => $endDate];
+    }
+
+    /**
+     * Get overview report data
+     */
+    private function getOverviewReport($orgId, $startDate, $endDate)
+    {
+        $membershipModel = new StudentOrganizationMembershipModel();
+        $eventModel = new EventModel();
+        $productModel = new ProductModel();
+        $reservationModel = new \App\Models\ReservationModel();
+        $db = \Config\Database::connect();
+
+        // Members
+        $totalMembers = count($membershipModel->getActiveMemberships($orgId));
+        $newMembers = $db->table('student_organization_memberships')
+            ->where('organization_id', $orgId)
+            ->where('status', 'active')
+            ->where('created_at >=', $startDate)
+            ->where('created_at <=', $endDate)
+            ->countAllResults();
+
+        // Events
+        $totalEvents = count($eventModel->getEventsByOrg($orgId));
+        $upcomingEvents = count($eventModel->getUpcomingEvents($orgId));
+        $eventsInPeriod = $db->table('events')
+            ->where('org_id', $orgId)
+            ->where('created_at >=', $startDate)
+            ->where('created_at <=', $endDate)
+            ->countAllResults();
+
+        // Reservations/Revenue
+        $confirmedReservations = $reservationModel
+            ->where('org_id', $orgId)
+            ->where('status', 'confirmed')
+            ->where('updated_at >=', $startDate)
+            ->where('updated_at <=', $endDate)
+            ->findAll();
+        
+        $totalRevenue = 0;
+        foreach ($confirmedReservations as $reservation) {
+            $totalRevenue += (float)($reservation['total_amount'] ?? 0);
+        }
+
+        $pendingReservations = $reservationModel
+            ->where('org_id', $orgId)
+            ->where('status', 'pending')
+            ->findAll();
+        
+        $pendingCollections = 0;
+        foreach ($pendingReservations as $reservation) {
+            $pendingCollections += (float)($reservation['total_amount'] ?? 0);
+        }
+
+        // Products
+        $totalProducts = count($productModel->getProductsByOrg($orgId));
+
+        // Reservations
+        $totalReservations = $reservationModel
+            ->where('org_id', $orgId)
+            ->countAllResults();
+        
+        $reservationsInPeriod = $reservationModel
+            ->where('org_id', $orgId)
+            ->where('created_at >=', $startDate)
+            ->where('created_at <=', $endDate)
+            ->countAllResults();
+
+        return [
+            'members' => [
+                'total' => $totalMembers,
+                'new' => $newMembers
+            ],
+            'events' => [
+                'total' => $totalEvents,
+                'upcoming' => $upcomingEvents,
+                'in_period' => $eventsInPeriod,
+                'total_attendees' => $this->getTotalAttendees($orgId)
+            ],
+            'products' => [
+                'total' => $totalProducts
+            ],
+            'reservations' => [
+                'total' => $totalReservations,
+                'in_period' => $reservationsInPeriod
+            ]
+        ];
+    }
+
+    /**
+     * Get financial report data
+     */
+    private function getFinancialReport($orgId, $startDate, $endDate)
+    {
+        $reservationModel = new \App\Models\ReservationModel();
+        
+        $confirmedReservations = $reservationModel
+            ->where('org_id', $orgId)
+            ->where('status', 'confirmed')
+            ->where('updated_at >=', $startDate)
+            ->where('updated_at <=', $endDate)
+            ->findAll();
+        
+        $totalRevenue = 0;
+        foreach ($confirmedReservations as $reservation) {
+            $totalRevenue += (float)($reservation['total_amount'] ?? 0);
+        }
+
+        $pendingReservations = $reservationModel
+            ->where('org_id', $orgId)
+            ->where('status', 'pending')
+            ->findAll();
+        
+        $pendingCollections = 0;
+        foreach ($pendingReservations as $reservation) {
+            $pendingCollections += (float)($reservation['total_amount'] ?? 0);
+        }
+
+        return [
+            'total_revenue' => $totalRevenue,
+            'total_expenses' => 0, // Can be added later if expense tracking is implemented
+            'net_income' => $totalRevenue,
+            'pending_collections' => $pendingCollections,
+            'breakdown' => [
+                ['category' => 'Reservations', 'amount' => $totalRevenue]
+            ]
+        ];
+    }
+
+    /**
+     * Get members report data
+     */
+    private function getMembersReport($orgId, $startDate, $endDate)
+    {
+        $membershipModel = new StudentOrganizationMembershipModel();
+        $db = \Config\Database::connect();
+
+        $totalMembers = count($membershipModel->getActiveMemberships($orgId));
+        $newMembers = $db->table('student_organization_memberships')
+            ->where('organization_id', $orgId)
+            ->where('status', 'active')
+            ->where('created_at >=', $startDate)
+            ->where('created_at <=', $endDate)
+            ->countAllResults();
+
+        $activeMembers = $totalMembers;
+        $inactiveMembers = 0; // Can be calculated if inactive status is tracked
+
+        // Get members by course/department
+        $membersByCourse = $db->table('student_organization_memberships')
+            ->select('students.department, COUNT(*) as count')
+            ->join('students', 'students.id = student_organization_memberships.student_id')
+            ->where('student_organization_memberships.organization_id', $orgId)
+            ->where('student_organization_memberships.status', 'active')
+            ->groupBy('students.department')
+            ->get()
+            ->getResultArray();
+
+        return [
+            'total_members' => $totalMembers,
+            'new_members' => $newMembers,
+            'active_members' => $activeMembers,
+            'inactive_members' => $inactiveMembers,
+            'by_course' => $membersByCourse
+        ];
+    }
+
+    /**
+     * Get total attendees for organization
+     */
+    private function getTotalAttendees($orgId)
+    {
+        $db = \Config\Database::connect();
+        return $db->table('event_attendees')
+            ->join('events', 'events.event_id = event_attendees.event_id')
+            ->where('events.org_id', $orgId)
+            ->countAllResults();
+    }
+
+    /**
+     * Get events report data
+     */
+    private function getEventsReport($orgId, $startDate, $endDate)
+    {
+        $eventModel = new EventModel();
+        $db = \Config\Database::connect();
+
+        $allEvents = $eventModel->getEventsByOrg($orgId);
+        $totalEvents = count($allEvents);
+        
+        $upcomingEvents = count($eventModel->getUpcomingEvents($orgId));
+        
+        $completedEvents = $db->table('events')
+            ->where('org_id', $orgId)
+            ->where('status', 'completed')
+            ->countAllResults();
+
+        $eventsInPeriod = $db->table('events')
+            ->where('org_id', $orgId)
+            ->where('created_at >=', $startDate)
+            ->where('created_at <=', $endDate)
+            ->countAllResults();
+
+        // Get total attendees
+        $totalAttendees = $db->table('event_attendees')
+            ->join('events', 'events.event_id = event_attendees.event_id')
+            ->where('events.org_id', $orgId)
+            ->countAllResults();
+
+        $avgAttendance = $totalEvents > 0 ? round($totalAttendees / $totalEvents, 1) : 0;
+
+        return [
+            'total_events' => $totalEvents,
+            'completed_events' => $completedEvents,
+            'upcoming_events' => $upcomingEvents,
+            'events_in_period' => $eventsInPeriod,
+            'total_attendees' => $totalAttendees,
+            'avg_attendance' => $avgAttendance
+        ];
     }
 
     // ==========================================
