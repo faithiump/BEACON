@@ -231,7 +231,7 @@
                 </div>
             </div>
             <div class="file-viewer-actions">
-                <a href="<?= base_url($file['file_path']) ?>" target="_blank" class="btn-action btn-download">
+                <a href="<?= base_url('admin/organizations/file/' . $file['id'] . '/download') ?>" target="_blank" class="btn-action btn-download">
                     <i class="fas fa-download"></i>
                     Download
                 </a>
@@ -253,7 +253,7 @@
                 <i class="fas fa-exclamation-triangle"></i>
                 <h3>Unable to display file</h3>
                 <p>The file cannot be displayed in the browser. Please download it to view.</p>
-                <a href="<?= base_url($file['file_path']) ?>" target="_blank" class="btn-action btn-download">
+                <a href="<?= base_url('admin/organizations/file/' . $file['id'] . '/download') ?>" target="_blank" class="btn-action btn-download">
                     <i class="fas fa-download"></i>
                     Download File
                 </a>

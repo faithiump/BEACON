@@ -146,9 +146,18 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
+        // Get viewed notifications from session
+        $viewedNotifications = session()->get('viewed_notifications') ?? [];
+
         // Format pending applications for display
         $pendingOrgsData = [];
+        $unreadCount = 0;
         foreach ($pendingApplications as $app) {
+            $isViewed = in_array($app['id'], $viewedNotifications);
+            if (!$isViewed) {
+                $unreadCount++;
+            }
+            
             $submittedDate = new \DateTime($app['submitted_at']);
             $now = new \DateTime();
             $interval = $now->diff($submittedDate);
@@ -168,9 +177,13 @@ class Login extends BaseController
                 'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
                 'email' => $app['contact_email'],
                 'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
+                'submitted_at' => $timeAgo,
+                'is_viewed' => $isViewed
             ];
         }
+        
+        // Store unread count in session for use in views
+        session()->set('unread_notifications_count', $unreadCount);
 
         // Fetch approved organizations
         $approvedOrgs = $db->table('organizations o')
@@ -757,6 +770,13 @@ class Login extends BaseController
             // Send approval email notification
             $this->sendApprovalEmail($application, $advisor, $officer);
 
+            // Remove from viewed notifications
+            $viewedNotifications = session()->get('viewed_notifications') ?? [];
+            $viewedNotifications = array_values(array_filter($viewedNotifications, function($viewedId) use ($id) {
+                return $viewedId != $id;
+            }));
+            session()->set('viewed_notifications', $viewedNotifications);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Organization approved successfully. Email notification sent.'
@@ -856,6 +876,13 @@ class Login extends BaseController
             // Send rejection email notification
             $this->sendRejectionEmail($application, $advisor, $officer);
 
+            // Remove from viewed notifications
+            $viewedNotifications = session()->get('viewed_notifications') ?? [];
+            $viewedNotifications = array_values(array_filter($viewedNotifications, function($viewedId) use ($id) {
+                return $viewedId != $id;
+            }));
+            session()->set('viewed_notifications', $viewedNotifications);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Organization rejected. Email notification sent.'
@@ -909,7 +936,130 @@ class Login extends BaseController
     }
 
     /**
-     * View organization details
+     * View pending organization application details
+     */
+    public function viewPendingOrganization($id)
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Fetch pending application
+        $application = $db->table('organization_applications')
+            ->where('id', $id)
+            ->where('status', 'pending')
+            ->get()
+            ->getRowArray();
+        
+        if (!$application) {
+            return redirect()->to('/admin/organizations/pending')->with('error', 'Pending application not found');
+        }
+
+        // Mark this notification as viewed
+        $viewedNotifications = session()->get('viewed_notifications') ?? [];
+        if (!in_array($id, $viewedNotifications)) {
+            $viewedNotifications[] = $id;
+            session()->set('viewed_notifications', $viewedNotifications);
+        }
+
+        // Create organization object from application data
+        $organization = [
+            'id' => null,
+            'organization_name' => $application['organization_name'],
+            'organization_acronym' => $application['organization_acronym'] ?? '',
+            'organization_type' => $application['organization_type'],
+            'organization_category' => $application['organization_category'] ?? '',
+            'mission' => $application['mission'] ?? '',
+            'vision' => $application['vision'] ?? '',
+            'objectives' => $application['objectives'] ?? '',
+            'founding_date' => $application['founding_date'] ?? null,
+            'contact_email' => $application['contact_email'],
+            'contact_phone' => $application['contact_phone'],
+            'is_active' => 0,
+            'user_id' => null,
+            'current_members' => $application['current_members'] ?? 0,
+            'created_at' => $application['submitted_at']
+        ];
+
+        // Get advisor information
+        $advisor = $db->table('organization_advisors')
+            ->where('application_id', $application['id'])
+            ->get()
+            ->getRowArray();
+
+        // Get officers information
+        $officers = $db->table('organization_officers')
+            ->where('application_id', $application['id'])
+            ->get()
+            ->getResultArray();
+
+        // Get files
+        $files = $db->table('organization_files')
+            ->where('application_id', $application['id'])
+            ->get()
+            ->getResultArray();
+
+        // Get return parameter
+        $returnTo = $this->request->getGet('return') ?? 'organizations';
+        
+        // Format data for view
+        $data = [
+            'organization' => $organization,
+            'application' => $application,
+            'advisor' => $advisor,
+            'officers' => $officers,
+            'files' => $files,
+            'isPending' => true,
+            'stats' => [
+                'events' => 0,
+                'announcements' => 0,
+                'products' => 0,
+                'members' => 0
+            ],
+            'returnTo' => $returnTo
+        ];
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo,
+                'is_viewed' => in_array($app['id'], $viewedNotifications)
+            ];
+        }
+        $data['pending_organizations'] = $pendingOrgsData;
+
+        return view('admin/organization_details', $data);
+    }
+
+    /**
+     * View organization details (approved organizations only)
      */
     public function viewOrganization($id)
     {
@@ -919,64 +1069,23 @@ class Login extends BaseController
 
         $db = \Config\Database::connect();
 
-        // First, check if this is an application ID (for pending organizations)
-        $application = $db->table('organization_applications')
+        // This is an organization ID, fetch organization details
+        $organization = $db->table('organizations')
             ->where('id', $id)
             ->get()
             ->getRowArray();
 
-        $organization = null;
-        $isPending = false;
-
-        if ($application) {
-            // This is a pending application
-            $isPending = true;
-            
-            // Check if organization exists in organizations table
-            $organization = $db->table('organizations')
-                ->where('organization_name', $application['organization_name'])
-                ->get()
-                ->getRowArray();
-            
-            // If organization doesn't exist, create a mock organization object from application data
-            if (!$organization) {
-                $organization = [
-                    'id' => null,
-                    'organization_name' => $application['organization_name'],
-                    'organization_acronym' => $application['organization_acronym'] ?? '',
-                    'organization_type' => $application['organization_type'],
-                    'organization_category' => $application['organization_category'] ?? '',
-                    'mission' => $application['mission'] ?? '',
-                    'vision' => $application['vision'] ?? '',
-                    'objectives' => $application['objectives'] ?? '',
-                    'founding_date' => $application['founding_date'] ?? null,
-                    'contact_email' => $application['contact_email'],
-                    'contact_phone' => $application['contact_phone'],
-                    'is_active' => 0,
-                    'user_id' => null,
-                    'current_members' => $application['current_members'] ?? 0,
-                    'created_at' => $application['submitted_at']
-                ];
-            }
-        } else {
-            // This is an organization ID, fetch organization details
-            $organization = $db->table('organizations')
-                ->where('id', $id)
-                ->get()
-                ->getRowArray();
-
-            if (!$organization) {
-                return redirect()->to('/admin/dashboard')->with('error', 'Organization not found');
-            }
-
-            // Find related application
-            $application = $db->table('organization_applications')
-                ->where('organization_name', $organization['organization_name'])
-                ->where('status', 'approved')
-                ->orderBy('reviewed_at', 'DESC')
-                ->get()
-                ->getRowArray();
+        if (!$organization) {
+            return redirect()->to('/admin/dashboard')->with('error', 'Organization not found');
         }
+
+        // Find related application
+        $application = $db->table('organization_applications')
+            ->where('organization_name', $organization['organization_name'])
+            ->where('status', 'approved')
+            ->orderBy('reviewed_at', 'DESC')
+            ->get()
+            ->getRowArray();
 
         // Get advisor information (from application)
         $advisor = null;
@@ -1050,7 +1159,7 @@ class Login extends BaseController
             'officers' => $officers,
             'files' => $files,
             'user' => $user,
-            'isPending' => $isPending,
+            'isPending' => false,
             'stats' => [
                 'events' => $eventsCount,
                 'announcements' => $announcementsCount,
@@ -1059,6 +1168,41 @@ class Login extends BaseController
             ],
             'returnTo' => $returnTo
         ];
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $viewedNotifications = session()->get('viewed_notifications') ?? [];
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo,
+                'is_viewed' => in_array($app['id'], $viewedNotifications)
+            ];
+        }
+        $data['pending_organizations'] = $pendingOrgsData;
 
         return view('admin/organization_details', $data);
     }
@@ -1108,25 +1252,45 @@ class Login extends BaseController
 
         // Get file extension
         $extension = strtolower(pathinfo($file['file_name'], PATHINFO_EXTENSION));
+        $mimeType = $file['mime_type'] ?? mime_content_type($filePath);
+        
+        // Check if file is an image
+        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']) || 
+                   strpos($mimeType, 'image/') === 0;
+        
+        // For images, serve directly inline so they can be viewed in browser
+        if ($isImage) {
+            // Clear any previous output
+            ob_clean();
+            
+            // Set headers directly to ensure they're sent
+            header('Content-Type: ' . $mimeType);
+            header('Content-Disposition: inline; filename="' . addslashes($file['file_name']) . '"');
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: private, max-age=3600');
+            
+            // Read and output file content
+            readfile($filePath);
+            exit;
+        }
         
         // For PDF files, serve directly with inline display
         if ($extension === 'pdf') {
-            $this->response->setHeader('Content-Type', 'application/pdf');
-            $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
-            $this->response->setHeader('Content-Length', filesize($filePath));
-            $this->response->setHeader('Cache-Control', 'private, max-age=3600');
-            return $this->response->sendFile($filePath);
+            // Clear any previous output
+            ob_clean();
+            
+            // Set headers directly to ensure they're sent
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline; filename="' . addslashes($file['file_name']) . '"');
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: private, max-age=3600');
+            
+            // Read and output file content
+            readfile($filePath);
+            exit;
         }
 
-        // For DOC/DOCX files, try to serve directly first
-        // If browser can't display, user can download
-        $mimeType = $file['mime_type'] ?? mime_content_type($filePath);
-        $this->response->setHeader('Content-Type', $mimeType);
-        $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
-        $this->response->setHeader('Content-Length', filesize($filePath));
-        $this->response->setHeader('Cache-Control', 'private, max-age=3600');
-        
-        // For DOC/DOCX, return view with iframe that tries to display the file
+        // For DOC/DOCX and other files, return view with iframe that tries to display the file
         // If browser can't display, it will offer download
         $data = [
             'file' => $file,
@@ -1176,14 +1340,61 @@ class Login extends BaseController
             return $this->response->setStatusCode(404)->setBody('File not found on server');
         }
 
-        // Serve the file
+        // Serve the file with download disposition
         $mimeType = $file['mime_type'] ?? mime_content_type($filePath);
-        $this->response->setHeader('Content-Type', $mimeType);
-        $this->response->setHeader('Content-Disposition', 'inline; filename="' . $file['file_name'] . '"');
-        $this->response->setHeader('Content-Length', filesize($filePath));
-        $this->response->setHeader('Cache-Control', 'private, max-age=3600');
         
-        return $this->response->sendFile($filePath);
+        // Clear any previous output
+        ob_clean();
+        
+        // Set headers directly to ensure they're sent
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: attachment; filename="' . addslashes($file['file_name']) . '"');
+        header('Content-Length: ' . filesize($filePath));
+        header('Cache-Control: private, max-age=3600');
+        
+        // Read and output file content
+        readfile($filePath);
+        exit;
+    }
+
+    /**
+     * Mark notification as read
+     */
+    public function markNotificationRead()
+    {
+        if (!session()->get('is_admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ])->setStatusCode(401);
+        }
+
+        $orgId = $this->request->getPost('org_id');
+        
+        if (!$orgId) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Organization ID is required'
+            ]);
+        }
+
+        // Get viewed notifications from session
+        $viewedNotifications = session()->get('viewed_notifications') ?? [];
+        
+        // Add to viewed notifications if not already there
+        if (!in_array($orgId, $viewedNotifications)) {
+            $viewedNotifications[] = $orgId;
+            session()->set('viewed_notifications', $viewedNotifications);
+            
+            // Update unread count
+            $unreadCount = max(0, (session()->get('unread_notifications_count') ?? 0) - 1);
+            session()->set('unread_notifications_count', $unreadCount);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'unread_count' => session()->get('unread_notifications_count') ?? 0
+        ]);
     }
 
     /**

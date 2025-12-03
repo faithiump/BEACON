@@ -3,32 +3,38 @@
  * Admin Top Bar
  */
 $pending_organizations = $pending_organizations ?? [];
+$unread_count = session()->get('unread_notifications_count') ?? 0;
+// Filter to only show unread notifications
+$unread_organizations = array_filter($pending_organizations, function($org) {
+    return !isset($org['is_viewed']) || !$org['is_viewed'];
+});
 ?>
 <div class="admin-topbar">
     <div class="topbar-left">
-        <button class="search-btn" id="searchBtn">
-            <i class="fas fa-search"></i>
-        </button>
-        <input type="text" class="topbar-search" placeholder="Search..." id="topbarSearch">
+        <img src="<?= base_url('assets/images/beacon-logo-text-v1.png') ?>" alt="BEACON" class="topbar-title-image" style="height: 30px;">
     </div>
     
     <div class="topbar-right">
         <div class="notification-wrapper">
             <button class="topbar-icon-btn" id="notificationBtn">
                 <i class="fas fa-bell"></i>
-                <?php if (count($pending_organizations) > 0): ?>
-                    <span class="icon-badge"><?= count($pending_organizations) ?></span>
+                <?php if ($unread_count > 0): ?>
+                    <span class="icon-badge" id="notificationBadge"><?= $unread_count ?></span>
                 <?php endif; ?>
             </button>
             <div class="notification-dropdown" id="notificationDropdown">
                 <div class="notification-header">
                     <h3>Notifications</h3>
-                    <span class="notification-count"><?= count($pending_organizations) ?> new</span>
+                    <span class="notification-count" id="notificationCount"><?= $unread_count ?> new</span>
                 </div>
                 <div class="notification-list">
                     <?php if (!empty($pending_organizations)): ?>
                         <?php foreach (array_slice($pending_organizations, 0, 5) as $org): ?>
-                            <div class="notification-item" onclick="window.location.href='#organizations'">
+                            <?php $isUnread = !isset($org['is_viewed']) || !$org['is_viewed']; ?>
+                            <div class="notification-item <?= $isUnread ? 'unread' : '' ?>" 
+                                 data-org-id="<?= $org['id'] ?>"
+                                 onclick="markNotificationRead(<?= $org['id'] ?>); window.location.href='<?= base_url('admin/organizations/pending/view/' . $org['id']) ?>'" 
+                                 style="cursor: pointer;">
                                 <div class="notification-icon organization">
                                     <i class="fas fa-building"></i>
                                 </div>
@@ -45,74 +51,21 @@ $pending_organizations = $pending_organizations ?? [];
                 </div>
             </div>
         </div>
-        
-        <div class="message-wrapper">
-            <button class="topbar-icon-btn">
-                <i class="fas fa-envelope"></i>
-                <span class="icon-badge">4</span>
-            </button>
-        </div>
-        
-        <div class="user-menu">
-            <button class="user-avatar-btn" id="userMenuBtn">
-                <div class="user-avatar">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-            </button>
-            <div class="user-dropdown" id="userDropdown">
-                <div class="user-info">
-                    <div class="user-name"><?= esc(session()->get('admin_user')) ?></div>
-                    <div class="user-role">Administrator</div>
-                </div>
-                <div class="user-menu-items">
-                    <a href="#" class="user-menu-item">
-                        <i class="fas fa-user"></i> Profile
-                    </a>
-                    <a href="#" class="user-menu-item">
-                        <i class="fas fa-cog"></i> Settings
-                    </a>
-                    <a href="<?= base_url('admin/logout') ?>" class="user-menu-item">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
-<link rel="stylesheet" href="<?= base_url('assets/css/admin-topbar.css') ?>" type="text/css">
+<link rel="stylesheet" href="<?= base_url('assets/css/admin/topbar.css') ?>" type="text/css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const notificationBtn = document.getElementById('notificationBtn');
     const notificationDropdown = document.getElementById('notificationDropdown');
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userDropdown = document.getElementById('userDropdown');
-    const searchBtn = document.getElementById('searchBtn');
-    const topbarSearch = document.getElementById('topbarSearch');
     
     // Notification dropdown
     if (notificationBtn && notificationDropdown) {
         notificationBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             notificationDropdown.classList.toggle('active');
-            if (userDropdown) userDropdown.classList.remove('active');
-        });
-    }
-    
-    // User menu dropdown
-    if (userMenuBtn && userDropdown) {
-        userMenuBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userDropdown.classList.toggle('active');
-            if (notificationDropdown) notificationDropdown.classList.remove('active');
-        });
-    }
-    
-    // Search toggle
-    if (searchBtn && topbarSearch) {
-        searchBtn.addEventListener('click', function() {
-            topbarSearch.focus();
         });
     }
     
@@ -121,10 +74,61 @@ document.addEventListener('DOMContentLoaded', function() {
         if (notificationDropdown && !notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
             notificationDropdown.classList.remove('active');
         }
-        if (userDropdown && !userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-            userDropdown.classList.remove('active');
-        }
     });
 });
+
+// Mark notification as read
+function markNotificationRead(orgId) {
+    // Mark as read via AJAX
+    fetch('<?= base_url('admin/notifications/mark-read') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'org_id=' + orgId
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove unread class from notification item
+            const notifItem = document.querySelector(`.notification-item[data-org-id="${orgId}"]`);
+            if (notifItem) {
+                notifItem.classList.remove('unread');
+            }
+            
+            // Update badge count
+            updateNotificationBadge();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+// Update notification badge count
+function updateNotificationBadge() {
+    const unreadItems = document.querySelectorAll('.notification-item.unread');
+    const badge = document.getElementById('notificationBadge');
+    const countSpan = document.getElementById('notificationCount');
+    const unreadCount = unreadItems.length;
+    
+    if (unreadCount > 0) {
+        if (badge) {
+            badge.textContent = unreadCount;
+            badge.style.display = 'flex';
+        }
+        if (countSpan) {
+            countSpan.textContent = unreadCount + ' new';
+        }
+    } else {
+        if (badge) {
+            badge.style.display = 'none';
+        }
+        if (countSpan) {
+            countSpan.textContent = '0 new';
+        }
+    }
+}
 </script>
 

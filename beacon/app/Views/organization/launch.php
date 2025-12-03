@@ -195,10 +195,10 @@
 
                             <div class="form-group form-group-half">
                                 <label for="password_confirm">Confirm Password <span class="required">*</span></label>
-                                <div style="position: relative;">
+                                <div class="password-wrapper">
                                     <input type="password" name="password_confirm" id="password_confirm" class="form-control" placeholder="Confirm your password" required minlength="8">
-                                    <label style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.875rem; color: #666;">
-                                        <input type="checkbox" id="show_password_confirm" style="cursor: pointer;">
+                                    <label class="password-toggle" for="show_password_confirm">
+                                        <input type="checkbox" id="show_password_confirm">
                                         <span>Show</span>
                                     </label>
                                 </div>

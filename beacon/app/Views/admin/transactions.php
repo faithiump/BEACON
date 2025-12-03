@@ -6,7 +6,7 @@
     <title>All Transactions - Admin - BEACON</title>
     <?php helper('url'); ?>
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>" type="text/css">
+    <link rel="stylesheet" href="<?= base_url('assets/css/admin/dashboard.css') ?>" type="text/css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">

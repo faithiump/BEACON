@@ -1,4 +1,8 @@
 /* Admin Top Bar Styles */
+* {
+    font-family: Helvetica, Arial, sans-serif;
+}
+
 .admin-topbar {
     position: fixed;
     top: 0;
@@ -22,9 +26,25 @@
 .topbar-left {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     flex: 1;
-    max-width: 500px;
+    max-width: 600px;
+}
+
+.topbar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-weight: bold;
+    color: #1e293b;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.topbar-title-image {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+    display: block;
 }
 
 .search-btn {
@@ -148,7 +168,7 @@
 }
 
 .notification-count {
-    background: #7c3aed;
+    background: #35283f;
     color: #ffffff;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
@@ -181,6 +201,15 @@
     background: #f8fafc;
 }
 
+.notification-item.unread {
+    background: #f0f9ff;
+    border-left: 3px solid #3b82f6;
+}
+
+.notification-item.unread:hover {
+    background: #e0f2fe;
+}
+
 .notification-icon {
     width: 40px;
     height: 40px;
@@ -194,7 +223,7 @@
 
 .notification-icon.organization {
     background: rgba(55, 20, 80, 0.15);
-    color: #7c3aed;
+    color: #35283f;
 }
 
 .notification-content {
@@ -237,7 +266,7 @@
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #35283f 0%, #35283f 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
