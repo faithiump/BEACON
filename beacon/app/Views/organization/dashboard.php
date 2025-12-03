@@ -1778,7 +1778,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        const baseUrl = '<?= base_url() ?>';
+        const baseUrl = <?= json_encode(base_url()) ?>;
         
         // Navigation
         document.querySelectorAll('.nav-link, .mobile-nav-link, .dropdown-item[data-section]').forEach(link => {
@@ -3140,11 +3140,393 @@
             });
         });
 
-        // Search functionality
-        document.getElementById('globalSearch').addEventListener('input', function(e) {
-            const query = e.target.value.toLowerCase();
-            // Add search logic here
-        });
+        // Global Search Functionality
+        function initializeGlobalSearch() {
+            const searchInput = document.getElementById('globalSearch');
+            if (!searchInput) {
+                return;
+            }
+
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim().toLowerCase();
+                
+                // Debounce search to avoid too many searches
+                searchTimeout = setTimeout(() => {
+                    performGlobalSearch(query);
+                }, 300);
+            });
+
+            // Clear search on Escape key
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    performGlobalSearch('');
+                }
+            });
+        }
+
+        function performGlobalSearch(query) {
+            if (!query) {
+                // Show all items when search is cleared
+                showAllItems();
+                return;
+            }
+
+            // Search in different sections
+            const eventsFound = searchEvents(query);
+            const announcementsFound = searchAnnouncements(query);
+            const feedPostsFound = searchFeedPosts(query);
+            const productsFound = searchProducts(query);
+            const membersFound = searchMembers(query);
+            const reservationsFound = searchReservations(query);
+            const forumPostsFound = searchForumPosts(query);
+
+            // Show general "not found" message if nothing is found in any section
+            const totalFound = eventsFound + announcementsFound + feedPostsFound + productsFound + membersFound + reservationsFound + forumPostsFound;
+            showGeneralNotFound(query, totalFound);
+        }
+
+        function showGeneralNotFound(query, totalFound) {
+            // Remove existing general not found message
+            const existing = document.querySelector('.general-empty-state-search');
+            if (existing) {
+                existing.remove();
+            }
+
+            // Show general "not found" message if nothing found in any section
+            if (totalFound === 0 && query) {
+                const activeSection = document.querySelector('.dashboard-section.active');
+                if (activeSection) {
+                    const generalEmpty = document.createElement('div');
+                    generalEmpty.className = 'general-empty-state-search';
+                    generalEmpty.style.cssText = 'text-align: center; padding: 4rem 2rem; color: var(--gray-500); margin: 2rem 0;';
+                    generalEmpty.innerHTML = `
+                        <i class="fas fa-search" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--gray-600);">No results found</h3>
+                        <p style="font-size: 0.9375rem;">No content found matching "<strong>${query}</strong>"</p>
+                    `;
+                    
+                    let sectionContent = activeSection.querySelector('.feed-main') ||
+                                       activeSection.querySelector('.events-grid') ||
+                                       activeSection.querySelector('.announcements-grid') ||
+                                       activeSection.querySelector('.products-grid') ||
+                                       activeSection.querySelector('.members-table-container') ||
+                                       activeSection.querySelector('.payments-grid') ||
+                                       activeSection.querySelector('#forumPostsList') ||
+                                       activeSection.querySelector('div:first-child');
+                    
+                    if (sectionContent) {
+                        sectionContent.insertBefore(generalEmpty, sectionContent.firstChild);
+                    } else {
+                        activeSection.insertBefore(generalEmpty, activeSection.firstChild);
+                    }
+                }
+            }
+        }
+
+        function showAllItems() {
+            // Show all events
+            const eventCards = document.querySelectorAll('.event-card, .feed-post.event-post-card');
+            eventCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Show all announcements
+            const announcementCards = document.querySelectorAll('.announcement-card, .feed-post.announcement-post');
+            announcementCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Show all feed posts
+            const feedPosts = document.querySelectorAll('.feed-post');
+            feedPosts.forEach(post => {
+                post.style.display = '';
+            });
+
+            // Show all products
+            const productCards = document.querySelectorAll('.product-card');
+            productCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Show all members
+            const memberRows = document.querySelectorAll('#membersTable tbody tr');
+            memberRows.forEach(row => {
+                row.style.display = '';
+            });
+
+            // Show all reservations
+            const reservationCards = document.querySelectorAll('.payment-card');
+            reservationCards.forEach(card => {
+                card.style.display = '';
+            });
+
+            // Show all forum posts
+            const forumPosts = document.querySelectorAll('.forum-post');
+            forumPosts.forEach(post => {
+                post.style.display = '';
+            });
+
+            // Hide empty states
+            const emptyStates = document.querySelectorAll('.empty-state-search, .general-empty-state-search');
+            emptyStates.forEach(state => {
+                state.remove();
+            });
+        }
+
+        function searchFeedPosts(query) {
+            const feedPosts = document.querySelectorAll('.feed-post');
+            let foundCount = 0;
+
+            feedPosts.forEach(post => {
+                // Skip if it's already handled by announcement search
+                if (post.classList.contains('announcement-post')) {
+                    return;
+                }
+
+                // Get title from event posts
+                const title = (post.querySelector('.event-preview-info h3')?.textContent || 
+                              post.querySelector('h3')?.textContent || '').toLowerCase();
+                // Get content
+                const content = (post.querySelector('.post-text')?.textContent || 
+                                post.querySelector('p')?.textContent || '').toLowerCase();
+                // Get org name
+                const orgName = (post.querySelector('.post-author-name')?.textContent || '').toLowerCase();
+                // Get location from event preview
+                const location = (post.querySelector('.event-preview-info p')?.textContent || '').toLowerCase();
+                
+                const matches = title.includes(query) || 
+                               content.includes(query) || 
+                               orgName.includes(query) ||
+                               location.includes(query);
+
+                if (matches) {
+                    post.style.display = '';
+                    foundCount++;
+                } else {
+                    post.style.display = 'none';
+                }
+            });
+
+            return foundCount;
+        }
+
+        function searchEvents(query) {
+            const eventCards = document.querySelectorAll('.event-card, .feed-post.event-post-card');
+            let foundCount = 0;
+
+            eventCards.forEach(card => {
+                // Get title
+                const title = (card.querySelector('.event-card-body h3')?.textContent || 
+                              card.querySelector('.event-preview-info h3')?.textContent ||
+                              card.querySelector('h3')?.textContent || '').toLowerCase();
+                // Get description
+                const description = (card.querySelector('.event-card-body p')?.textContent || '').toLowerCase();
+                // Get location
+                const locationItems = card.querySelectorAll('.info-item, .event-preview-info p');
+                let location = '';
+                locationItems.forEach(item => {
+                    if (item.querySelector('.fa-map-marker-alt, .fa-location-dot') || item.textContent.includes('📍')) {
+                        location = (item.querySelector('span')?.textContent || item.textContent || '').toLowerCase();
+                    }
+                });
+                
+                const matches = title.includes(query) || 
+                               description.includes(query) || 
+                               location.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for events
+            const eventsGrid = document.querySelector('.events-grid');
+            if (eventsGrid && query) {
+                let emptyState = eventsGrid.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No events found matching "<strong>' + query + '</strong>"</p>';
+                    eventsGrid.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
+
+        function searchAnnouncements(query) {
+            const announcementCards = document.querySelectorAll('.announcement-card, .feed-post.announcement-post');
+            let foundCount = 0;
+
+            announcementCards.forEach(card => {
+                // Get title
+                const title = (card.querySelector('h3')?.textContent || 
+                              card.querySelector('.post-title')?.textContent || '').toLowerCase();
+                // Get content
+                const content = (card.querySelector('p')?.textContent || 
+                                card.querySelector('.post-text')?.textContent || '').toLowerCase();
+                
+                const matches = title.includes(query) || 
+                               content.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for announcements
+            const announcementsGrid = document.querySelector('.announcements-grid');
+            if (announcementsGrid && query) {
+                let emptyState = announcementsGrid.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No announcements found matching "<strong>' + query + '</strong>"</p>';
+                    announcementsGrid.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
+
+        function searchProducts(query) {
+            const productCards = document.querySelectorAll('.product-card');
+            let foundCount = 0;
+
+            productCards.forEach(card => {
+                const name = (card.querySelector('h3')?.textContent || '').toLowerCase();
+                const description = (card.querySelector('.product-desc')?.textContent || '').toLowerCase();
+                const price = (card.querySelector('.price')?.textContent || '').toLowerCase();
+                
+                const matches = name.includes(query) || 
+                               description.includes(query) || 
+                               price.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for products
+            const productsGrid = document.querySelector('#productsGrid, .products-grid');
+            if (productsGrid && query) {
+                let emptyState = productsGrid.querySelector('.empty-state-search');
+                if (foundCount === 0 && !emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state-search';
+                    emptyState.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);';
+                    emptyState.innerHTML = '<i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p>No products found matching "<strong>' + query + '</strong>"</p>';
+                    productsGrid.appendChild(emptyState);
+                } else if (foundCount > 0 && emptyState) {
+                    emptyState.remove();
+                }
+            }
+            
+            return foundCount;
+        }
+
+        function searchMembers(query) {
+            const memberRows = document.querySelectorAll('#membersTable tbody tr');
+            let foundCount = 0;
+
+            memberRows.forEach(row => {
+                const name = (row.querySelector('strong')?.textContent || '').toLowerCase();
+                const email = (row.querySelector('span')?.textContent || '').toLowerCase();
+                const studentId = (row.querySelectorAll('td')[1]?.textContent || '').toLowerCase();
+                const course = (row.querySelectorAll('td')[2]?.textContent || '').toLowerCase();
+                const status = (row.querySelector('.status-badge')?.textContent || '').toLowerCase();
+                
+                const matches = name.includes(query) || 
+                               email.includes(query) || 
+                               studentId.includes(query) ||
+                               course.includes(query) ||
+                               status.includes(query);
+
+                if (matches) {
+                    row.style.display = '';
+                    foundCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            return foundCount;
+        }
+
+        function searchReservations(query) {
+            const reservationCards = document.querySelectorAll('.payment-card');
+            let foundCount = 0;
+
+            reservationCards.forEach(card => {
+                const studentName = (card.querySelector('.payment-student-name')?.textContent || 
+                                    card.querySelector('h3')?.textContent || '').toLowerCase();
+                const productName = (card.querySelector('.payment-product-name')?.textContent || '').toLowerCase();
+                const amount = (card.querySelector('.payment-amount')?.textContent || '').toLowerCase();
+                const status = (card.querySelector('.payment-status')?.textContent || 
+                               card.querySelector('.status-badge')?.textContent || '').toLowerCase();
+                
+                const matches = studentName.includes(query) || 
+                               productName.includes(query) || 
+                               amount.includes(query) ||
+                               status.includes(query);
+
+                if (matches) {
+                    card.style.display = '';
+                    foundCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            return foundCount;
+        }
+
+        function searchForumPosts(query) {
+            const forumPosts = document.querySelectorAll('.forum-post');
+            let foundCount = 0;
+
+            forumPosts.forEach(post => {
+                const title = (post.querySelector('.forum-post-title')?.textContent || 
+                              post.querySelector('h3')?.textContent || '').toLowerCase();
+                const content = (post.querySelector('.forum-post-content')?.textContent || 
+                                post.querySelector('p')?.textContent || '').toLowerCase();
+                const author = (post.querySelector('.forum-post-author')?.textContent || '').toLowerCase();
+                const category = (post.querySelector('.forum-post-category')?.textContent || '').toLowerCase();
+                
+                const matches = title.includes(query) || 
+                               content.includes(query) || 
+                               author.includes(query) ||
+                               category.includes(query);
+
+                if (matches) {
+                    post.style.display = '';
+                    foundCount++;
+                } else {
+                    post.style.display = 'none';
+                }
+            });
+
+            return foundCount;
+        }
 
         // Reaction functions (same as student dashboard)
         const reactionIcons = {
@@ -3603,6 +3985,9 @@
 
         // Track views when announcements and events are displayed
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize global search
+            initializeGlobalSearch();
+            
             // Track announcement views
             const announcementPosts = document.querySelectorAll('.feed-post[data-announcement-id]');
             announcementPosts.forEach(post => {

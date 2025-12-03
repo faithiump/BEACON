@@ -78,16 +78,6 @@
                                 <h4>Quick Actions</h4>
                             </div>
                             <div class="quick-actions-grid">
-                                <!-- Cart Action -->
-                                <div class="quick-action-item" id="cartActionBtn">
-                                    <div class="quick-action-icon cart">
-                                        <i class="fas fa-shopping-cart"></i>
-                                        <span class="item-badge" id="cartCount">0</span>
-                                    </div>
-                                    <span class="quick-action-label">My Cart</span>
-                                    <span class="quick-action-desc">View your items</span>
-                                </div>
-                                
                                 <!-- Notifications Action -->
                                 <div class="quick-action-item" id="notificationActionBtn">
                                     <div class="quick-action-icon notification">
@@ -1034,10 +1024,10 @@
                                     <div class="product-footer">
                                         <span class="product-price">₱<?= esc($product['price']) ?></span>
                                         <button class="btn-add-cart" 
-                                                onclick="addToCart(<?= $product['id'] ?>)" 
+                                                onclick="createReservation(<?= $product['id'] ?>)" 
                                                 <?= $product['status'] === 'out_of_stock' || $product['stock'] <= 0 ? 'disabled' : '' ?>
-                                                title="<?= $product['status'] === 'out_of_stock' || $product['stock'] <= 0 ? 'Out of Stock' : 'Add to Cart' ?>">
-                                            <i class="fas fa-cart-plus"></i>
+                                                title="<?= $product['status'] === 'out_of_stock' || $product['stock'] <= 0 ? 'Out of Stock' : 'Reserve Product' ?>">
+                                            <i class="fas fa-calendar-check"></i> Reserve
                                         </button>
                                     </div>
                                     <?php if($product['stock'] > 0 && $product['stock'] <= 10): ?>
@@ -1446,29 +1436,6 @@
         </main>
     </div>
 
-    <!-- Cart Sidebar -->
-    <div class="cart-sidebar" id="cartSidebar">
-        <div class="cart-header">
-            <h3><i class="fas fa-shopping-cart"></i> Your Cart</h3>
-            <button class="close-cart" id="closeCart"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="cart-items" id="cartItems">
-            <div class="empty-cart">
-                <i class="fas fa-shopping-bag"></i>
-                <p>Your cart is empty</p>
-            </div>
-        </div>
-        <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total</span>
-                <span class="total-value" id="cartTotal">₱0.00</span>
-            </div>
-            <button class="btn-checkout" id="checkoutBtn" onclick="proceedToCheckout()">
-                <i class="fas fa-credit-card"></i> Proceed to Checkout
-            </button>
-        </div>
-    </div>
-    <div class="cart-overlay" id="cartOverlay"></div>
 
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
@@ -2089,9 +2056,6 @@
         const quickActionsBtn = document.getElementById('quickActionsBtn');
         const quickActionsDropdown = document.getElementById('quickActionsDropdown');
         const notificationPanel = document.getElementById('notificationPanel');
-        const cartActionBtn = document.getElementById('cartActionBtn');
-        const cartSidebar = document.getElementById('cartSidebar');
-        const cartOverlay = document.getElementById('cartOverlay');
         const notificationActionBtn = document.getElementById('notificationActionBtn');
         const backToActions = document.getElementById('backToActions');
         const notifTabs = document.querySelectorAll('.notif-tab');
@@ -2108,17 +2072,6 @@
                     notificationPanel.classList.remove('active');
                 }
                 quickActionsDropdown.classList.remove('show-notifications');
-            });
-        }
-        
-        // Cart action - opens cart sidebar
-        if (cartActionBtn && cartSidebar && cartOverlay) {
-            cartActionBtn.addEventListener('click', () => {
-                if (quickActionsDropdown) {
-                    quickActionsDropdown.classList.remove('active');
-                }
-                cartSidebar.classList.add('open');
-                cartOverlay.classList.add('active');
             });
         }
         
@@ -2372,7 +2325,6 @@
             const unreadCount = notifications.filter(n => n.unread).length;
             const notifBadge = document.getElementById('notificationCount');
             const combinedBadge = document.getElementById('combinedBadge');
-            const cartCount = parseInt(document.getElementById('cartCount').textContent) || 0;
             
             if (notifBadge) {
                 notifBadge.textContent = unreadCount;
@@ -2380,7 +2332,8 @@
             }
             
             if (combinedBadge) {
-                const totalCount = unreadCount + cartCount;
+                const pendingPayments = parseInt(document.getElementById('pendingPaymentCount')?.textContent) || 0;
+                const totalCount = unreadCount + pendingPayments;
                 combinedBadge.textContent = totalCount;
                 combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
             }
@@ -2390,7 +2343,6 @@
             const unreadCount = document.querySelectorAll('.notification-item.unread').length;
             const notifBadge = document.getElementById('notificationCount');
             const combinedBadge = document.getElementById('combinedBadge');
-            const cartCount = parseInt(document.getElementById('cartCount').textContent) || 0;
             
             if (notifBadge) {
                 notifBadge.textContent = unreadCount;
@@ -2398,7 +2350,8 @@
             }
             
             if (combinedBadge) {
-                const totalCount = unreadCount + cartCount;
+                const pendingPayments = parseInt(document.getElementById('pendingPaymentCount')?.textContent) || 0;
+                const totalCount = unreadCount + pendingPayments;
                 combinedBadge.textContent = totalCount;
                 combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
             }
@@ -2421,11 +2374,10 @@
         
         function updateCombinedBadge() {
             const unreadCount = document.querySelectorAll('.notification-item.unread').length;
-            const cartCount = parseInt(document.getElementById('cartCount').textContent) || 0;
-            const pendingPayments = parseInt(document.getElementById('pendingPaymentCount').textContent) || 0;
+            const pendingPayments = parseInt(document.getElementById('pendingPaymentCount')?.textContent) || 0;
             const combinedBadge = document.getElementById('combinedBadge');
             
-            const totalCount = unreadCount + cartCount + pendingPayments;
+            const totalCount = unreadCount + pendingPayments;
             combinedBadge.textContent = totalCount;
             combinedBadge.style.display = totalCount > 0 ? 'flex' : 'none';
         }
@@ -2720,93 +2672,48 @@
         }
         
 
-        // Cart Functionality
-        const closeCart = document.getElementById('closeCart');
-        let cart = [];
-
-        if (closeCart) {
-            closeCart.addEventListener('click', closeCartSidebar);
-        }
-        if (cartOverlay) {
-            cartOverlay.addEventListener('click', closeCartSidebar);
-        }
-
-        function closeCartSidebar() {
-            if (cartSidebar) {
-                cartSidebar.classList.remove('open');
+        // Direct Reservation Functionality
+        function createReservation(productId) {
+            // Show confirmation dialog
+            if (!confirm('Do you want to reserve this product? The organization will review your reservation.')) {
+                return;
             }
-            if (cartOverlay) {
-                cartOverlay.classList.remove('active');
-            }
-        }
 
-        function addToCart(productId) {
-            fetch(baseUrl + 'student/cart/manage', {
+            fetch(baseUrl + 'student/reserve', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: `action=add&product_id=${productId}&quantity=1`
+                body: `product_id=${productId}&quantity=1`
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast(data.message, 'success');
-                    updateCartCount(data.cart_count);
-                    loadCartItems();
+                    showToast(data.message || 'Reservation created successfully! Waiting for organization approval.', 'success');
+                    // Reload pending reservations count if function exists
+                    if (typeof updatePendingReservationsCount === 'function') {
+                        setTimeout(() => {
+                            fetch(baseUrl + 'student/payments/pending', {
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.pending_payments) {
+                                    updatePendingReservationsCount(data.pending_payments.length);
+                                }
+                            })
+                            .catch(error => console.error('Error updating reservations count:', error));
+                        }, 500);
+                    }
+                } else {
+                    showToast(data.message || 'Failed to create reservation. Please try again.', 'error');
                 }
-            });
-        }
-
-        function updateCartCount(count) {
-            document.getElementById('cartCount').textContent = count;
-            updateCombinedBadge();
-        }
-
-        function loadCartItems() {
-            fetch(baseUrl + 'student/cart', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-            .then(response => response.json())
-            .then(data => {
-                renderCartItems(data.cart_items, data.total);
+            .catch(error => {
+                console.error('Error creating reservation:', error);
+                showToast('An error occurred. Please try again.', 'error');
             });
-        }
-
-        function renderCartItems(items, total) {
-            const cartItemsContainer = document.getElementById('cartItems');
-            
-            if (items.length === 0) {
-                cartItemsContainer.innerHTML = `
-                    <div class="empty-cart">
-                        <i class="fas fa-shopping-bag"></i>
-                        <p>Your cart is empty</p>
-                    </div>
-                `;
-            } else {
-                cartItemsContainer.innerHTML = items.map(item => `
-                    <div class="cart-item">
-                        <div class="cart-item-info">
-                            <h4>${item.name}</h4>
-                            <p>${item.organization}</p>
-                            <span class="cart-item-price">₱${item.price.toFixed(2)}</span>
-                        </div>
-                        <div class="cart-item-actions">
-                            <div class="quantity-control">
-                                <button onclick="updateCartQuantity(${item.product_id}, ${item.quantity - 1})">-</button>
-                                <span>${item.quantity}</span>
-                                <button onclick="updateCartQuantity(${item.product_id}, ${item.quantity + 1})">+</button>
-                            </div>
-                            <button class="remove-item" onclick="removeFromCart(${item.product_id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            
-            document.getElementById('cartTotal').textContent = `₱${total.toFixed(2)}`;
         }
 
         // Event Filter Functions
@@ -3790,9 +3697,6 @@
             showToast('Payment gateway coming soon!', 'info');
         }
 
-        function proceedToCheckout() {
-            showToast('Checkout page coming soon!', 'info');
-        }
 
         // Comment Functions
         function toggleComments(postId, postType, buttonElement) {
