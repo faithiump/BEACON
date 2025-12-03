@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 28, 2025 at 04:56 AM
+-- Generation Time: Dec 03, 2025 at 05:06 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -88,7 +88,9 @@ CREATE TABLE `announcements` (
 --
 
 INSERT INTO `announcements` (`announcement_id`, `org_id`, `title`, `content`, `priority`, `views`, `is_pinned`, `created_at`, `updated_at`) VALUES
-(3, 7, 'stress week', 'stress  na si mariel', 'normal', 76, 0, '2025-11-27 08:07:26', '2025-11-28 03:55:08');
+(3, 7, 'stress week', 'stress  na si mariel hehehe', 'high', 230, 0, '2025-11-27 08:07:26', '2025-12-04 00:05:20'),
+(4, 7, 'success', 'yeheyyyyyyyyyyyyyyyyyyy', 'high', 13, 0, '2025-12-03 22:54:37', '2025-12-04 00:05:21'),
+(5, 7, '-[0p[]', '[]\r\n\\]\'\r\n;\r\niloilo', 'normal', 11, 0, '2025-12-03 23:06:28', '2025-12-04 00:05:22');
 
 -- --------------------------------------------------------
 
@@ -103,7 +105,9 @@ CREATE TABLE `events` (
   `event_name` varchar(255) NOT NULL COMMENT 'Name/title of the event',
   `description` text NOT NULL COMMENT 'Detailed description of the event',
   `date` date NOT NULL COMMENT 'Event date',
+  `end_date` date DEFAULT NULL,
   `time` time NOT NULL COMMENT 'Event time',
+  `end_time` time DEFAULT NULL,
   `venue` varchar(255) NOT NULL COMMENT 'Location/venue where event will be held',
   `audience_type` enum('all','department','specific_students') NOT NULL DEFAULT 'all',
   `department_access` enum('ccs','cea','cthbm','chs','ctde','cas','gs') DEFAULT NULL,
@@ -112,7 +116,7 @@ CREATE TABLE `events` (
   `current_attendees` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Current number of registered attendees',
   `views` int(11) UNSIGNED NOT NULL DEFAULT 0,
   `image` varchar(255) DEFAULT NULL COMMENT 'Event image filename',
-  `status` enum('upcoming','active','completed','cancelled') NOT NULL DEFAULT 'upcoming' COMMENT 'Current status of the event',
+  `status` enum('upcoming','ongoing','ended','active','completed','cancelled') NOT NULL DEFAULT 'upcoming',
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -121,8 +125,10 @@ CREATE TABLE `events` (
 -- Dumping data for table `events`
 --
 
-INSERT INTO `events` (`event_id`, `org_id`, `org_type`, `event_name`, `description`, `date`, `time`, `venue`, `audience_type`, `department_access`, `student_access`, `max_attendees`, `current_attendees`, `views`, `image`, `status`, `created_at`, `updated_at`) VALUES
-(2, 7, 'academic', 'BYCIT', 'JNLJLIKLJHKLJHWQfgvngvngnn', '2025-11-28', '08:00:00', 'hmhmhvmhvmh', 'specific_students', 'ccs', '[\"3\",\"4\"]', 5, 2, 45, '1764232950_b0682b4018a6ca826894.png', 'upcoming', '2025-11-27 08:42:30', '2025-11-28 03:55:08');
+INSERT INTO `events` (`event_id`, `org_id`, `org_type`, `event_name`, `description`, `date`, `end_date`, `time`, `end_time`, `venue`, `audience_type`, `department_access`, `student_access`, `max_attendees`, `current_attendees`, `views`, `image`, `status`, `created_at`, `updated_at`) VALUES
+(2, 7, 'academic', 'BYCIT', 'JNLJLIKLJHKLJHWQfgvngvngnn', '2025-11-28', '2025-11-28', '13:00:00', '14:30:00', 'hmhmhvmhvmh', 'specific_students', 'ccs', '[\"3\",\"4\"]', 2, 2, 109, '1764232950_b0682b4018a6ca826894.png', 'ended', '2025-11-27 08:42:30', '2025-12-02 01:16:58'),
+(5, 7, 'academic', 'Finals', 'Final week', '2025-12-01', '2025-12-01', '23:20:00', '23:50:00', 'HOME', 'specific_students', 'ccs', '[\"4\"]', 1, 1, 33, '1764601678_e18051a6b900483c1800.jpg', 'ended', '2025-12-01 15:07:58', '2025-12-02 17:43:15'),
+(6, 7, 'academic', 'jkjhik', 'jijiofgfgfgfg', '2025-12-02', '2025-12-02', '01:20:00', '01:25:00', 'kioiui', 'specific_students', NULL, '[\"4\"]', 1, 1, 9, NULL, 'ended', '2025-12-02 01:17:51', '2025-12-02 17:43:15');
 
 -- --------------------------------------------------------
 
@@ -143,7 +149,9 @@ CREATE TABLE `event_attendees` (
 
 INSERT INTO `event_attendees` (`id`, `event_id`, `student_id`, `joined_at`) VALUES
 (1, 2, 4, '2025-11-27 11:28:02'),
-(2, 2, 3, '2025-11-27 19:29:47');
+(2, 2, 3, '2025-11-27 19:29:47'),
+(5, 5, 4, '2025-12-01 15:08:45'),
+(6, 6, 4, '2025-12-02 01:18:24');
 
 -- --------------------------------------------------------
 
@@ -407,7 +415,13 @@ INSERT INTO `post_comments` (`id`, `student_id`, `organization_id`, `commenter_t
 (26, NULL, 7, 'organization', 'forum_post', 6, NULL, 'brooo', '2025-11-28 03:29:04', '2025-11-28 03:29:04'),
 (27, NULL, 7, 'organization', 'forum_post', 6, NULL, 'yihh', '2025-11-28 03:32:54', '2025-11-28 03:32:54'),
 (28, NULL, 7, 'organization', 'forum_post', 5, NULL, 'ehh', '2025-11-28 03:33:04', '2025-11-28 03:33:04'),
-(29, NULL, 7, 'organization', 'forum_post', 6, NULL, 'omgg', '2025-11-28 03:36:15', '2025-11-28 03:36:15');
+(29, NULL, 7, 'organization', 'forum_post', 6, NULL, 'omgg', '2025-11-28 03:36:15', '2025-11-28 03:36:15'),
+(30, 4, NULL, 'student', 'event', 2, 14, 'jhjh', '2025-12-03 22:57:22', '2025-12-03 22:57:22'),
+(31, 4, NULL, 'student', 'event', 2, NULL, 'hjhj', '2025-12-03 22:57:27', '2025-12-03 22:57:27'),
+(32, 4, NULL, 'student', 'announcement', 3, 18, 'iuiku', '2025-12-03 22:59:00', '2025-12-03 22:59:00'),
+(33, 4, NULL, 'student', 'announcement', 5, NULL, 'gjhgjng', '2025-12-03 23:13:21', '2025-12-03 23:13:21'),
+(34, 4, NULL, 'student', 'announcement', 5, NULL, 'gjhgjhg', '2025-12-03 23:15:30', '2025-12-03 23:15:30'),
+(35, 4, NULL, 'student', 'announcement', 5, NULL, 'hhhhh', '2025-12-03 23:15:42', '2025-12-03 23:15:42');
 
 -- --------------------------------------------------------
 
@@ -424,14 +438,13 @@ CREATE TABLE `post_likes` (
   `post_id` int(11) UNSIGNED NOT NULL,
   `reaction_type` enum('like','love','care','haha','wow','sad','angry') NOT NULL DEFAULT 'like',
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `post_likes`
 --
 
 INSERT INTO `post_likes` (`id`, `student_id`, `organization_id`, `reactor_type`, `post_type`, `post_id`, `reaction_type`, `created_at`) VALUES
-(7, 4, NULL, 'student', 'announcement', 3, 'haha', '2025-11-27 08:35:08'),
 (8, 4, NULL, 'student', 'event', 2, 'love', '2025-11-27 08:48:26'),
 (9, 3, NULL, 'student', 'event', 2, 'love', '2025-11-27 19:30:00'),
 (11, 3, NULL, 'student', 'announcement', 3, 'love', '2025-11-27 19:30:46'),
@@ -441,7 +454,10 @@ INSERT INTO `post_likes` (`id`, `student_id`, `organization_id`, `reactor_type`,
 (15, NULL, 7, 'organization', 'forum_post', 6, 'love', '2025-11-28 03:32:50'),
 (17, 3, NULL, 'student', 'forum_post', 4, 'love', '2025-11-28 03:37:16'),
 (18, NULL, 7, 'organization', 'forum_post', 5, 'love', '2025-11-28 03:43:03'),
-(20, NULL, 7, 'organization', 'forum_post', 4, 'love', '2025-11-28 03:43:05');
+(20, NULL, 7, 'organization', 'forum_post', 4, 'love', '2025-11-28 03:43:05'),
+(21, 4, NULL, 'student', 'event', 4, 'care', '2025-12-01 13:46:03'),
+(22, 4, NULL, 'student', 'announcement', 3, 'haha', '2025-12-02 06:03:13'),
+(24, 4, NULL, 'student', 'announcement', 4, 'care', '2025-12-03 22:55:14');
 
 -- --------------------------------------------------------
 
@@ -463,6 +479,44 @@ CREATE TABLE `products` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `products`
+--
+
+INSERT INTO `products` (`product_id`, `org_id`, `product_name`, `description`, `price`, `stock`, `sold`, `sizes`, `image`, `status`, `created_at`, `updated_at`) VALUES
+(3, 7, 'SZSDDS', 'DFGDGFDGRTRE', 0.05, 1, 1, 'S', NULL, 'low_stock', '2025-12-02 19:22:31', '2025-12-03 22:20:10'),
+(4, 7, 'hkjh', 'hkjhkjgk', 1.00, 2, 1, 'S', NULL, 'low_stock', '2025-12-02 20:39:54', '2025-12-03 21:38:55');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `reservations`
+--
+
+CREATE TABLE `reservations` (
+  `reservation_id` int(11) UNSIGNED NOT NULL,
+  `student_id` int(11) UNSIGNED NOT NULL,
+  `org_id` int(11) UNSIGNED NOT NULL,
+  `product_id` int(11) UNSIGNED NOT NULL,
+  `product_name` varchar(255) NOT NULL,
+  `quantity` int(11) UNSIGNED NOT NULL DEFAULT 1,
+  `price` decimal(10,2) NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `status` enum('pending','confirmed','rejected','completed') NOT NULL DEFAULT 'pending',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `proof_image` varchar(255) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `reservations`
+--
+
+INSERT INTO `reservations` (`reservation_id`, `student_id`, `org_id`, `product_id`, `product_name`, `quantity`, `price`, `total_amount`, `status`, `payment_method`, `proof_image`, `notes`, `created_at`, `updated_at`) VALUES
+(2, 4, 7, 3, 'SZSDDS', 1, 0.05, 0.05, 'confirmed', NULL, NULL, NULL, '2025-12-03 22:09:14', '2025-12-03 22:20:10');
 
 -- --------------------------------------------------------
 
@@ -746,6 +800,16 @@ ALTER TABLE `products`
   ADD KEY `idx_org_status` (`org_id`,`status`);
 
 --
+-- Indexes for table `reservations`
+--
+ALTER TABLE `reservations`
+  ADD PRIMARY KEY (`reservation_id`),
+  ADD KEY `student_id` (`student_id`),
+  ADD KEY `org_id` (`org_id`),
+  ADD KEY `product_id` (`product_id`),
+  ADD KEY `status` (`status`);
+
+--
 -- Indexes for table `students`
 --
 ALTER TABLE `students`
@@ -812,19 +876,19 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `announcements`
 --
 ALTER TABLE `announcements`
-  MODIFY `announcement_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `announcement_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `event_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `event_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `event_attendees`
 --
 ALTER TABLE `event_attendees`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `event_interests`
@@ -878,19 +942,25 @@ ALTER TABLE `organization_officers`
 -- AUTO_INCREMENT for table `post_comments`
 --
 ALTER TABLE `post_comments`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `post_likes`
 --
 ALTER TABLE `post_likes`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `product_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `product_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `reservations`
+--
+ALTER TABLE `reservations`
+  MODIFY `reservation_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `students`
@@ -1002,6 +1072,14 @@ ALTER TABLE `post_comments`
 --
 ALTER TABLE `products`
   ADD CONSTRAINT `fk_products_organization` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `reservations`
+--
+ALTER TABLE `reservations`
+  ADD CONSTRAINT `reservations_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `reservations_ibfk_2` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `reservations_ibfk_3` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `students`
