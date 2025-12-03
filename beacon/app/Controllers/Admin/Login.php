@@ -201,12 +201,25 @@ class Login extends BaseController
         foreach ($approvedOrgs as $org) {
             $approvedDate = $approvedDates[$org['organization_name']] ?? $org['created_at'];
             
+            // Get member count
+            $memberCount = $db->table('student_organization_memberships')
+                ->where('org_id', $org['id'])
+                ->where('status', 'active')
+                ->countAllResults();
+            
+            // Get event count
+            $eventCount = $db->table('events')
+                ->where('org_id', $org['id'])
+                ->countAllResults();
+            
             $approvedOrgsData[] = [
                 'id' => $org['id'],
                 'name' => $org['organization_name'],
                 'category' => ucfirst(str_replace('_', ' ', $org['organization_category'])),
                 'status' => $org['is_active'] ? 'Approved' : 'Inactive',
-                'approved_date' => $approvedDate ? date('Y-m-d', strtotime($approvedDate)) : 'N/A'
+                'approved_date' => $approvedDate ? date('Y-m-d', strtotime($approvedDate)) : 'N/A',
+                'member_count' => $memberCount,
+                'event_count' => $eventCount
             ];
         }
 
@@ -372,6 +385,162 @@ class Login extends BaseController
         
         // Count pending organizations
         $pendingOrgsCount = count($pendingOrgsData);
+        
+        // Count total users (all roles)
+        $totalUsersCount = $db->table('users')->countAllResults();
+        
+        // Count total organizations (active)
+        $totalOrganizationsCount = $db->table('organizations')->where('is_active', 1)->countAllResults();
+        
+        // Get recent activity from database
+        $recentActivity = [];
+        
+        // Get recent organization registrations
+        $recentOrgs = $db->table('organization_applications')
+            ->select('organization_name, submitted_at, status')
+            ->orderBy('submitted_at', 'DESC')
+            ->limit(5)
+            ->get()
+            ->getResultArray();
+        
+        foreach ($recentOrgs as $org) {
+            $date = new \DateTime($org['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($date);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->i > 0) {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = 'Just now';
+            }
+            
+            $recentActivity[] = [
+                'type' => $org['status'] === 'pending' ? 'pending_org' : 'approved_org',
+                'title' => $org['status'] === 'pending' ? 'Organization pending approval' : 'Organization approved',
+                'description' => $org['organization_name'],
+                'time' => $timeAgo,
+                'created_at' => $org['submitted_at']
+            ];
+        }
+        
+        // Get recent student registrations
+        $recentStudents = $db->table('users u')
+            ->select('u.created_at, up.firstname, up.middlename, up.lastname')
+            ->join('user_profiles up', 'u.id = up.user_id', 'inner')
+            ->where('u.role', 'student')
+            ->orderBy('u.created_at', 'DESC')
+            ->limit(3)
+            ->get()
+            ->getResultArray();
+        
+        foreach ($recentStudents as $student) {
+            $fullName = trim(($student['firstname'] ?? '') . ' ' . ($student['middlename'] ?? '') . ' ' . ($student['lastname'] ?? ''));
+            $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'New Student';
+            
+            $date = new \DateTime($student['created_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($date);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->i > 0) {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = 'Just now';
+            }
+            
+            $recentActivity[] = [
+                'type' => 'new_student',
+                'title' => 'New student registered',
+                'description' => $fullName,
+                'time' => $timeAgo,
+                'created_at' => $student['created_at']
+            ];
+        }
+        
+        // Add recent comments to activity
+        foreach (array_slice($commentsData, 0, 2) as $comment) {
+            $recentActivity[] = [
+                'type' => 'comment',
+                'title' => 'New comment posted',
+                'description' => $comment['student_name'] . ' commented on ' . $comment['post_title'],
+                'time' => $comment['time_ago'],
+                'created_at' => $comment['created_at']
+            ];
+        }
+        
+        // Sort by created_at descending and limit to 5
+        usort($recentActivity, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+        $recentActivity = array_slice($recentActivity, 0, 5);
+
+        // Fetch transactions from database
+        $transactionData = [];
+        try {
+            $tables = $db->listTables();
+            if (in_array('reservations', $tables)) {
+                $reservations = $db->table('reservations r')
+                    ->select('r.*, 
+                             s.id as student_id, s.user_id as student_user_id,
+                             up.firstname, up.middlename, up.lastname,
+                             o.organization_name')
+                    ->join('students s', 's.id = r.student_id', 'inner')
+                    ->join('users u', 'u.id = s.user_id', 'inner')
+                    ->join('user_profiles up', 'up.user_id = u.id', 'left')
+                    ->join('organizations o', 'o.id = r.org_id', 'left')
+                    ->orderBy('r.created_at', 'DESC')
+                    ->limit(10)
+                    ->get()
+                    ->getResultArray();
+
+                foreach ($reservations as $reservation) {
+                    $fullName = trim(($reservation['firstname'] ?? '') . ' ' . ($reservation['middlename'] ?? '') . ' ' . ($reservation['lastname'] ?? ''));
+                    $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+                    
+                    // Determine transaction type
+                    $transactionType = 'Product Purchase';
+                    if (strpos(strtolower($reservation['product_name'] ?? ''), 'event') !== false) {
+                        $transactionType = 'Event Registration';
+                    } elseif (strpos(strtolower($reservation['product_name'] ?? ''), 'membership') !== false) {
+                        $transactionType = 'Membership Fee';
+                    }
+                    
+                    // Format status
+                    $statusClass = 'pending';
+                    $statusText = ucfirst($reservation['status']);
+                    if ($reservation['status'] === 'completed' || $reservation['status'] === 'confirmed') {
+                        $statusClass = 'success';
+                        $statusText = 'Paid';
+                    } elseif ($reservation['status'] === 'rejected') {
+                        $statusClass = 'rejected';
+                        $statusText = 'Rejected';
+                    }
+                    
+                    $transactionData[] = [
+                        'student_name' => $fullName,
+                        'transaction_type' => $transactionType,
+                        'amount' => number_format($reservation['total_amount'] ?? 0, 2),
+                        'organization_name' => $reservation['organization_name'] ?? 'N/A',
+                        'date' => $reservation['created_at'] ? date('Y-m-d', strtotime($reservation['created_at'])) : 'N/A',
+                        'status' => $reservation['status'],
+                        'status_class' => $statusClass,
+                        'status_text' => $statusText
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to fetch transactions for dashboard: ' . $e->getMessage());
+            $transactionData = [];
+        }
 
         $data = [
             'students' => $studentData,
@@ -381,10 +550,14 @@ class Login extends BaseController
             'approved_organizations' => $approvedOrgsData,
             'recent_comments' => $commentsData,
             'student_activity' => $activityData,
+            'recent_activity' => $recentActivity,
+            'transactions' => $transactionData,
             'stats' => [
                 'active_students' => $activeStudentsCount,
                 'approved_organizations' => $approvedOrgsCount,
-                'pending_organizations' => $pendingOrgsCount
+                'pending_organizations' => $pendingOrgsCount,
+                'total_users' => $totalUsersCount,
+                'total_organizations' => $totalOrganizationsCount
             ]
         ];
 
@@ -1139,8 +1312,645 @@ class Login extends BaseController
             return redirect()->to('/admin/login');
         }
 
-        // TODO: Fetch all users (students and organizations) from database
+        $db = \Config\Database::connect();
         
-        return view('admin/users');
+        // Fetch all users for User Management section (students and organizations)
+        $usersBuilder = $db->table('users u');
+        $usersBuilder->select('u.id as user_id, u.email, u.role, u.is_active, u.created_at,
+                              up.firstname, up.middlename, up.lastname,
+                              o.id as organization_id, o.organization_name');
+        $usersBuilder->join('user_profiles up', 'u.id = up.user_id', 'left');
+        $usersBuilder->join('organizations o', 'u.id = o.user_id', 'left');
+        $usersBuilder->orderBy('u.created_at', 'DESC');
+        $allUsers = $usersBuilder->get()->getResultArray();
+
+        // Format user data for display
+        $userData = [];
+        foreach ($allUsers as $user) {
+            // For organizations, use organization_name as Name
+            if ($user['role'] === 'organization' && !empty($user['organization_name'])) {
+                $displayName = $user['organization_name'];
+            } else {
+                // For students, use full name
+                $fullName = trim(($user['firstname'] ?? '') . ' ' . ($user['middlename'] ?? '') . ' ' . ($user['lastname'] ?? ''));
+                $displayName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+            }
+            
+            $userData[] = [
+                'id' => $user['user_id'],
+                'organization_id' => $user['organization_id'] ?? null,
+                'name' => $displayName,
+                'email' => $user['email'] ?? 'N/A',
+                'role' => ucfirst($user['role'] ?? 'N/A'),
+                'status' => $user['is_active'] ? 'Active' : 'Inactive',
+                'registration_date' => $user['created_at'] ? date('Y-m-d', strtotime($user['created_at'])) : 'N/A'
+            ];
+        }
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        $data = [
+            'users' => $userData,
+            'pending_organizations' => $pendingOrgsData
+        ];
+        
+        return view('admin/users', $data);
+    }
+
+    /**
+     * View all organizations
+     */
+    public function organizations()
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Fetch approved organizations (same logic as dashboard)
+        $approvedOrgs = $db->table('organizations o')
+            ->select('o.id, o.organization_name, o.organization_category, o.is_active, o.created_at')
+            ->where('o.is_active', 1)
+            ->orderBy('o.created_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Get approved dates from organization_applications
+        $approvedDates = [];
+        if (!empty($approvedOrgs)) {
+            $orgNames = array_column($approvedOrgs, 'organization_name');
+            $approvedApps = $db->table('organization_applications')
+                ->select('organization_name, reviewed_at')
+                ->whereIn('organization_name', $orgNames)
+                ->where('status', 'approved')
+                ->get()
+                ->getResultArray();
+            
+            foreach ($approvedApps as $app) {
+                $approvedDates[$app['organization_name']] = $app['reviewed_at'];
+            }
+        }
+
+        // Format approved organizations for display
+        $approvedOrgsData = [];
+        foreach ($approvedOrgs as $org) {
+            $approvedDate = $approvedDates[$org['organization_name']] ?? $org['created_at'];
+            
+            // Get member count
+            $memberCount = $db->table('student_organization_memberships')
+                ->where('org_id', $org['id'])
+                ->where('status', 'active')
+                ->countAllResults();
+            
+            // Get event count
+            $eventCount = $db->table('events')
+                ->where('org_id', $org['id'])
+                ->countAllResults();
+            
+            $approvedOrgsData[] = [
+                'id' => $org['id'],
+                'name' => $org['organization_name'],
+                'category' => ucfirst(str_replace('_', ' ', $org['organization_category'])),
+                'status' => $org['is_active'] ? 'Approved' : 'Inactive',
+                'approved_date' => $approvedDate ? date('Y-m-d', strtotime($approvedDate)) : 'N/A',
+                'member_count' => $memberCount,
+                'event_count' => $eventCount
+            ];
+        }
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        $data = [
+            'approved_organizations' => $approvedOrgsData,
+            'pending_organizations' => $pendingOrgsData
+        ];
+
+        return view('admin/organizations', $data);
+    }
+
+    /**
+     * View pending organization approvals
+     */
+    public function organizationsPending()
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Fetch pending organization applications
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Format pending applications for display
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        $data = [
+            'pending_organizations' => $pendingOrgsData
+        ];
+
+        return view('admin/organizations_pending', $data);
+    }
+
+    /**
+     * View all students
+     */
+    public function students()
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Fetch active students with their profiles and student info
+        $builder = $db->table('users u');
+        $builder->select('u.id as user_id, u.email, u.is_active, u.created_at, 
+                         up.firstname, up.middlename, up.lastname,
+                         s.id as student_id, s.course, s.department, s.in_organization, s.organization_name');
+        $builder->join('user_profiles up', 'u.id = up.user_id', 'inner');
+        $builder->join('students s', 'u.id = s.user_id', 'inner');
+        $builder->where('u.role', 'student');
+        $builder->where('u.is_active', 1);
+        $builder->orderBy('u.created_at', 'DESC');
+        $students = $builder->get()->getResultArray();
+
+        // Format student data for display
+        $studentData = [];
+        foreach ($students as $student) {
+            $fullName = trim(($student['firstname'] ?? '') . ' ' . ($student['middlename'] ?? '') . ' ' . ($student['lastname'] ?? ''));
+            $fullName = preg_replace('/\s+/', ' ', $fullName);
+            
+            $orgCount = ($student['in_organization'] === 'yes' && !empty($student['organization_name'])) ? 1 : 0;
+            $courseName = $this->getCourseName($student['course'] ?? '');
+            
+            $studentData[] = [
+                'id' => $student['user_id'],
+                'name' => $fullName ?: 'N/A',
+                'course' => $courseName ?: ($student['course'] ?? 'N/A'),
+                'status' => $student['is_active'] ? 'Active' : 'Inactive',
+                'org_count' => $orgCount,
+                'email' => $student['email'] ?? 'N/A'
+            ];
+        }
+
+        $totalStudentsCount = count($studentData);
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        $data = [
+            'students' => $studentData,
+            'total_students_count' => $totalStudentsCount,
+            'pending_organizations' => $pendingOrgsData
+        ];
+
+        return view('admin/students', $data);
+    }
+
+    /**
+     * View student activity
+     */
+    public function studentsActivity()
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Fetch student activity data with memberships and comment counts
+        $activityBuilder = $db->table('students s');
+        $activityBuilder->select('s.id as student_id, s.user_id, s.course,
+                                  up.firstname, up.middlename, up.lastname');
+        $activityBuilder->join('user_profiles up', 'up.user_id = s.user_id', 'inner');
+        $activityBuilder->join('users u', 'u.id = s.user_id', 'inner');
+        $activityBuilder->where('u.role', 'student');
+        $activityBuilder->where('u.is_active', 1);
+        $activityBuilder->orderBy('s.id', 'DESC');
+        $activityStudents = $activityBuilder->get()->getResultArray();
+
+        // Format activity data with memberships and metrics
+        $activityData = [];
+        foreach ($activityStudents as $student) {
+            $fullName = trim(($student['firstname'] ?? '') . ' ' . ($student['middlename'] ?? '') . ' ' . ($student['lastname'] ?? ''));
+            $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+            
+            $courseName = $this->getCourseName($student['course'] ?? '');
+            
+            // Get organization memberships
+            $memberships = $db->table('student_organization_memberships som')
+                ->select('o.organization_name')
+                ->join('organizations o', 'o.id = som.org_id', 'inner')
+                ->where('som.student_id', $student['student_id'])
+                ->where('som.status', 'active')
+                ->where('o.is_active', 1)
+                ->get()
+                ->getResultArray();
+            
+            $orgNames = array_column($memberships, 'organization_name');
+            
+            // Count comments
+            $commentCount = $db->table('post_comments')
+                ->where('student_id', $student['student_id'])
+                ->countAllResults();
+            
+            // Count event likes
+            $eventLikesCount = $db->table('post_likes')
+                ->where('student_id', $student['student_id'])
+                ->where('post_type', 'event')
+                ->countAllResults();
+            
+            $activityData[] = [
+                'student_name' => $fullName,
+                'course' => $courseName ?: ($student['course'] ?? 'N/A'),
+                'organizations' => $orgNames,
+                'comment_count' => $commentCount,
+                'event_likes_count' => $eventLikesCount
+            ];
+        }
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        $data = [
+            'student_activity' => $activityData,
+            'pending_organizations' => $pendingOrgsData
+        ];
+
+        return view('admin/students_activity', $data);
+    }
+
+    /**
+     * View all transactions
+     */
+    public function transactions()
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Check if reservations table exists
+        $transactionData = [];
+        try {
+            // First check if table exists
+            $tables = $db->listTables();
+            if (!in_array('reservations', $tables)) {
+                log_message('error', 'Reservations table does not exist');
+                $transactionData = [];
+            } else {
+                // Fetch all reservations (transactions) - match the pattern from ReservationModel
+                $reservations = $db->table('reservations r')
+                    ->select('r.*, 
+                             s.id as student_id, s.user_id as student_user_id,
+                             up.firstname, up.middlename, up.lastname,
+                             o.organization_name')
+                    ->join('students s', 's.id = r.student_id', 'inner')
+                    ->join('users u', 'u.id = s.user_id', 'inner')
+                    ->join('user_profiles up', 'up.user_id = u.id', 'left')
+                    ->join('organizations o', 'o.id = r.org_id', 'left')
+                    ->orderBy('r.created_at', 'DESC')
+                    ->get()
+                    ->getResultArray();
+
+                // Format transaction data
+                foreach ($reservations as $reservation) {
+                $fullName = trim(($reservation['firstname'] ?? '') . ' ' . ($reservation['middlename'] ?? '') . ' ' . ($reservation['lastname'] ?? ''));
+                $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+                
+                // Determine transaction type
+                $transactionType = 'Product Purchase';
+                if (strpos(strtolower($reservation['product_name'] ?? ''), 'event') !== false) {
+                    $transactionType = 'Event Registration';
+                } elseif (strpos(strtolower($reservation['product_name'] ?? ''), 'membership') !== false) {
+                    $transactionType = 'Membership Fee';
+                }
+                
+                // Format status
+                $statusClass = 'pending';
+                $statusText = ucfirst($reservation['status']);
+                if ($reservation['status'] === 'completed' || $reservation['status'] === 'confirmed') {
+                    $statusClass = 'success';
+                    $statusText = 'Paid';
+                } elseif ($reservation['status'] === 'rejected') {
+                    $statusClass = 'rejected';
+                    $statusText = 'Rejected';
+                }
+                
+                $transactionData[] = [
+                    'id' => $reservation['reservation_id'],
+                    'student_name' => $fullName,
+                    'transaction_type' => $transactionType,
+                    'product_name' => $reservation['product_name'] ?? 'N/A',
+                    'amount' => number_format($reservation['total_amount'] ?? 0, 2),
+                    'organization_name' => $reservation['organization_name'] ?? 'N/A',
+                    'date' => $reservation['created_at'] ? date('Y-m-d', strtotime($reservation['created_at'])) : 'N/A',
+                    'status' => $reservation['status'],
+                    'status_class' => $statusClass,
+                    'status_text' => $statusText,
+                    'payment_method' => $reservation['payment_method'] ?? 'N/A',
+                    'quantity' => $reservation['quantity'] ?? 1
+                ];
+                }
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist or query failed - return empty array
+            log_message('error', 'Transactions query failed: ' . $e->getMessage());
+            $transactionData = [];
+        }
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        $data = [
+            'transactions' => $transactionData,
+            'pending_organizations' => $pendingOrgsData
+        ];
+
+        return view('admin/transactions', $data);
+    }
+
+    /**
+     * View payments (completed/confirmed transactions)
+     */
+    public function transactionsPayments()
+    {
+        if (!session()->get('is_admin')) {
+            return redirect()->to('/admin/login');
+        }
+
+        $db = \Config\Database::connect();
+        
+        // Check if reservations table exists
+        $paymentData = [];
+        try {
+            // First check if table exists
+            $tables = $db->listTables();
+            if (!in_array('reservations', $tables)) {
+                log_message('error', 'Reservations table does not exist');
+                $paymentData = [];
+            } else {
+                // Fetch only completed/confirmed reservations (payments) - match the pattern from ReservationModel
+                $reservations = $db->table('reservations r')
+                    ->select('r.*, 
+                             s.id as student_id, s.user_id as student_user_id,
+                             up.firstname, up.middlename, up.lastname,
+                             o.organization_name')
+                    ->join('students s', 's.id = r.student_id', 'inner')
+                    ->join('users u', 'u.id = s.user_id', 'inner')
+                    ->join('user_profiles up', 'up.user_id = u.id', 'left')
+                    ->join('organizations o', 'o.id = r.org_id', 'left')
+                    ->whereIn('r.status', ['completed', 'confirmed'])
+                    ->orderBy('r.created_at', 'DESC')
+                    ->get()
+                    ->getResultArray();
+
+                // Format payment data
+                foreach ($reservations as $reservation) {
+                    $fullName = trim(($reservation['firstname'] ?? '') . ' ' . ($reservation['middlename'] ?? '') . ' ' . ($reservation['lastname'] ?? ''));
+                    $fullName = preg_replace('/\s+/', ' ', $fullName) ?: 'N/A';
+                    
+                    // Determine transaction type
+                    $transactionType = 'Product Purchase';
+                    if (strpos(strtolower($reservation['product_name'] ?? ''), 'event') !== false) {
+                        $transactionType = 'Event Registration';
+                    } elseif (strpos(strtolower($reservation['product_name'] ?? ''), 'membership') !== false) {
+                        $transactionType = 'Membership Fee';
+                    }
+                    
+                    $paymentData[] = [
+                        'id' => $reservation['reservation_id'],
+                        'student_name' => $fullName,
+                        'transaction_type' => $transactionType,
+                        'product_name' => $reservation['product_name'] ?? 'N/A',
+                        'amount' => number_format($reservation['total_amount'] ?? 0, 2),
+                        'organization_name' => $reservation['organization_name'] ?? 'N/A',
+                        'date' => $reservation['created_at'] ? date('Y-m-d', strtotime($reservation['created_at'])) : 'N/A',
+                        'payment_method' => $reservation['payment_method'] ?? 'N/A',
+                        'quantity' => $reservation['quantity'] ?? 1
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist or query failed - return empty array
+            log_message('error', 'Payments query failed: ' . $e->getMessage());
+            $paymentData = [];
+        }
+
+        // Fetch pending organizations for topbar
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->orderBy('submitted_at', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        $pendingOrgsData = [];
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo
+            ];
+        }
+
+        $data = [
+            'payments' => $paymentData,
+            'pending_organizations' => $pendingOrgsData
+        ];
+
+        return view('admin/transactions_payments', $data);
     }
 }

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - BEACON</title>
     <?php helper('url'); ?>
+    <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>" type="text/css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,111 +14,161 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <div class="header-content">
-                <div class="header-left">
-                    <div class="logo-placeholder">
-                        <span class="logo-text">BEACONS <strong>ADMIN</strong></span>
-                    </div>
-                    <h1 class="dashboard-title">Administrator Dashboard</h1>
-                </div>
-                <div class="header-right">
-                    <div class="notification-wrapper">
-                        <button class="notification-btn" id="notificationBtn">
-                            <i class="fas fa-bell"></i>
-                            <span class="notification-badge" id="notificationBadge"><?= isset($pending_organizations) ? count($pending_organizations) : 0 ?></span>
-                        </button>
-                        <div class="notification-dropdown" id="notificationDropdown">
-                            <div class="notification-header">
-                                <h3>Pending Organization Approvals</h3>
-                                <span class="notification-count"><?= isset($pending_organizations) ? count($pending_organizations) : 0 ?> new</span>
-                            </div>
-                            <div class="notification-list">
-                                <?php if (!empty($pending_organizations)): ?>
-                                    <?php foreach (array_slice($pending_organizations, 0, 3) as $org): ?>
-                                        <div class="notification-item" onclick="window.location.href='#organizations'">
-                                            <div class="notification-icon organization">
-                                                <i class="fas fa-building"></i>
-                                            </div>
-                                            <div class="notification-content">
-                                                <p class="notification-title">Organization Pending Approval</p>
-                                                <p class="notification-text"><?= esc($org['name']) ?></p>
-                                                <span class="notification-time"><?= esc($org['submitted_at']) ?></span>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div style="padding: 1rem; text-align: center; color: #64748b;">
-                                        No pending organizations
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="notification-footer">
-                                <a href="#organizations" class="view-all-link">View All Pending Organizations</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="admin-profile">
-                        <div class="profile-info">
-                            <span class="profile-name"><?= esc(session()->get('admin_user')) ?></span>
-                            <span class="profile-role">Administrator</span>
-                        </div>
-                        <div class="profile-avatar">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                    </div>
-                    <a href="<?= base_url('admin/logout') ?>" class="logout-btn" title="Logout">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="dashboard-main">
+        <!-- Sidebar -->
+        <?= view('admin/sidebar') ?>
+        
+        <!-- Main Content Area -->
+        <div class="dashboard-wrapper">
+            <!-- Top Bar -->
+            <?= view('admin/topbar', ['pending_organizations' => $pending_organizations ?? []]) ?>
+            
+            <!-- Main Content -->
+            <main class="dashboard-main">
             <?php if (session()->getFlashdata('success')): ?>
-                <div class="alert alert-success" style="margin: 1rem 2rem; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="alert alert-success">
                     <i class="fas fa-check-circle"></i>
                     <span><?= session()->getFlashdata('success') ?></span>
                 </div>
             <?php endif; ?>
+            
             <!-- Stats Cards -->
             <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon students">
-                        <i class="fas fa-user-graduate"></i>
+                <div class="stat-card stat-card-blue">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon-large">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
                     </div>
                     <div class="stat-content">
                         <h3 class="stat-value"><?= isset($stats['active_students']) ? number_format($stats['active_students']) : '0' ?></h3>
                         <p class="stat-label">Active Students</p>
-                        <span class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i> 12% this month
-                        </span>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon organizations">
-                        <i class="fas fa-building"></i>
+                
+                <div class="stat-card stat-card-purple">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon-large">
+                            <i class="fas fa-building"></i>
+                        </div>
                     </div>
                     <div class="stat-content">
                         <h3 class="stat-value"><?= isset($stats['approved_organizations']) ? number_format($stats['approved_organizations']) : '0' ?></h3>
                         <p class="stat-label">Approved Organizations</p>
-                        <span class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i> 5% this month
-                        </span>
                     </div>
                 </div>
-                <div class="stat-card highlight">
-                    <div class="stat-icon pending">
-                        <i class="fas fa-clock"></i>
+                
+                <div class="stat-card stat-card-orange">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon-large">
+                            <i class="fas fa-clock"></i>
+                        </div>
                     </div>
                     <div class="stat-content">
                         <h3 class="stat-value"><?= isset($stats['pending_organizations']) ? number_format($stats['pending_organizations']) : '0' ?></h3>
-                        <p class="stat-label">Pending Org Approvals</p>
-                        <span class="stat-change warning">
-                            <i class="fas fa-exclamation-circle"></i> Requires attention
-                        </span>
+                        <p class="stat-label">Pending Approvals</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-card-green">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon-large">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value"><?= isset($stats['total_users']) ? number_format($stats['total_users']) : '0' ?></h3>
+                        <p class="stat-label">Total Users</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Content Grid -->
+            <div class="dashboard-content-grid">
+                <!-- Left Column -->
+                <div class="dashboard-left">
+                    <!-- Recent Activity -->
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h2>
+                                <i class="fas fa-history"></i>
+                                Recent Activity
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="activity-list">
+                                <?php if (!empty($recent_activity)): ?>
+                                    <?php foreach ($recent_activity as $activity): ?>
+                                        <div class="activity-item">
+                                            <div class="activity-icon <?= $activity['type'] === 'pending_org' ? 'warning' : '' ?>">
+                                                <?php if ($activity['type'] === 'pending_org' || $activity['type'] === 'approved_org'): ?>
+                                                    <i class="fas fa-building"></i>
+                                                <?php elseif ($activity['type'] === 'new_student'): ?>
+                                                    <i class="fas fa-user-plus"></i>
+                                                <?php elseif ($activity['type'] === 'comment'): ?>
+                                                    <i class="fas fa-comment"></i>
+                                                <?php else: ?>
+                                                    <i class="fas fa-circle"></i>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="activity-content">
+                                                <p class="activity-title"><?= esc($activity['title']) ?></p>
+                                                <p class="activity-description"><?= esc($activity['description']) ?></p>
+                                                <span class="activity-time"><?= esc($activity['time']) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                                        No recent activity
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div class="dashboard-right">
+                    <!-- Top Organizations -->
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h2>
+                                <i class="fas fa-trophy"></i>
+                                Top Organizations
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table compact">
+                                    <thead>
+                                        <tr>
+                                            <th>Organization</th>
+                                            <th>Members</th>
+                                            <th>Events</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (!empty($approved_organizations)): ?>
+                                            <?php foreach (array_slice($approved_organizations, 0, 5) as $org): ?>
+                                                <tr>
+                                                    <td><strong><?= esc($org['name']) ?></strong></td>
+                                                    <td><?= isset($org['member_count']) ? number_format($org['member_count']) : '0' ?></td>
+                                                    <td><?= isset($org['event_count']) ? number_format($org['event_count']) : '0' ?></td>
+                                                    <td><span class="status-badge approved">Active</span></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <tr>
+                                                <td colspan="4" style="text-align: center; padding: 2rem; color: #64748b;">
+                                                    No organizations found
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -140,7 +191,7 @@
 
             <!-- Tab Content: Organizations -->
             <div class="tab-content active" id="organizations">
-                <div class="content-card">
+                <div class="content-card" id="section-pending" data-section="pending">
                     <div class="card-header">
                         <h2>
                             <i class="fas fa-clipboard-check"></i>
@@ -186,7 +237,7 @@
                     </div>
                 </div>
 
-                <div class="content-card">
+                <div class="content-card" id="section-all-orgs" data-section="all">
                     <div class="card-header">
                         <h2>
                             <i class="fas fa-check-circle"></i>
@@ -235,7 +286,7 @@
             <!-- Tab Content: Students -->
             <div class="tab-content" id="students">
                 <div class="content-grid">
-                    <div class="content-card">
+                    <div class="content-card" id="section-all-students" data-section="all">
                         <div class="card-header">
                             <h2>
                                 <i class="fas fa-user-graduate"></i>
@@ -285,7 +336,7 @@
                         </div>
                     </div>
 
-                    <div class="content-card">
+                    <div class="content-card" id="section-comments" data-section="all">
                         <div class="card-header">
                             <h2>
                                 <i class="fas fa-comments"></i>
@@ -327,7 +378,7 @@
                     </div>
                 </div>
 
-                <div class="content-card">
+                <div class="content-card" id="section-activity" data-section="activity">
                     <div class="card-header">
                         <h2>
                             <i class="fas fa-chart-line"></i>
@@ -454,87 +505,122 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>John Doe</td>
-                                        <td>Event Registration</td>
-                                        <td>₱500.00</td>
-                                        <td>Tech Innovation Hub</td>
-                                        <td>2024-01-25</td>
-                                        <td><span class="status-badge success">Paid</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Jane Smith</td>
-                                        <td>Membership Fee</td>
-                                        <td>₱200.00</td>
-                                        <td>Business Administration Club</td>
-                                        <td>2024-01-24</td>
-                                        <td><span class="status-badge success">Paid</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Sarah Johnson</td>
-                                        <td>Event Registration</td>
-                                        <td>₱300.00</td>
-                                        <td>Green Energy Initiative</td>
-                                        <td>2024-01-23</td>
-                                        <td><span class="status-badge pending">Pending</span></td>
-                                    </tr>
+                                    <?php if (!empty($transactions)): ?>
+                                        <?php foreach ($transactions as $transaction): ?>
+                                            <tr>
+                                                <td><?= esc($transaction['student_name']) ?></td>
+                                                <td><?= esc($transaction['transaction_type']) ?></td>
+                                                <td>₱<?= esc($transaction['amount']) ?></td>
+                                                <td><?= esc($transaction['organization_name']) ?></td>
+                                                <td><?= esc($transaction['date']) ?></td>
+                                                <td><span class="status-badge <?= esc($transaction['status_class']) ?>"><?= esc($transaction['status_text']) ?></span></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
+                                                No transactions found.
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
+            </main>
+        </div>
     </div>
 
     <script>
-        // Notification dropdown toggle
-        const notificationBtn = document.getElementById('notificationBtn');
-        const notificationDropdown = document.getElementById('notificationDropdown');
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
 
-        notificationBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            notificationDropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
-                notificationDropdown.classList.remove('active');
+            function switchTab(tabId) {
+                // Remove active class from all tabs and contents
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to target tab and corresponding content
+                const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+                const targetContent = document.getElementById(tabId);
+                
+                if (targetBtn && targetContent) {
+                    targetBtn.classList.add('active');
+                    targetContent.classList.add('active');
+                }
             }
-        });
 
-        // Tab switching
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        function switchTab(tabId) {
-            // Remove active class from all tabs and contents
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            
-            // Add active class to target tab and corresponding content
-            const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-            const targetContent = document.getElementById(tabId);
-            
-            if (targetBtn && targetContent) {
-                targetBtn.classList.add('active');
-                targetContent.classList.add('active');
-            }
-        }
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const targetTab = this.getAttribute('data-tab');
-                switchTab(targetTab);
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    switchTab(targetTab);
+                    // Clear section filter when clicking tabs directly
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.delete('section');
+                    window.history.replaceState({}, '', window.location.pathname + '?' + urlParams.toString());
+                    filterSections(targetTab, null);
+                });
             });
-        });
 
-        // Handle hash navigation (for returning from detail pages)
-        if (window.location.hash) {
-            const hash = window.location.hash.substring(1); // Remove #
-            switchTab(hash);
-        }
+            // Function to filter sections - SIMPLE AND DIRECT
+            function filterSections(tabId, sectionName) {
+                const tabContent = document.getElementById(tabId);
+                if (!tabContent) {
+                    return;
+                }
+                
+                // Get all sections with data-section attribute in this tab
+                const allSections = tabContent.querySelectorAll('[data-section]');
+                
+                if (sectionName) {
+                    // Hide all sections first
+                    allSections.forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
+                    // Show only matching sections
+                    allSections.forEach(section => {
+                        const sectionData = section.getAttribute('data-section');
+                        if (sectionData === sectionName) {
+                            section.style.display = '';
+                        }
+                    });
+                } else {
+                    // Show all sections (no filter)
+                    allSections.forEach(section => {
+                        section.style.display = '';
+                    });
+                }
+            }
+            
+            // Handle URL parameters for tab navigation (from sidebar links)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            const sectionParam = urlParams.get('section');
+            
+            // Apply tab switching and section filtering
+            if (tabParam) {
+                switchTab(tabParam);
+                
+                // Filter sections based on URL parameter
+                if (sectionParam) {
+                    filterSections(tabParam, sectionParam);
+                } else {
+                    filterSections(tabParam, null);
+                }
+            }
+
+            // Handle hash navigation (for returning from detail pages)
+            if (window.location.hash) {
+                const hash = window.location.hash.substring(1); // Remove #
+                switchTab(hash);
+            }
+        }); // End DOMContentLoaded
 
         // Organization approval functions
         function approveOrg(id) {
