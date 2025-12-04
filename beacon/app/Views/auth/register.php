@@ -124,7 +124,7 @@
                                         <option value="">Select gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
-                                        <option value="other">Other</option>
+                                        <option value="intersex">Intersex</option>
                                         <option value="prefer_not_to_say">Prefer not to say</option>
                                     </select>
                                     <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">

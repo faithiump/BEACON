@@ -163,6 +163,68 @@ class Auth extends BaseController
         // Role is automatically set to 'student' for register page
         $role = 'student';
         
+        // Get form data
+        $email = strtolower(trim($this->request->getPost('email')));
+        $studentId = trim($this->request->getPost('student_id'));
+        $phone = trim($this->request->getPost('phone'));
+        $firstname = trim($this->request->getPost('firstname'));
+        $lastname = trim($this->request->getPost('lastname'));
+        $birthday = $this->request->getPost('birthday');
+        
+        // Custom validation errors array
+        $customErrors = [];
+        
+        // 1. Validate email domain - must be @cspc.edu.ph
+        if (!empty($email)) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $customErrors['email'] = 'Please enter a valid email address.';
+            } elseif (substr($email, -12) !== '@cspc.edu.ph') {
+                $customErrors['email'] = 'Only email addresses with @cspc.edu.ph domain are allowed.';
+            }
+        }
+        
+        // 2. Check for duplicate student_id
+        if (!empty($studentId)) {
+            $existingStudent = $this->studentModel->where('student_id', $studentId)->first();
+            if ($existingStudent) {
+                $customErrors['student_id'] = 'This student ID is already registered.';
+            }
+        }
+        
+        // 3. Check for duplicate phone number
+        if (!empty($phone)) {
+            $existingProfile = $this->userProfileModel->where('phone', $phone)->first();
+            if ($existingProfile) {
+                $customErrors['phone'] = 'This phone number is already registered.';
+            }
+        }
+        
+        // 4. Check for duplicate email (additional check)
+        if (!empty($email)) {
+            $existingUser = $this->userModel->where('email', $email)->first();
+            if ($existingUser) {
+                $customErrors['email'] = 'This email address is already registered.';
+            }
+        }
+        
+        // 5. Check for duplicate combination of firstname, lastname, and birthday
+        if (!empty($firstname) && !empty($lastname) && !empty($birthday)) {
+            $existingProfile = $this->userProfileModel
+                ->where('firstname', $firstname)
+                ->where('lastname', $lastname)
+                ->where('birthday', $birthday)
+                ->first();
+            if ($existingProfile) {
+                $customErrors['duplicate_profile'] = 'A student with the same name and date of birth is already registered.';
+            }
+        }
+        
+        // If there are custom errors, return them
+        if (!empty($customErrors)) {
+            log_message('error', 'Registration validation failed (custom): ' . json_encode($customErrors));
+            return redirect()->to(base_url('auth/register'))->withInput()->with('errors', $customErrors);
+        }
+        
         $rules = [
             'firstname' => 'required|min_length[2]',
             'middlename' => 'required|min_length[2]',
@@ -174,7 +236,7 @@ class Auth extends BaseController
             'city_municipality' => 'required|min_length[3]',
             'barangay' => 'required|min_length[3]',
             'role' => 'required|in_list[student]',
-            'email' => 'required|valid_email|is_unique[users.email]',
+            'email' => 'required|valid_email',
             'password' => 'required|min_length[8]',
             'confirm_password' => 'required|matches[password]',
             'student_id' => 'required|min_length[5]',
@@ -208,7 +270,7 @@ class Auth extends BaseController
 
             // 2. Create user account
             $userData = [
-                'email' => $this->request->getPost('email'),
+                'email' => $email, // Use normalized email (lowercase, trimmed)
                 'password' => $this->request->getPost('password'), // Will be hashed by model
                 'role' => 'student',
                 'is_active' => 1,
@@ -223,12 +285,12 @@ class Auth extends BaseController
             // 3. Create user profile
             $profileData = [
                 'user_id' => $userId,
-                'firstname' => $this->request->getPost('firstname'),
-                'middlename' => $this->request->getPost('middlename'),
-                'lastname' => $this->request->getPost('lastname'),
+                'firstname' => trim($this->request->getPost('firstname')),
+                'middlename' => trim($this->request->getPost('middlename')),
+                'lastname' => trim($this->request->getPost('lastname')),
                 'birthday' => $this->request->getPost('birthday'),
                 'gender' => $this->request->getPost('gender'),
-                'phone' => $this->request->getPost('phone'),
+                'phone' => $phone, // Use normalized phone (trimmed)
                 'address_id' => $addressId
             ];
             $profileId = $this->userProfileModel->insert($profileData);
@@ -240,7 +302,7 @@ class Auth extends BaseController
             // 4. Create student record
             $studentData = [
                 'user_id' => $userId,
-                'student_id' => $this->request->getPost('student_id'),
+                'student_id' => $studentId, // Use normalized student_id (trimmed)
                 'department' => $this->request->getPost('department'),
                 'course' => $this->request->getPost('course'),
                 'year_level' => $this->request->getPost('year_level')

@@ -866,7 +866,7 @@
                                 <div class="comments-section" id="comments-announcement-<?= $announcement['id'] ?>" style="display: none;">
                                     <div class="comments-list" id="comments-list-announcement-<?= $announcement['id'] ?>"></div>
                                     <div class="comment-input-wrapper">
-                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') { const btn = this.closest('.comment-input-wrapper').querySelector('.btn-send'); postComment(<?= $announcement['id'] ?>, 'announcement', btn); }">
+                                        <input type="text" class="comment-input" id="comment-input-announcement-<?= $announcement['id'] ?>" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') { const btn = this.closest('.comment-input-wrapper').querySelector('.btn-send');  insrtpostComment(<?= $announcement['id'] ?>, 'announcement', btn); }">
                                         <button class="btn-send" onclick="postComment(<?= $announcement['id'] ?>, 'announcement', this)"><i class="fas fa-paper-plane"></i></button>
                                     </div>
                                 </div>
@@ -1354,7 +1354,7 @@
                                             <option value="">Select gender</option>
                                             <option value="male" <?= ($profile['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Male</option>
                                             <option value="female" <?= ($profile['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
-                                            <option value="other" <?= ($profile['gender'] ?? '') === 'other' ? 'selected' : '' ?>>Other</option>
+                                            <option value="intersex" <?= (($profile['gender'] ?? '') === 'intersex' || ($profile['gender'] ?? '') === 'other') ? 'selected' : '' ?>>Intersex</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
