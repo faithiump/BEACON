@@ -24,6 +24,115 @@ class Login extends BaseController
         $this->studentModel = new StudentModel();
     }
 
+    /**
+     * Get viewed notification IDs from database for current admin
+     */
+    private function getViewedNotifications($adminId)
+    {
+        if (!$adminId) {
+            return [];
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Check if table exists
+            $tables = $db->listTables();
+            if (!in_array('admin_notification_views', $tables)) {
+                log_message('warning', 'admin_notification_views table does not exist. Please run the migration SQL file.');
+                return [];
+            }
+            
+            $viewed = $db->table('admin_notification_views')
+                ->where('admin_id', $adminId)
+                ->get()
+                ->getResultArray();
+
+            return array_column($viewed, 'application_id');
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching viewed notifications: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Mark a notification as viewed in the database
+     */
+    private function markNotificationAsViewed($adminId, $applicationId)
+    {
+        if (!$adminId || !$applicationId) {
+            return false;
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Check if table exists
+            $tables = $db->listTables();
+            if (!in_array('admin_notification_views', $tables)) {
+                log_message('warning', 'admin_notification_views table does not exist. Please run the migration SQL file.');
+                return false;
+            }
+            
+            // Check if already viewed
+            $existing = $db->table('admin_notification_views')
+                ->where('admin_id', $adminId)
+                ->where('application_id', $applicationId)
+                ->get()
+                ->getRowArray();
+
+            if (!$existing) {
+                // Insert new view record
+                $db->table('admin_notification_views')->insert([
+                    'admin_id' => $adminId,
+                    'application_id' => $applicationId,
+                    'viewed_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            log_message('error', 'Error marking notification as viewed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Format pending organizations data with viewed status
+     */
+    private function formatPendingOrganizations($pendingApplications, $adminId = null)
+    {
+        $viewedNotifications = $adminId ? $this->getViewedNotifications($adminId) : [];
+        $pendingOrgsData = [];
+
+        foreach ($pendingApplications as $app) {
+            $submittedDate = new \DateTime($app['submitted_at']);
+            $now = new \DateTime();
+            $interval = $now->diff($submittedDate);
+            
+            $timeAgo = '';
+            if ($interval->days > 0) {
+                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+            } elseif ($interval->h > 0) {
+                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+            } else {
+                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+            }
+
+            $pendingOrgsData[] = [
+                'id' => $app['id'],
+                'name' => $app['organization_name'],
+                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
+                'email' => $app['contact_email'],
+                'phone' => $app['contact_phone'],
+                'submitted_at' => $timeAgo,
+                'is_viewed' => in_array($app['id'], $viewedNotifications)
+            ];
+        }
+
+        return $pendingOrgsData;
+    }
+
     public function index()
     {
         return view('admin/login');
@@ -146,40 +255,19 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        // Get viewed notifications from session
-        $viewedNotifications = session()->get('viewed_notifications') ?? [];
+        // Get viewed notifications from database for current admin
+        $adminId = session()->get('admin_id');
+        $viewedNotifications = $this->getViewedNotifications($adminId);
 
         // Format pending applications for display
-        $pendingOrgsData = [];
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        
+        // Calculate unread count
         $unreadCount = 0;
-        foreach ($pendingApplications as $app) {
-            $isViewed = in_array($app['id'], $viewedNotifications);
-            if (!$isViewed) {
+        foreach ($pendingOrgsData as $org) {
+            if (!$org['is_viewed']) {
                 $unreadCount++;
             }
-            
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo,
-                'is_viewed' => $isViewed
-            ];
         }
         
         // Store unread count in session for use in views
@@ -770,12 +858,8 @@ class Login extends BaseController
             // Send approval email notification
             $this->sendApprovalEmail($application, $advisor, $officer);
 
-            // Remove from viewed notifications
-            $viewedNotifications = session()->get('viewed_notifications') ?? [];
-            $viewedNotifications = array_values(array_filter($viewedNotifications, function($viewedId) use ($id) {
-                return $viewedId != $id;
-            }));
-            session()->set('viewed_notifications', $viewedNotifications);
+            // Note: No need to remove from viewed notifications in database
+            // The notification will no longer appear since the application is approved
 
             return $this->response->setJSON([
                 'success' => true,
@@ -876,12 +960,8 @@ class Login extends BaseController
             // Send rejection email notification
             $this->sendRejectionEmail($application, $advisor, $officer);
 
-            // Remove from viewed notifications
-            $viewedNotifications = session()->get('viewed_notifications') ?? [];
-            $viewedNotifications = array_values(array_filter($viewedNotifications, function($viewedId) use ($id) {
-                return $viewedId != $id;
-            }));
-            session()->set('viewed_notifications', $viewedNotifications);
+            // Note: No need to remove from viewed notifications in database
+            // The notification will no longer appear since the application is rejected
 
             return $this->response->setJSON([
                 'success' => true,
@@ -957,11 +1037,25 @@ class Login extends BaseController
             return redirect()->to('/admin/organizations/pending')->with('error', 'Pending application not found');
         }
 
-        // Mark this notification as viewed
-        $viewedNotifications = session()->get('viewed_notifications') ?? [];
-        if (!in_array($id, $viewedNotifications)) {
-            $viewedNotifications[] = $id;
-            session()->set('viewed_notifications', $viewedNotifications);
+        // Mark this notification as viewed in database
+        $adminId = session()->get('admin_id');
+        if ($adminId) {
+            $this->markNotificationAsViewed($adminId, $id);
+            
+            // Recalculate and update session unread count
+            $pendingApplicationsForCount = $db->table('organization_applications')
+                ->where('status', 'pending')
+                ->get()
+                ->getResultArray();
+
+            $viewedNotifications = $this->getViewedNotifications($adminId);
+            $unreadCount = 0;
+            foreach ($pendingApplicationsForCount as $app) {
+                if (!in_array($app['id'], $viewedNotifications)) {
+                    $unreadCount++;
+                }
+            }
+            session()->set('unread_notifications_count', $unreadCount);
         }
 
         // Create organization object from application data
@@ -1028,32 +1122,8 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo,
-                'is_viewed' => in_array($app['id'], $viewedNotifications)
-            ];
-        }
-        $data['pending_organizations'] = $pendingOrgsData;
+        $adminId = session()->get('admin_id');
+        $data['pending_organizations'] = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         return view('admin/organization_details', $data);
     }
@@ -1176,33 +1246,9 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $viewedNotifications = session()->get('viewed_notifications') ?? [];
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo,
-                'is_viewed' => in_array($app['id'], $viewedNotifications)
-            ];
-        }
-        $data['pending_organizations'] = $pendingOrgsData;
+        // Get viewed notifications from database for current admin
+        $adminId = session()->get('admin_id');
+        $data['pending_organizations'] = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         return view('admin/organization_details', $data);
     }
@@ -1369,7 +1415,8 @@ class Login extends BaseController
             ])->setStatusCode(401);
         }
 
-        $orgId = $this->request->getPost('org_id');
+        $input = $this->request->getJSON(true);
+        $orgId = $input['id'] ?? $this->request->getPost('org_id');
         
         if (!$orgId) {
             return $this->response->setJSON([
@@ -1378,22 +1425,33 @@ class Login extends BaseController
             ]);
         }
 
-        // Get viewed notifications from session
-        $viewedNotifications = session()->get('viewed_notifications') ?? [];
-        
-        // Add to viewed notifications if not already there
-        if (!in_array($orgId, $viewedNotifications)) {
-            $viewedNotifications[] = $orgId;
-            session()->set('viewed_notifications', $viewedNotifications);
-            
-            // Update unread count
-            $unreadCount = max(0, (session()->get('unread_notifications_count') ?? 0) - 1);
-            session()->set('unread_notifications_count', $unreadCount);
+        // Mark notification as viewed in database
+        $adminId = session()->get('admin_id');
+        if ($adminId) {
+            $this->markNotificationAsViewed($adminId, $orgId);
         }
+
+        // Recalculate unread count
+        $db = \Config\Database::connect();
+        $pendingApplications = $db->table('organization_applications')
+            ->where('status', 'pending')
+            ->get()
+            ->getResultArray();
+
+        $viewedNotifications = $this->getViewedNotifications($adminId);
+        $unreadCount = 0;
+        foreach ($pendingApplications as $app) {
+            if (!in_array($app['id'], $viewedNotifications)) {
+                $unreadCount++;
+            }
+        }
+
+        // Update session unread count
+        session()->set('unread_notifications_count', $unreadCount);
 
         return $this->response->setJSON([
             'success' => true,
-            'unread_count' => session()->get('unread_notifications_count') ?? 0
+            'unread_count' => $unreadCount
         ]);
     }
 
@@ -1565,30 +1623,8 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
-            ];
-        }
+        $adminId = session()->get('admin_id');
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         $data = [
             'users' => $userData,
@@ -1667,30 +1703,8 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
-            ];
-        }
+        $adminId = session()->get('admin_id');
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         $data = [
             'approved_organizations' => $approvedOrgsData,
@@ -1719,30 +1733,8 @@ class Login extends BaseController
             ->getResultArray();
 
         // Format pending applications for display
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
-            ];
-        }
+        $adminId = session()->get('admin_id');
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         $data = [
             'pending_organizations' => $pendingOrgsData
@@ -1802,30 +1794,8 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
-            ];
-        }
+        $adminId = session()->get('admin_id');
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         $data = [
             'students' => $studentData,
@@ -1905,30 +1875,8 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
-            ];
-        }
+        $adminId = session()->get('admin_id');
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         $data = [
             'student_activity' => $activityData,
@@ -2025,30 +1973,8 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
-            ];
-        }
+        $adminId = session()->get('admin_id');
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         $data = [
             'transactions' => $transactionData,
@@ -2132,30 +2058,8 @@ class Login extends BaseController
             ->get()
             ->getResultArray();
 
-        $pendingOrgsData = [];
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
-            }
-
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo
-            ];
-        }
+        $adminId = session()->get('admin_id');
+        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
 
         $data = [
             'payments' => $paymentData,

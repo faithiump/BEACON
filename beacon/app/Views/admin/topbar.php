@@ -3,15 +3,22 @@
  * Admin Top Bar
  */
 $pending_organizations = $pending_organizations ?? [];
-$unread_count = session()->get('unread_notifications_count') ?? 0;
-// Filter to only show unread notifications
-$unread_organizations = array_filter($pending_organizations, function($org) {
-    return !isset($org['is_viewed']) || !$org['is_viewed'];
-});
+
+// Derive unread count from provided pending organizations; fall back to session
+$unread_organizations = [];
+if (!empty($pending_organizations)) {
+    $unread_organizations = array_filter($pending_organizations, function($org) {
+        return !isset($org['is_viewed']) || !$org['is_viewed'];
+    });
+    $unread_count = count($unread_organizations);
+} else {
+    $unread_count = session()->get('unread_notifications_count') ?? 0;
+}
 ?>
 <div class="admin-topbar">
     <div class="topbar-left">
         <img src="<?= base_url('assets/images/beacon-logo-text-v1.png') ?>" alt="BEACON" class="topbar-title-image" style="height: 30px;">
+        <span class="topbar-title-text">Admin Dashboard</span>
     </div>
     
     <div class="topbar-right">
@@ -33,7 +40,7 @@ $unread_organizations = array_filter($pending_organizations, function($org) {
                             <?php $isUnread = !isset($org['is_viewed']) || !$org['is_viewed']; ?>
                             <div class="notification-item <?= $isUnread ? 'unread' : '' ?>" 
                                  data-org-id="<?= $org['id'] ?>"
-                                 onclick="markNotificationRead(<?= $org['id'] ?>); window.location.href='<?= base_url('admin/organizations/pending/view/' . $org['id']) ?>'" 
+                                 onclick="handleNotificationClick(<?= $org['id'] ?>, '<?= base_url('admin/organizations/pending/view/' . $org['id']) ?>')" 
                                  style="cursor: pointer;">
                                 <div class="notification-icon organization">
                                     <i class="fas fa-building"></i>
@@ -77,9 +84,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Mark notification as read
-function markNotificationRead(orgId) {
-    // Mark as read via AJAX
+// Handle notification click - mark as read and navigate
+function handleNotificationClick(orgId, url) {
+    // Mark as read via AJAX first, then navigate
     fetch('<?= base_url('admin/notifications/mark-read') ?>', {
         method: 'POST',
         headers: {
@@ -91,19 +98,51 @@ function markNotificationRead(orgId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Remove unread class from notification item
+            // Remove unread class from notification item immediately
             const notifItem = document.querySelector(`.notification-item[data-org-id="${orgId}"]`);
             if (notifItem) {
                 notifItem.classList.remove('unread');
             }
             
-            // Update badge count
-            updateNotificationBadge();
+            // Update badge count with the server's unread count
+            const badge = document.getElementById('notificationBadge');
+            const countSpan = document.getElementById('notificationCount');
+            const unreadCount = data.unread_count || 0;
+            
+            if (unreadCount > 0) {
+                if (badge) {
+                    badge.textContent = unreadCount;
+                    badge.style.display = 'flex';
+                }
+                if (countSpan) {
+                    countSpan.textContent = unreadCount + ' new';
+                }
+            } else {
+                if (badge) {
+                    badge.style.display = 'none';
+                }
+                if (countSpan) {
+                    countSpan.textContent = '0 new';
+                }
+            }
+            
+            // Navigate to the page after updating UI
+            window.location.href = url;
+        } else {
+            // Even if marking fails, still navigate
+            window.location.href = url;
         }
     })
     .catch(error => {
         console.error('Error marking notification as read:', error);
+        // Navigate even if there's an error
+        window.location.href = url;
     });
+}
+
+// Mark notification as read (for other uses)
+function markNotificationRead(orgId) {
+    handleNotificationClick(orgId, window.location.href);
 }
 
 // Update notification badge count

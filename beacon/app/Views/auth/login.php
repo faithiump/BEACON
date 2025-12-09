@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>" type="text/css">
     <link rel="stylesheet" href="<?= base_url('assets/css/login.css') ?>" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -63,14 +64,12 @@
         <div class="auth-left-section">
             <div class="auth-left-content">
                 <div class="auth-branding">
-                    <h1 class="auth-welcome-title">Your beacon of hope</h1>
-                    <p class="auth-welcome-text">Access the unified platform for events, announcements, and campus organizations. Connect with your community and stay engaged.</p>
                 </div>
                 
                 <!-- Website Information -->
                 <div class="website-info">
                     <div class="info-section">
-                        <h2 class="info-title">About BEACON</h2>
+                        <h2 class="info-title">ABOUT BEACON</h2>
                         <p class="info-text">BEACON is CSPC's centralized hub for organization management, event visibility, and student engagement. Stay informed, collaborate seamlessly, and keep the pulse of campus life in one place.</p>
                     </div>
                     
@@ -129,7 +128,12 @@
 
                     <div class="form-group role-dependent">
                         <label for="password">Password</label>
-                        <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-primary">Log In</button>
@@ -183,6 +187,27 @@
 
             toggleFields();
             roleSelect.addEventListener('change', toggleFields);
+
+            // Password visibility toggle
+            const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('passwordToggle');
+            const passwordToggleIcon = document.getElementById('passwordToggleIcon');
+
+            if (passwordToggle && passwordInput) {
+                passwordToggle.addEventListener('click', function() {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    // Toggle icon
+                    if (type === 'text') {
+                        passwordToggleIcon.classList.remove('fa-eye');
+                        passwordToggleIcon.classList.add('fa-eye-slash');
+                    } else {
+                        passwordToggleIcon.classList.remove('fa-eye-slash');
+                        passwordToggleIcon.classList.add('fa-eye');
+                    }
+                });
+            }
         });
     </script>
 </body>

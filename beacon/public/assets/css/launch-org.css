@@ -385,37 +385,29 @@ input[type="number"].form-control:hover::-webkit-outer-spin-button {
 }
 
 .password-wrapper .form-control {
-    padding-right: 4.5rem;
+    padding-right: 2.75rem;
     width: 100%;
 }
 
 .password-toggle {
     position: absolute;
-    right: 1rem;
+    right: 0.65rem;
     top: 50%;
     transform: translateY(-50%);
+    border: none;
+    background: transparent;
     cursor: pointer;
+    color: #6b7280;
+    padding: 0.25rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-    user-select: none;
+    justify-content: center;
+    font-size: 0.95rem;
     transition: color 0.2s ease;
 }
 
 .password-toggle:hover {
-    color: #a855f7;
-}
-
-.password-toggle input[type="checkbox"] {
-    cursor: pointer;
-    margin: 0;
-    width: auto;
-}
-
-.password-toggle span {
-    font-weight: 500;
+    color: #35283f;
 }
 
 /* Form Rows */

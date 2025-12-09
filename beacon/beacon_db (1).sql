@@ -644,6 +644,19 @@ INSERT INTO `user_profiles` (`id`, `user_id`, `firstname`, `middlename`, `lastna
 (3, 7, 'Deanne', 'Faith', 'Pandes', '2025-11-26', 'female', '12345678901', 3, '2025-11-25 16:18:35', '2025-11-28 03:20:57'),
 (4, 8, 'irene', 'buendia', 'espeleta', '2025-11-26', 'female', '09512736322', 4, '2025-11-26 12:28:42', '2025-11-26 16:55:54');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `admin_notification_views`
+--
+
+CREATE TABLE `admin_notification_views` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `admin_id` int(11) UNSIGNED NOT NULL,
+  `application_id` int(11) UNSIGNED NOT NULL,
+  `viewed_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 --
 -- Indexes for dumped tables
 --
@@ -662,6 +675,15 @@ ALTER TABLE `addresses`
 ALTER TABLE `admin`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`);
+
+--
+-- Indexes for table `admin_notification_views`
+--
+ALTER TABLE `admin_notification_views`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_admin_application` (`admin_id`,`application_id`),
+  ADD KEY `idx_admin_id` (`admin_id`),
+  ADD KEY `idx_application_id` (`application_id`);
 
 --
 -- Indexes for table `announcements`
@@ -873,6 +895,12 @@ ALTER TABLE `admin`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `admin_notification_views`
+--
+ALTER TABLE `admin_notification_views`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `announcements`
 --
 ALTER TABLE `announcements`
@@ -995,6 +1023,13 @@ ALTER TABLE `user_profiles`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `admin_notification_views`
+--
+ALTER TABLE `admin_notification_views`
+  ADD CONSTRAINT `fk_admin_notification_views_admin` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_admin_notification_views_application` FOREIGN KEY (`application_id`) REFERENCES `organization_applications` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `announcements`

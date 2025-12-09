@@ -509,6 +509,35 @@ textarea.form-control {
     width: 100%;
 }
 
+/* Password toggle */
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper .form-control {
+    padding-right: 2.75rem;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+.password-toggle:hover {
+    color: #35283f;
+}
+
 /* Background - Removed separate background, using body gradient */
 .auth-background {
     display: none;

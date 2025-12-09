@@ -429,6 +429,49 @@ body {
     font-weight: 400;
 }
 
+/* Password Wrapper */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    display: block;
+}
+
+.password-wrapper .form-control {
+    padding-right: 3rem;
+    width: 100%;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    color: #6b7280;
+    transition: color 0.2s ease;
+    z-index: 1;
+}
+
+.password-toggle:hover {
+    color: #35283f;
+}
+
+.password-toggle:focus {
+    outline: 2px solid #35283f;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.password-toggle i {
+    font-size: 1rem;
+}
+
 .btn-primary {
     width: 100%;
     padding: 1rem 2rem;

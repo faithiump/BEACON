@@ -174,12 +174,22 @@ class Auth extends BaseController
         // Custom validation errors array
         $customErrors = [];
         
-        // 1. Validate email domain - must be @cspc.edu.ph
+        // 1. Validate email domain - must be @cspc.edu.ph or @my.cspc.edu.ph
         if (!empty($email)) {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $customErrors['email'] = 'Please enter a valid email address.';
-            } elseif (substr($email, -12) !== '@cspc.edu.ph') {
-                $customErrors['email'] = 'Only email addresses with @cspc.edu.ph domain are allowed.';
+            } else {
+                $allowedDomains = ['@cspc.edu.ph', '@my.cspc.edu.ph'];
+                $isAllowed = false;
+                foreach ($allowedDomains as $domain) {
+                    if (substr($email, -strlen($domain)) === $domain) {
+                        $isAllowed = true;
+                        break;
+                    }
+                }
+                if (!$isAllowed) {
+                    $customErrors['email'] = 'Only email addresses with @cspc.edu.ph or @my.cspc.edu.ph domains are allowed.';
+                }
             }
         }
         

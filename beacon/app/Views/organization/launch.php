@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/launch-org.css') ?>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -189,7 +190,12 @@
                         <div class="form-row">
                             <div class="form-group form-group-half">
                                 <label for="password">Account Password <span class="required">*</span></label>
-                                <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required minlength="8">
+                                <div class="password-wrapper">
+                                    <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required minlength="8">
+                                    <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                                 <small class="form-hint">Minimum 8 characters</small>
                             </div>
 
@@ -197,10 +203,9 @@
                                 <label for="password_confirm">Confirm Password <span class="required">*</span></label>
                                 <div class="password-wrapper">
                                     <input type="password" name="password_confirm" id="password_confirm" class="form-control" placeholder="Confirm your password" required minlength="8">
-                                    <label class="password-toggle" for="show_password_confirm">
-                                        <input type="checkbox" id="show_password_confirm">
-                                        <span>Show</span>
-                                    </label>
+                                    <button type="button" class="password-toggle" id="confirmPasswordToggle" aria-label="Toggle confirm password visibility">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -319,20 +324,24 @@
     <script src="<?= base_url('assets/js/nav.js') ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Handle show/hide confirm password
-            const showPasswordConfirm = document.getElementById('show_password_confirm');
-            const passwordConfirmInput = document.getElementById('password_confirm');
-            if (showPasswordConfirm && passwordConfirmInput) {
-                showPasswordConfirm.addEventListener('change', function() {
-                    if (this.checked) {
-                        passwordConfirmInput.type = 'text';
-                        this.parentElement.querySelector('span').textContent = 'Hide';
-                    } else {
-                        passwordConfirmInput.type = 'password';
-                        this.parentElement.querySelector('span').textContent = 'Show';
+            function setupPasswordToggle(buttonId, inputId) {
+                const toggleBtn = document.getElementById(buttonId);
+                const input = document.getElementById(inputId);
+                if (!toggleBtn || !input) return;
+
+                toggleBtn.addEventListener('click', function() {
+                    const isPassword = input.type === 'password';
+                    input.type = isPassword ? 'text' : 'password';
+                    const icon = toggleBtn.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('fa-eye', !isPassword);
+                        icon.classList.toggle('fa-eye-slash', isPassword);
                     }
                 });
             }
+
+            setupPasswordToggle('passwordToggle', 'password');
+            setupPasswordToggle('confirmPasswordToggle', 'password_confirm');
         });
     </script>
 </body>
