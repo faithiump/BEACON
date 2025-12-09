@@ -677,7 +677,7 @@
                             <div class="product-grid">
                                 <?php if(!empty($products)): ?>
                                     <?php foreach(array_slice($products, 0, 4) as $product): ?>
-                                    <div class="product-mini-card">
+                                    <div class="product-mini-card" onclick="switchSection('products')" style="cursor: pointer;">
                                         <div class="product-mini-img">
                                             <?php if(!empty($product['image'])): ?>
                                                 <img src="<?= base_url('uploads/products/' . $product['image']) ?>" alt="<?= esc($product['name']) ?>">
