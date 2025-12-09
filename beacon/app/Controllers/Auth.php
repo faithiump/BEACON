@@ -36,12 +36,12 @@ class Auth extends BaseController
 
     public function login(): string
     {
-        return view('auth/login');
+        return view('main/login');
     }
 
     public function register(): string
     {
-        return view('auth/register');
+        return view('main/register');
     }
 
     public function processLogin()

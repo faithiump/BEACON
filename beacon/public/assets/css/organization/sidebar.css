@@ -1,0 +1,56 @@
+/* Organization Sidebar (mirrors admin sidebar layout) */
+.admin-sidebar {
+    width: 260px;
+    background: #ffffff;
+    min-height: 100vh;
+}
+.admin-sidebar .nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.25rem 0.75rem 1rem;
+}
+.admin-sidebar .nav-item {
+    width: 100%;
+}
+.admin-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 12px;
+    color: #0f172a;
+}
+
+/* Logo hover slow rotate */
+.admin-sidebar .logo-icon {
+    transition: transform 0.6s ease;
+}
+.admin-sidebar .sidebar-logo:hover .logo-icon {
+    transform: rotate(-90deg);
+}
+.admin-sidebar .sidebar-logo:active .logo-icon {
+    transform: rotate(90deg);
+}
+
+/* Text and icon contrast + hover/active */
+.admin-sidebar .nav-link i {
+    color: #0f172a;
+}
+.admin-sidebar .nav-link:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+.admin-sidebar .nav-link:hover i {
+    color: #0f172a;
+}
+.admin-sidebar .nav-link.active {
+    background: #e2e8f0;
+    color: #0f172a;
+    font-weight: 700;
+}
+.admin-sidebar .nav-link.active i {
+    color: #0f172a;
+}
+
+

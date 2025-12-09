@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BEACON | Unified Campus Hub</title>
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/home.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/footer.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/main/nav.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/main/home.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/main/footer.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">

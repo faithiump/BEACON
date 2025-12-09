@@ -26,72 +26,17 @@ class Organization extends BaseController
     }
 
     /**
-     * Organization Dashboard
+     * Organization Dashboard (renders overview content/layout)
      */
-    public function dashboard()
+    public function dashboard($activeSection = null)
     {
-        // Check if organization is logged in
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
             return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
         }
 
-        // Ensure uploads directories exist
-        $eventsPath = FCPATH . 'uploads/events/';
-        $productsPath = FCPATH . 'uploads/products/';
-        if (!is_dir($eventsPath)) {
-            mkdir($eventsPath, 0755, true);
-        }
-        if (!is_dir($productsPath)) {
-            mkdir($productsPath, 0755, true);
-        }
-
-        // Get forum category counts
-        $forumPostModel = new ForumPostModel();
-        $categoryCounts = $forumPostModel->getCategoryCounts();
-
-        // Get forum category counts
-        $forumPostModel = new ForumPostModel();
-        $categoryCounts = $forumPostModel->getCategoryCounts();
-
-        // Get all events and announcements from all organizations
-        $recentEvents = $this->getRecentEvents(null); // Show events from all organizations
-        $recentAnnouncements = $this->getRecentAnnouncements();
-        
-        // Combine announcements and events into a single feed (like student dashboard)
-        $allPosts = [];
-        foreach ($recentAnnouncements as $announcement) {
-            $allPosts[] = [
-                'type' => 'announcement',
-                'data' => $announcement,
-                'date' => strtotime($announcement['created_at'])
-            ];
-        }
-        foreach ($recentEvents as $event) {
-            $allPosts[] = [
-                'type' => 'event',
-                'data' => $event,
-                'date' => strtotime($event['created_at'] ?? $event['date'])
-            ];
-        }
-        
-        // Sort by date (newest first)
-        usort($allPosts, function($a, $b) {
-            return $b['date'] - $a['date'];
-        });
-        
-        $data = [
-            'title' => 'Organization Dashboard',
-            'organization' => $this->getOrganizationData(),
-            'stats' => $this->getDashboardStats(),
-            'recentEvents' => $recentEvents,
-            'recentAnnouncements' => $recentAnnouncements,
-            'allPosts' => $allPosts, // Combined feed for overview
-            'pendingPayments' => $this->getPendingPayments(),
-            'recentMembers' => $this->getRecentMembers(),
-            'products' => $this->getRecentProducts(),
-            'forumCategoryCounts' => $categoryCounts,
-        ];
-
+        $data = $this->buildDashboardData();
+        $data['active_section'] = $activeSection;
+        // Render original dashboard layout (with full content)
         return view('organization/dashboard', $data);
     }
 
@@ -1909,6 +1854,63 @@ class Organization extends BaseController
         }
     }
 
+    /**
+     * Build shared dashboard data for all org pages
+     */
+    private function buildDashboardData()
+    {
+        // Ensure uploads directories exist
+        $eventsPath = FCPATH . 'uploads/events/';
+        $productsPath = FCPATH . 'uploads/products/';
+        if (!is_dir($eventsPath)) {
+            mkdir($eventsPath, 0755, true);
+        }
+        if (!is_dir($productsPath)) {
+            mkdir($productsPath, 0755, true);
+        }
+
+        // Get forum category counts
+        $forumPostModel = new ForumPostModel();
+        $categoryCounts = $forumPostModel->getCategoryCounts();
+
+        // Events and announcements
+        $recentEvents = $this->getRecentEvents(null);
+        $recentAnnouncements = $this->getRecentAnnouncements();
+
+        // Combined feed
+        $allPosts = [];
+        foreach ($recentAnnouncements as $announcement) {
+            $allPosts[] = [
+                'type' => 'announcement',
+                'data' => $announcement,
+                'date' => strtotime($announcement['created_at'])
+            ];
+        }
+        foreach ($recentEvents as $event) {
+            $allPosts[] = [
+                'type' => 'event',
+                'data' => $event,
+                'date' => strtotime($event['created_at'] ?? $event['date'])
+            ];
+        }
+        usort($allPosts, function($a, $b) {
+            return $b['date'] - $a['date'];
+        });
+
+        return [
+            'title' => 'Organization Dashboard',
+            'organization' => $this->getOrganizationData(),
+            'stats' => $this->getDashboardStats(),
+            'recentEvents' => $recentEvents,
+            'recentAnnouncements' => $recentAnnouncements,
+            'allPosts' => $allPosts,
+            'pendingPayments' => $this->getPendingPayments(),
+            'recentMembers' => $this->getRecentMembers(),
+            'products' => $this->getRecentProducts(),
+            'forumCategoryCounts' => $categoryCounts,
+        ];
+    }
+
     // ==========================================
     // MEMBER MANAGEMENT FUNCTIONS
     // ==========================================
@@ -3229,7 +3231,87 @@ class Organization extends BaseController
 
     public function launch(): string
     {
-        return view('organization/launch');
+        return view('main/launch');
+    }
+
+    /**
+     * Overview (alias to dashboard)
+     */
+    public function overview()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'overview';
+        // Use full dashboard view for overview to restore original UI
+        return view('organization/dashboard', $data);
+    }
+
+    public function events()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'events';
+        return view('organization/dashboard', $data);
+    }
+
+    public function announcements()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'announcements';
+        return view('organization/dashboard', $data);
+    }
+
+    public function members()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'members';
+        return view('organization/dashboard', $data);
+    }
+
+    public function products()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'products';
+        return view('organization/dashboard', $data);
+    }
+
+    /**
+     * Reservations page (alias to pending payments)
+     */
+    public function reservations()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'reservations';
+        return view('organization/dashboard', $data);
+    }
+
+    /**
+     * Forum placeholder
+     */
+    public function forum()
+    {
+        if (!session()->get('isLoggedIn') || session()->get('role') !== 'organization') {
+            return redirect()->to('/auth/login');
+        }
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'forum';
+        return view('organization/dashboard', $data);
     }
 
     public function processLaunch()

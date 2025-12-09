@@ -19,6 +19,20 @@ $routes->get('auth/googleLogout', 'Auth::googleLogout');
 // Organization routes
 $routes->get('organization/launch', 'Organization::launch');
 $routes->post('organization/launch', 'Organization::processLaunch');
+$routes->get('organization/overview', 'Organization::overview');
+$routes->get('organization/overview.php', 'Organization::overview');
+$routes->get('organization/events', 'Organization::events');
+$routes->get('organization/events.php', 'Organization::events');
+$routes->get('organization/announcements', 'Organization::announcements');
+$routes->get('organization/announcements.php', 'Organization::announcements');
+$routes->get('organization/members', 'Organization::members');
+$routes->get('organization/members.php', 'Organization::members');
+$routes->get('organization/products', 'Organization::products');
+$routes->get('organization/products.php', 'Organization::products');
+$routes->get('organization/reservations', 'Organization::reservations');
+$routes->get('organization/reservations.php', 'Organization::reservations');
+$routes->get('organization/forum', 'Organization::forum');
+$routes->get('organization/forum.php', 'Organization::forum');
 
 // Organization Dashboard routes
 $routes->get('organization/dashboard', 'Organization::dashboard');

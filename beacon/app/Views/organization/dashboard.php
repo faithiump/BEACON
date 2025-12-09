@@ -9,9 +9,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<?= base_url('assets/css/admin/dashboard.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/admin/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/admin/topbar.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/organization/organization.css') ?>">
+    <style>
+        /* Hide old nav bar; use admin-style topbar/sidebar */
+        .top-nav { display: none !important; }
+    </style>
 </head>
 <body>
+    <?php $activeSection = $active_section ?? 'overview'; ?>
+    <div class="dashboard-container">
+        <?= view('organization/partials/sidebar') ?>
+        <div class="dashboard-wrapper">
+            <?= view('organization/partials/topbar') ?>
     <!-- Top Navigation -->
     <header class="top-nav">
         <div class="nav-container">
@@ -265,7 +277,7 @@
         <div class="content-area">
             
             <!-- Overview Section - Facebook Style Feed -->
-            <section id="overview" class="dashboard-section active">
+            <section id="overview" class="dashboard-section <?= $activeSection === 'overview' ? 'active' : '' ?>" style="<?= $activeSection === 'overview' ? '' : 'display:none;' ?>">
                 <div class="feed-layout">
                     <!-- Left Sidebar -->
                     <aside class="feed-sidebar-left">
@@ -764,7 +776,7 @@
             </section>
 
             <!-- Events Section -->
-            <section id="events" class="dashboard-section">
+            <section id="events" class="dashboard-section <?= $activeSection === 'events' ? 'active' : '' ?>" style="<?= $activeSection === 'events' ? '' : 'display:none;' ?>">
                 <div class="section-header">
                     <div>
                         <h1 class="section-title">Events Management</h1>
@@ -853,7 +865,7 @@
             </section>
 
             <!-- Announcements Section -->
-            <section id="announcements" class="dashboard-section">
+            <section id="announcements" class="dashboard-section <?= $activeSection === 'announcements' ? 'active' : '' ?>" style="<?= $activeSection === 'announcements' ? '' : 'display:none;' ?>">
                 <div class="section-header">
                     <div>
                         <h1 class="section-title">Announcements</h1>
@@ -902,7 +914,7 @@
             </section>
 
             <!-- Members Section -->
-            <section id="members" class="dashboard-section">
+            <section id="members" class="dashboard-section <?= $activeSection === 'members' ? 'active' : '' ?>" style="<?= $activeSection === 'members' ? '' : 'display:none;' ?>">
                 <div class="section-header">
                     <div>
                         <h1 class="section-title">Members Management</h1>
@@ -974,7 +986,7 @@
             </section>
 
             <!-- Products Section -->
-            <section id="products" class="dashboard-section">
+            <section id="products" class="dashboard-section <?= $activeSection === 'products' ? 'active' : '' ?>" style="<?= $activeSection === 'products' ? '' : 'display:none;' ?>">
                 <div class="section-header">
                     <div>
                         <h1 class="section-title">Products & Merchandise</h1>
@@ -1034,7 +1046,7 @@
             </section>
 
             <!-- Reservations Section -->
-            <section id="reservations" class="dashboard-section">
+            <section id="reservations" class="dashboard-section <?= $activeSection === 'reservations' ? 'active' : '' ?>" style="<?= $activeSection === 'reservations' ? '' : 'display:none;' ?>">
                 <div class="section-header">
                     <div>
                         <h1 class="section-title">Reservation Management</h1>
@@ -1109,7 +1121,7 @@
             </section>
 
             <!-- Forum Section -->
-            <section id="forum" class="dashboard-section">
+            <section id="forum" class="dashboard-section <?= $activeSection === 'forum' ? 'active' : '' ?>" style="<?= $activeSection === 'forum' ? '' : 'display:none;' ?>">
                 <div class="section-header" style="text-align: center; justify-content: center;">
                     <div>
                         <h1 class="section-title">Community Forum</h1>
@@ -1234,7 +1246,7 @@
             </section>
 
             <!-- Settings Section -->
-            <section id="settings" class="dashboard-section">
+            <section id="settings" class="dashboard-section <?= $activeSection === 'settings' ? 'active' : '' ?>" style="<?= $activeSection === 'settings' ? '' : 'display:none;' ?>">
                 <div class="section-header">
                     <div>
                         <h1 class="section-title">Organization Settings</h1>
@@ -1407,7 +1419,7 @@
             </section>
 
             <!-- Reports Section -->
-            <section id="reports" class="dashboard-section">
+            <section id="reports" class="dashboard-section <?= $activeSection === 'reports' ? 'active' : '' ?>" style="<?= $activeSection === 'reports' ? '' : 'display:none;' ?>">
                 <div class="section-header">
                     <div>
                         <h1 class="section-title">Reports & Analytics</h1>
@@ -4701,9 +4713,6 @@
             background: #2563eb;
         }
 
-    </script>
-
-    <style>
         .btn-send i {
             font-size: 0.875rem;
         }
@@ -5051,6 +5060,8 @@
             }
         });
     </script>
+</div><!-- /.dashboard-wrapper -->
+</div><!-- /.dashboard-container -->
 </body>
 </html>
 

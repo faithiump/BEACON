@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Launch Organization - BEACON | CSPC</title>
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/nav.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/launch-org.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/main/nav.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/main/launch-org.css') ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
