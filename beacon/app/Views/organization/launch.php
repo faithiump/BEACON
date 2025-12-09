@@ -108,7 +108,6 @@
                                         <option value="religious">Religious</option>
                                         <option value="cultural">Cultural</option>
                                         <option value="sports">Sports</option>
-                                        <option value="other">Other</option>
                                     </select>
                                     <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -122,7 +121,6 @@
                                     <select name="organization_category" id="organization_category" class="form-control" required>
                                         <option value="">Select category</option>
                                         <option value="departmental">Departmental</option>
-                                        <option value="inter_departmental">Inter-Departmental</option>
                                         <option value="university_wide">University-Wide</option>
                                     </select>
                                     <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -133,10 +131,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="department">Department <span class="required">*</span></label>
+                            <label for="department">Department</label>
                             <div class="select-wrapper">
-                                <select name="department" id="department" class="form-control" required>
-                                    <option value="">Select department</option>
+                                <select name="department" id="department" class="form-control" required disabled>
+                                    <option value="">Select category first</option>
                                     <option value="ccs">College of Computer Studies</option>
                                     <option value="cea">College of Engineering and Architecture</option>
                                     <option value="cthbm">College of Tourism, Hospitality, and Business Management</option>
@@ -156,23 +154,7 @@
                             <input type="date" name="founding_date" id="founding_date" class="form-control" required>
                         </div>
 
-                        <div class="form-group">
-                            <label for="mission">Mission Statement <span class="required">*</span></label>
-                            <textarea name="mission" id="mission" class="form-control" rows="4" placeholder="Describe your organization's mission (50-1000 characters)" required minlength="50" maxlength="1000"></textarea>
-                            <small class="form-hint">Minimum 50 characters required</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="vision">Vision Statement <span class="required">*</span></label>
-                            <textarea name="vision" id="vision" class="form-control" rows="4" placeholder="Describe your organization's vision (50-1000 characters)" required minlength="50" maxlength="1000"></textarea>
-                            <small class="form-hint">Minimum 50 characters required</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="objectives">Objectives <span class="required">*</span></label>
-                            <textarea name="objectives" id="objectives" class="form-control" rows="5" placeholder="List your organization's main objectives (50-2000 characters)" required minlength="50" maxlength="2000"></textarea>
-                            <small class="form-hint">Minimum 50 characters required</small>
-                        </div>
+                        <!-- Mission, Vision, Objectives will be completed later in the organization profile -->
 
                         <div class="form-row">
                             <div class="form-group form-group-half">
@@ -211,9 +193,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="current_members">Current Number of Members <span class="required">*</span></label>
-                            <input type="number" name="current_members" id="current_members" class="form-control" placeholder="Enter number of members" required min="5">
-                            <small class="form-hint">Minimum of 5 members required</small>
+                            <label for="current_officers">Current Number of Official Officers <span class="required">*</span></label>
+                            <input type="number" name="current_official_officers" id="current_officers" class="form-control" placeholder="Enter number of official officers" required min="1">
+                            <small class="form-hint">Enter the count of official officers</small>
                         </div>
                     </div>
 
@@ -342,6 +324,36 @@
 
             setupPasswordToggle('passwordToggle', 'password');
             setupPasswordToggle('confirmPasswordToggle', 'password_confirm');
+
+            // Department availability depends on category
+            const categorySelect = document.getElementById('organization_category');
+            const departmentSelect = document.getElementById('department');
+
+            function updateDepartmentState() {
+                const category = categorySelect ? categorySelect.value : '';
+                if (!departmentSelect) return;
+
+                const isDepartmental = category === 'departmental';
+                const isUniversityWide = category === 'university_wide';
+
+                if (!category || isUniversityWide) {
+                    departmentSelect.disabled = true;
+                    departmentSelect.required = false;
+                    departmentSelect.value = '';
+                } else if (isDepartmental) {
+                    departmentSelect.disabled = false;
+                    departmentSelect.required = true;
+                } else {
+                    // Fallback for any other categories: enable but not required
+                    departmentSelect.disabled = false;
+                    departmentSelect.required = false;
+                }
+            }
+
+            if (categorySelect && departmentSelect) {
+                categorySelect.addEventListener('change', updateDepartmentState);
+                updateDepartmentState();
+            }
         });
     </script>
 </body>

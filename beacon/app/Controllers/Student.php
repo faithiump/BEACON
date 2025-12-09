@@ -2889,10 +2889,11 @@ class Student extends BaseController
         }
 
         $reservationModel = new \App\Models\ReservationModel();
+        // Include all non-pending outcomes so confirmed reservations remain visible
         $reservations = $reservationModel->select('reservations.*, organizations.organization_name, organizations.organization_acronym')
             ->join('organizations', 'organizations.id = reservations.org_id', 'left')
             ->where('reservations.student_id', $student['id'])
-            ->whereIn('reservations.status', ['confirmed', 'completed'])
+            ->whereIn('reservations.status', ['confirmed', 'completed', 'rejected'])
             ->orderBy('reservations.updated_at', 'DESC')
             ->findAll();
 

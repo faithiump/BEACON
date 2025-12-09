@@ -3240,12 +3240,12 @@ class Organization extends BaseController
         $rules = [
             'organization_name' => 'required|min_length[3]|max_length[100]',
             'organization_acronym' => 'required|min_length[2]|max_length[20]',
-            'organization_type' => 'required|in_list[academic,non_academic,service,religious,cultural,sports,other]',
-            'organization_category' => 'required|in_list[departmental,inter_departmental,university_wide]',
-            'department' => 'required|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
-            'mission' => 'required|min_length[50]|max_length[1000]',
-            'vision' => 'required|min_length[50]|max_length[1000]',
-            'objectives' => 'required|min_length[50]|max_length[2000]',
+            'organization_type' => 'required|in_list[academic,non_academic,service,religious,cultural,sports]',
+            'organization_category' => 'required|in_list[departmental,university_wide]',
+            'department' => 'permit_empty|in_list[ccs,cea,cthbm,chs,ctde,cas,gs]',
+            'mission' => 'permit_empty|string',
+            'vision' => 'permit_empty|string',
+            'objectives' => 'permit_empty|string',
             'founding_date' => 'required|valid_date',
             'contact_email' => 'required|valid_email',
             'contact_phone' => 'required',
@@ -3260,7 +3260,7 @@ class Organization extends BaseController
             'primary_officer_email' => 'required|valid_email',
             'primary_officer_phone' => 'required',
             'primary_officer_student_id' => 'required|min_length[5]',
-            'current_members' => 'required|integer|greater_than[4]',
+            'current_official_officers' => 'required|integer|greater_than[0]',
             'constitution_file' => 'uploaded[constitution_file]|max_size[constitution_file,5120]',
             'certification_file' => 'uploaded[certification_file]|max_size[certification_file,5120]'
         ];
@@ -3278,16 +3278,24 @@ class Organization extends BaseController
             return redirect()->back()->withInput()->with('errors', $errors);
         }
 
+        // Additional conditional validation: department required if category is departmental
+        $category = $this->request->getPost('organization_category');
+        $department = trim((string)$this->request->getPost('department'));
+        if ($category === 'departmental' && $department === '') {
+            return redirect()->back()->withInput()->with('errors', ['Department is required for departmental organizations.']);
+        }
+
         // Get form data
         $data = [
             'organization_name' => $this->request->getPost('organization_name'),
             'organization_acronym' => $this->request->getPost('organization_acronym'),
             'organization_type' => $this->request->getPost('organization_type'),
             'organization_category' => $this->request->getPost('organization_category'),
-            'department' => $this->request->getPost('department'),
-            'mission' => $this->request->getPost('mission'),
-            'vision' => $this->request->getPost('vision'),
-            'objectives' => $this->request->getPost('objectives'),
+            'department' => $category === 'departmental' ? $department : null,
+            // Mission/Vision/Objectives captured later in org profile; store placeholders to satisfy DB NOT NULL
+            'mission' => 'To be completed in organization profile.',
+            'vision' => 'To be completed in organization profile.',
+            'objectives' => 'To be completed in organization profile.',
             'founding_date' => $this->request->getPost('founding_date'),
             'contact_email' => $this->request->getPost('contact_email'),
             'contact_phone' => $this->request->getPost('contact_phone'),
@@ -3300,7 +3308,7 @@ class Organization extends BaseController
             'primary_officer_email' => $this->request->getPost('primary_officer_email'),
             'primary_officer_phone' => $this->request->getPost('primary_officer_phone'),
             'primary_officer_student_id' => $this->request->getPost('primary_officer_student_id'),
-            'current_members' => $this->request->getPost('current_members'),
+            'current_members' => $this->request->getPost('current_official_officers'),
             'status' => 'pending',
             'submitted_at' => date('Y-m-d H:i:s')
         ];
@@ -3383,15 +3391,16 @@ class Organization extends BaseController
                 'organization_acronym' => $this->request->getPost('organization_acronym'),
                 'organization_type' => $this->request->getPost('organization_type'),
                 'organization_category' => $this->request->getPost('organization_category'),
-                'department' => $this->request->getPost('department'),
+                'department' => $category === 'departmental' ? $department : null,
                 'founding_date' => $this->request->getPost('founding_date'),
-                'mission' => $this->request->getPost('mission'),
-                'vision' => $this->request->getPost('vision'),
-                'objectives' => $this->request->getPost('objectives'),
+                // Mission/Vision/Objectives skipped at registration; use placeholders to satisfy NOT NULL
+                'mission' => 'To be completed in organization profile.',
+                'vision' => 'To be completed in organization profile.',
+                'objectives' => 'To be completed in organization profile.',
                 'contact_email' => $this->request->getPost('contact_email'),
                 'contact_phone' => $this->request->getPost('contact_phone'),
                 'password_hash' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
-                'current_members' => (int)$this->request->getPost('current_members'),
+                'current_members' => (int)$this->request->getPost('current_official_officers'),
                 'status' => 'pending',
                 'submitted_at' => date('Y-m-d H:i:s')
             ];
