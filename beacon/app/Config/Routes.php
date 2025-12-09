@@ -101,9 +101,11 @@ $routes->get('admin/students', 'Admin\\Login::students');
 // Admin user management
 $routes->get('admin/users', 'Admin\\Login::manageUsers');
 
-// Admin transactions management
-$routes->get('admin/transactions/payments', 'Admin\\Login::transactionsPayments');
-$routes->get('admin/transactions', 'Admin\\Login::transactions');
+// Admin reservations management
+$routes->get('admin/reservations/history', 'Admin\\Login::reservationsHistory');
+$routes->get('admin/reservations', 'Admin\\Login::reservations');
+$routes->post('admin/notifications/clear', 'Admin\\Login::clearNotifications');
+$routes->post('admin/notifications/mark-all-read', 'Admin\\Login::markAllNotificationsRead');
 
 // Location routes
 $routes->get('locations/provinces', 'Locations::getProvinces');

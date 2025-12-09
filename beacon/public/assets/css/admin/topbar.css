@@ -48,11 +48,11 @@
 }
 
 .topbar-title-text {
-    font-size: 1.1rem;
+    font-size: 1.7rem;
     font-weight: 700;
     color: #1e293b;
     white-space: nowrap;
-    border-left: 3px solid #35283f;
+    border-left: 1px solid #35283f;
     padding-left: 1rem;
 }
 
@@ -188,6 +188,34 @@
 .notification-list {
     max-height: 400px;
     overflow-y: auto;
+}
+
+.notification-footer {
+    border-top: 1px solid #e2e8f0;
+    padding: 0.85rem 1.25rem;
+    background: #fafbfc;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.clear-notifications-btn {
+    border: none;
+    background: #35283f;
+    color: #ffffff;
+    padding: 0.55rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.clear-notifications-btn:hover {
+    background: #24192c;
+}
+
+.clear-notifications-btn:active {
+    transform: translateY(1px);
 }
 
 .notification-empty {

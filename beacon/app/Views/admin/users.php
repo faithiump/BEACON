@@ -79,32 +79,34 @@
                                         <th>Role</th>
                                         <th>Status</th>
                                         <th>Registration Date</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php if (!empty($users)): ?>
                                         <?php foreach ($users as $user): ?>
                                             <tr>
-                                                <td><?= esc($user['name']) ?></td>
+                                                <td>
+                                                    <?php if (strtolower($user['role']) === 'student'): ?>
+                                                        <a href="javascript:void(0);" onclick="viewStudentDetails(<?= esc($user['id']) ?>, 'users')" style="color:#35283f; font-weight:600; text-decoration:none;">
+                                                            <?= esc($user['name']) ?>
+                                                        </a>
+                                                    <?php elseif (!empty($user['organization_id'])): ?>
+                                                        <a href="javascript:void(0);" onclick="viewOrgDetails(<?= esc($user['organization_id']) ?>, 'users')" style="color:#35283f; font-weight:600; text-decoration:none;">
+                                                            <?= esc($user['name']) ?>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <?= esc($user['name']) ?>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td><?= esc($user['email']) ?></td>
                                                 <td><span class="role-badge <?= strtolower($user['role']) ?>"><?= esc($user['role']) ?></span></td>
                                                 <td><span class="status-badge <?= strtolower($user['status']) === 'active' ? 'active' : 'pending' ?>"><?= esc($user['status']) ?></span></td>
                                                 <td><?= esc($user['registration_date']) ?></td>
-                                                <td>
-                                                    <?php if (strtolower($user['role']) === 'student'): ?>
-                                                        <button class="btn-action view" onclick="viewStudentDetails(<?= esc($user['id']) ?>, 'users')" title="View"><i class="fas fa-eye"></i> View</button>
-                                                    <?php else: ?>
-                                                        <?php if (!empty($user['organization_id'])): ?>
-                                                            <button class="btn-action view" onclick="viewOrgDetails(<?= esc($user['organization_id']) ?>, 'users')" title="View"><i class="fas fa-eye"></i> View</button>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
-                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
+                                            <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
                                                 No users found.
                                             </td>
                                         </tr>

@@ -48,7 +48,11 @@
                                             <i class="fas fa-building"></i>
                                         </div>
                                         <div class="approval-info">
-                                            <h4><?= esc($org['name']) ?></h4>
+                                            <h4>
+                                                <a href="javascript:void(0);" onclick="viewPendingOrgDetails(<?= esc($org['id']) ?>)" style="color:#35283f; text-decoration:none;">
+                                                    <?= esc($org['name']) ?>
+                                                </a>
+                                            </h4>
                                             <p><?= esc($org['type']) ?> • Registered <?= esc($org['submitted_at']) ?></p>
                                             <div class="approval-details">
                                                 <span><i class="fas fa-envelope"></i> <?= esc($org['email']) ?></span>
@@ -61,9 +65,6 @@
                                             </button>
                                             <button class="btn-action reject" onclick="rejectOrg(<?= esc($org['id']) ?>)" title="Reject">
                                                 <i class="fas fa-times"></i> Reject
-                                            </button>
-                                            <button class="btn-action view" onclick="viewPendingOrgDetails(<?= esc($org['id']) ?>)" title="View Details">
-                                                <i class="fas fa-eye"></i> View
                                             </button>
                                         </div>
                                     </div>

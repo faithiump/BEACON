@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Transactions - Admin - BEACON</title>
+    <title>Reservations - Admin - BEACON</title>
     <?php helper('url'); ?>
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/admin/dashboard.css') ?>" type="text/css">
@@ -34,8 +34,8 @@
                 <div class="content-card">
                     <div class="card-header">
                         <h2>
-                            <i class="fas fa-money-bill-wave"></i>
-                            Student Transactions & Payments
+                            <i class="fas fa-clipboard-list"></i>
+                            Student Reservations
                         </h2>
                     </div>
                     <div class="card-body">
@@ -44,13 +44,14 @@
                                 <thead>
                                     <tr>
                                         <th>Student</th>
-                                        <th>Transaction Type</th>
-                                        <th>Product/Service</th>
+                                        <th>Student</th>
+                                        <th>Product</th>
                                         <th>Quantity</th>
-                                        <th>Amount</th>
+                                        <th>Total</th>
                                         <th>Organization</th>
-                                        <th>Date</th>
+                                        <th>Requested</th>
                                         <th>Status</th>
+                                        <th>Method</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -58,7 +59,6 @@
                                         <?php foreach ($transactions as $transaction): ?>
                                             <tr>
                                                 <td><?= esc($transaction['student_name']) ?></td>
-                                                <td><?= esc($transaction['transaction_type']) ?></td>
                                                 <td><?= esc($transaction['product_name']) ?></td>
                                                 <td><?= esc($transaction['quantity']) ?></td>
                                                 <td>₱<?= esc($transaction['amount']) ?></td>
@@ -69,12 +69,13 @@
                                                         <?= esc($transaction['status_text']) ?>
                                                     </span>
                                                 </td>
+                                                <td><?= esc($transaction['payment_method']) ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
                                             <td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">
-                                                No transactions found.
+                                                No reservations found.
                                             </td>
                                         </tr>
                                     <?php endif; ?>

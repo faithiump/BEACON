@@ -61,8 +61,8 @@
                     <i class="fas fa-chevron-right nav-arrow"></i>
                 </a>
                 <ul class="nav-submenu">
-                    <li><a href="<?= base_url('admin/transactions') ?>">All Transactions</a></li>
-                    <li><a href="<?= base_url('admin/transactions/payments') ?>">Payments</a></li>
+                    <li><a href="<?= base_url('admin/reservations') ?>">Reservations</a></li>
+                    <li><a href="<?= base_url('admin/reservations/history') ?>">Reservation History</a></li>
                 </ul>
             </li>
             

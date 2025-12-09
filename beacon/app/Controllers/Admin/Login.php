@@ -48,10 +48,19 @@ class Login extends BaseController
                 ->get()
                 ->getResultArray();
 
-            return array_column($viewed, 'application_id');
+            $viewedIds = array_column($viewed, 'application_id');
+
+            // Merge with session fallback (in case table is missing or write failed)
+            $sessionViewed = session()->get('viewed_notifications') ?? [];
+            if (!empty($sessionViewed)) {
+                $viewedIds = array_unique(array_merge($viewedIds, $sessionViewed));
+            }
+
+            return $viewedIds;
         } catch (\Exception $e) {
             log_message('error', 'Error fetching viewed notifications: ' . $e->getMessage());
-            return [];
+            // Fallback to session-only
+            return session()->get('viewed_notifications') ?? [];
         }
     }
 
@@ -90,10 +99,23 @@ class Login extends BaseController
                 ]);
             }
 
+            // Always also track in session as a fallback
+            $sessionViewed = session()->get('viewed_notifications') ?? [];
+            if (!in_array($applicationId, $sessionViewed)) {
+                $sessionViewed[] = $applicationId;
+                session()->set('viewed_notifications', $sessionViewed);
+            }
+
             return true;
         } catch (\Exception $e) {
             log_message('error', 'Error marking notification as viewed: ' . $e->getMessage());
-            return false;
+            // Session fallback
+            $sessionViewed = session()->get('viewed_notifications') ?? [];
+            if (!in_array($applicationId, $sessionViewed)) {
+                $sessionViewed[] = $applicationId;
+                session()->set('viewed_notifications', $sessionViewed);
+            }
+            return true;
         }
     }
 
@@ -102,35 +124,75 @@ class Login extends BaseController
      */
     private function formatPendingOrganizations($pendingApplications, $adminId = null)
     {
-        $viewedNotifications = $adminId ? $this->getViewedNotifications($adminId) : [];
-        $pendingOrgsData = [];
+        // Legacy helper now delegates to notification data
+        $notifications = $this->getNotificationsData($adminId);
+        return $notifications['items'];
+    }
 
-        foreach ($pendingApplications as $app) {
-            $submittedDate = new \DateTime($app['submitted_at']);
-            $now = new \DateTime();
-            $interval = $now->diff($submittedDate);
-            
-            $timeAgo = '';
-            if ($interval->days > 0) {
-                $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
-            } elseif ($interval->h > 0) {
-                $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
-            } else {
-                $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+    /**
+     * Build notifications for topbar (includes all application statuses)
+     */
+    private function getNotificationsData($adminId = null, $limit = 15)
+    {
+        $items = [];
+        $unreadCount = 0;
+
+        try {
+            $db = \Config\Database::connect();
+            $tables = $db->listTables();
+            if (!in_array('organization_applications', $tables)) {
+                return ['items' => [], 'unread_count' => 0];
             }
 
-            $pendingOrgsData[] = [
-                'id' => $app['id'],
-                'name' => $app['organization_name'],
-                'type' => ucfirst(str_replace('_', ' ', $app['organization_type'])),
-                'email' => $app['contact_email'],
-                'phone' => $app['contact_phone'],
-                'submitted_at' => $timeAgo,
-                'is_viewed' => in_array($app['id'], $viewedNotifications)
-            ];
+            $clearedAt = session()->get('notifications_cleared_at');
+
+            $builder = $db->table('organization_applications')
+                ->orderBy('submitted_at', 'DESC')
+                ->limit($limit);
+
+            if (!empty($clearedAt)) {
+                $builder->where('submitted_at >', $clearedAt);
+            }
+
+            $apps = $builder->get()->getResultArray();
+            $viewed = $this->getViewedNotifications($adminId);
+
+            $now = new \DateTime();
+
+            foreach ($apps as $app) {
+                $submittedDate = new \DateTime($app['submitted_at']);
+                $interval = $now->diff($submittedDate);
+                $timeAgo = '';
+                if ($interval->days > 0) {
+                    $timeAgo = $interval->days . ' day' . ($interval->days > 1 ? 's' : '') . ' ago';
+                } elseif ($interval->h > 0) {
+                    $timeAgo = $interval->h . ' hour' . ($interval->h > 1 ? 's' : '') . ' ago';
+                } else {
+                    $timeAgo = $interval->i . ' minute' . ($interval->i > 1 ? 's' : '') . ' ago';
+                }
+
+                $isViewed = in_array($app['id'], $viewed);
+                if (!$isViewed) {
+                    $unreadCount++;
+                }
+
+                $items[] = [
+                    'id' => $app['id'],
+                    'name' => $app['organization_name'],
+                    'status' => $app['status'],
+                    'type' => isset($app['organization_type']) ? ucfirst(str_replace('_', ' ', $app['organization_type'])) : 'N/A',
+                    'email' => $app['contact_email'] ?? 'N/A',
+                    'phone' => $app['contact_phone'] ?? 'N/A',
+                    'is_viewed' => $isViewed,
+                    'submitted_at' => $timeAgo
+                ];
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to build notifications: ' . $e->getMessage());
+            return ['items' => [], 'unread_count' => 0];
         }
 
-        return $pendingOrgsData;
+        return ['items' => $items, 'unread_count' => $unreadCount];
     }
 
     public function index()
@@ -248,30 +310,18 @@ class Login extends BaseController
             ];
         }
 
-        // Fetch pending organization applications
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
-        // Get viewed notifications from database for current admin
+        // Notifications for topbar
         $adminId = session()->get('admin_id');
-        $viewedNotifications = $this->getViewedNotifications($adminId);
-
-        // Format pending applications for display
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
-        
-        // Calculate unread count
-        $unreadCount = 0;
-        foreach ($pendingOrgsData as $org) {
-            if (!$org['is_viewed']) {
-                $unreadCount++;
-            }
-        }
-        
-        // Store unread count in session for use in views
-        session()->set('unread_notifications_count', $unreadCount);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
+        $pendingOnly = array_filter($notifications['items'], function ($item) {
+            return isset($item['status']) && $item['status'] === 'pending';
+        });
+        $pendingOrgsData = array_values($pendingOnly);
+        $pendingOnly = array_filter($notifications['items'], function ($item) {
+            return isset($item['status']) && $item['status'] === 'pending';
+        });
+        $pendingOrgsData = array_values($pendingOnly);
 
         // Fetch approved organizations
         $approvedOrgs = $db->table('organizations o')
@@ -647,7 +697,8 @@ class Login extends BaseController
             'students' => $studentData,
             'total_students_count' => $totalStudentsCount,
             'users' => $userData,
-            'pending_organizations' => $pendingOrgsData,
+            'pending_organizations' => $notifications['items'], // topbar feed
+            'topbar_notifications' => $notifications['items'],   // explicit for topbar consistency
             'approved_organizations' => $approvedOrgsData,
             'recent_comments' => $commentsData,
             'student_activity' => $activityData,
@@ -1123,7 +1174,9 @@ class Login extends BaseController
             ->getResultArray();
 
         $adminId = session()->get('admin_id');
-        $data['pending_organizations'] = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
+        $data['pending_organizations'] = $notifications['items'];
 
         return view('admin/organization_details', $data);
     }
@@ -1248,7 +1301,9 @@ class Login extends BaseController
 
         // Get viewed notifications from database for current admin
         $adminId = session()->get('admin_id');
-        $data['pending_organizations'] = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
+        $data['pending_organizations'] = $notifications['items'];
 
         return view('admin/organization_details', $data);
     }
@@ -1431,27 +1486,78 @@ class Login extends BaseController
             $this->markNotificationAsViewed($adminId, $orgId);
         }
 
-        // Recalculate unread count
-        $db = \Config\Database::connect();
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->get()
-            ->getResultArray();
-
-        $viewedNotifications = $this->getViewedNotifications($adminId);
-        $unreadCount = 0;
-        foreach ($pendingApplications as $app) {
-            if (!in_array($app['id'], $viewedNotifications)) {
-                $unreadCount++;
-            }
-        }
-
-        // Update session unread count
-        session()->set('unread_notifications_count', $unreadCount);
+        // Recalculate unread count using unified notification builder
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
 
         return $this->response->setJSON([
             'success' => true,
-            'unread_count' => $unreadCount
+            'unread_count' => $notifications['unread_count']
+        ]);
+    }
+
+    /**
+     * Clear notifications (hide older than now for this admin session)
+     */
+    public function clearNotifications()
+    {
+        if (!session()->get('is_admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ])->setStatusCode(401);
+        }
+
+        session()->set('notifications_cleared_at', date('Y-m-d H:i:s'));
+        session()->set('unread_notifications_count', 0);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Notifications cleared'
+        ]);
+    }
+
+    /**
+     * Mark all notifications as read (for current admin)
+     */
+    public function markAllNotificationsRead()
+    {
+        if (!session()->get('is_admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ])->setStatusCode(401);
+        }
+
+        $adminId = session()->get('admin_id');
+        if ($adminId) {
+            // Mark all application IDs as viewed
+            $db = \Config\Database::connect();
+            $tables = $db->listTables();
+            if (in_array('organization_applications', $tables) && in_array('admin_notification_views', $tables)) {
+                $apps = $db->table('organization_applications')
+                    ->select('id')
+                    ->get()
+                    ->getResultArray();
+                foreach ($apps as $app) {
+                    $this->markNotificationAsViewed($adminId, $app['id']);
+                }
+            }
+        }
+
+        // Recalculate unread count
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
+
+        // Session fallback: store all as viewed
+        $allIds = array_column($notifications['items'], 'id');
+        if (!empty($allIds)) {
+            session()->set('viewed_notifications', $allIds);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'unread_count' => $notifications['unread_count']
         ]);
     }
 
@@ -1616,19 +1722,13 @@ class Login extends BaseController
             ];
         }
 
-        // Fetch pending organizations for topbar
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
         $adminId = session()->get('admin_id');
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
 
         $data = [
             'users' => $userData,
-            'pending_organizations' => $pendingOrgsData
+            'pending_organizations' => $notifications['items']
         ];
         
         return view('admin/users', $data);
@@ -1697,18 +1797,19 @@ class Login extends BaseController
         }
 
         // Fetch pending organizations for topbar
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
         $adminId = session()->get('admin_id');
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
+
+        // Pending list for this page should only include pending applications
+        $pendingOnly = array_filter($notifications['items'], function ($item) {
+            return isset($item['status']) && $item['status'] === 'pending';
+        });
 
         $data = [
             'approved_organizations' => $approvedOrgsData,
-            'pending_organizations' => $pendingOrgsData
+            'pending_organizations' => array_values($pendingOnly),
+            'topbar_notifications' => $notifications['items']
         ];
 
         return view('admin/organizations', $data);
@@ -1725,19 +1826,17 @@ class Login extends BaseController
 
         $db = \Config\Database::connect();
         
-        // Fetch pending organization applications
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
-        // Format pending applications for display
         $adminId = session()->get('admin_id');
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
+
+        $pendingOnly = array_filter($notifications['items'], function ($item) {
+            return isset($item['status']) && $item['status'] === 'pending';
+        });
 
         $data = [
-            'pending_organizations' => $pendingOrgsData
+            'pending_organizations' => array_values($pendingOnly),
+            'topbar_notifications' => $notifications['items']
         ];
 
         return view('admin/organizations_pending', $data);
@@ -1787,20 +1886,14 @@ class Login extends BaseController
 
         $totalStudentsCount = count($studentData);
 
-        // Fetch pending organizations for topbar
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
         $adminId = session()->get('admin_id');
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
 
         $data = [
             'students' => $studentData,
             'total_students_count' => $totalStudentsCount,
-            'pending_organizations' => $pendingOrgsData
+            'pending_organizations' => $notifications['items']
         ];
 
         return view('admin/students', $data);
@@ -1868,28 +1961,22 @@ class Login extends BaseController
             ];
         }
 
-        // Fetch pending organizations for topbar
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
         $adminId = session()->get('admin_id');
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
 
         $data = [
             'student_activity' => $activityData,
-            'pending_organizations' => $pendingOrgsData
+            'pending_organizations' => $notifications['items']
         ];
 
         return view('admin/students_activity', $data);
     }
 
     /**
-     * View all transactions
+     * View all reservations
      */
-    public function transactions()
+    public function reservations()
     {
         if (!session()->get('is_admin')) {
             return redirect()->to('/admin/login');
@@ -1933,12 +2020,12 @@ class Login extends BaseController
                     $transactionType = 'Membership Fee';
                 }
                 
-                // Format status
+                // Format status (use Approved/Rejected terminology)
                 $statusClass = 'pending';
-                $statusText = ucfirst($reservation['status']);
+                $statusText = 'Pending';
                 if ($reservation['status'] === 'completed' || $reservation['status'] === 'confirmed') {
                     $statusClass = 'success';
-                    $statusText = 'Paid';
+                    $statusText = 'Approved';
                 } elseif ($reservation['status'] === 'rejected') {
                     $statusClass = 'rejected';
                     $statusText = 'Rejected';
@@ -1955,7 +2042,6 @@ class Login extends BaseController
                     'status' => $reservation['status'],
                     'status_class' => $statusClass,
                     'status_text' => $statusText,
-                    'payment_method' => $reservation['payment_method'] ?? 'N/A',
                     'quantity' => $reservation['quantity'] ?? 1
                 ];
                 }
@@ -1966,35 +2052,34 @@ class Login extends BaseController
             $transactionData = [];
         }
 
-        // Fetch pending organizations for topbar
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
+        // Notifications for topbar (consistent across pages)
         $adminId = session()->get('admin_id');
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
 
         $data = [
             'transactions' => $transactionData,
-            'pending_organizations' => $pendingOrgsData
+            'pending_organizations' => $notifications['items']
         ];
 
-        return view('admin/transactions', $data);
+        return view('admin/reservations', $data);
     }
 
     /**
-     * View payments (completed/confirmed transactions)
+     * View reservation history (confirmed/completed)
      */
-    public function transactionsPayments()
+    public function reservationsHistory()
     {
         if (!session()->get('is_admin')) {
             return redirect()->to('/admin/login');
         }
 
         $db = \Config\Database::connect();
-        
+
+        $adminId = session()->get('admin_id');
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
+
         // Check if reservations table exists
         $paymentData = [];
         try {
@@ -2032,6 +2117,17 @@ class Login extends BaseController
                         $transactionType = 'Membership Fee';
                     }
                     
+                    // Status mapping for history
+                    $statusClass = 'pending';
+                    $statusText = 'Pending';
+                    if ($reservation['status'] === 'completed' || $reservation['status'] === 'confirmed') {
+                        $statusClass = 'success';
+                        $statusText = 'Approved';
+                    } elseif ($reservation['status'] === 'rejected') {
+                        $statusClass = 'rejected';
+                        $statusText = 'Rejected';
+                    }
+
                     $paymentData[] = [
                         'id' => $reservation['reservation_id'],
                         'student_name' => $fullName,
@@ -2040,8 +2136,9 @@ class Login extends BaseController
                         'amount' => number_format($reservation['total_amount'] ?? 0, 2),
                         'organization_name' => $reservation['organization_name'] ?? 'N/A',
                         'date' => $reservation['created_at'] ? date('Y-m-d', strtotime($reservation['created_at'])) : 'N/A',
-                        'payment_method' => $reservation['payment_method'] ?? 'N/A',
-                        'quantity' => $reservation['quantity'] ?? 1
+                        'quantity' => $reservation['quantity'] ?? 1,
+                        'status_class' => $statusClass,
+                        'status_text' => $statusText
                     ];
                 }
             }
@@ -2051,21 +2148,16 @@ class Login extends BaseController
             $paymentData = [];
         }
 
-        // Fetch pending organizations for topbar
-        $pendingApplications = $db->table('organization_applications')
-            ->where('status', 'pending')
-            ->orderBy('submitted_at', 'DESC')
-            ->get()
-            ->getResultArray();
-
+        // Notifications for topbar (consistent across pages)
         $adminId = session()->get('admin_id');
-        $pendingOrgsData = $this->formatPendingOrganizations($pendingApplications, $adminId);
+        $notifications = $this->getNotificationsData($adminId);
+        session()->set('unread_notifications_count', $notifications['unread_count']);
 
         $data = [
             'payments' => $paymentData,
-            'pending_organizations' => $pendingOrgsData
+            'pending_organizations' => $notifications['items']
         ];
 
-        return view('admin/transactions_payments', $data);
+        return view('admin/reservations_history', $data);
     }
 }

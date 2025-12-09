@@ -2,9 +2,9 @@
 /**
  * Admin Top Bar
  */
-$pending_organizations = $pending_organizations ?? [];
+$pending_organizations = $topbar_notifications ?? $pending_organizations ?? [];
 
-// Derive unread count from provided pending organizations; fall back to session
+// Derive unread count from provided notifications; fall back to session
 $unread_organizations = [];
 if (!empty($pending_organizations)) {
     $unread_organizations = array_filter($pending_organizations, function($org) {
@@ -36,17 +36,20 @@ if (!empty($pending_organizations)) {
                 </div>
                 <div class="notification-list">
                     <?php if (!empty($pending_organizations)): ?>
-                        <?php foreach (array_slice($pending_organizations, 0, 5) as $org): ?>
+                        <?php foreach (array_slice($pending_organizations, 0, 10) as $org): ?>
                             <?php $isUnread = !isset($org['is_viewed']) || !$org['is_viewed']; ?>
                             <div class="notification-item <?= $isUnread ? 'unread' : '' ?>" 
                                  data-org-id="<?= $org['id'] ?>"
-                                 onclick="handleNotificationClick(<?= $org['id'] ?>, '<?= base_url('admin/organizations/pending/view/' . $org['id']) ?>')" 
+                                 data-status="<?= esc($org['status']) ?>"
+                                 onclick="handleNotificationClick(<?= $org['id'] ?>, '<?= base_url('admin/organizations/pending/view/' . $org['id']) ?>', '<?= esc($org['status']) ?>')" 
                                  style="cursor: pointer;">
                                 <div class="notification-icon organization">
                                     <i class="fas fa-building"></i>
                                 </div>
                                 <div class="notification-content">
-                                    <p class="notification-title">Organization Pending Approval</p>
+                                    <p class="notification-title">
+                                        <?= esc(ucfirst($org['status'])) ?> Application
+                                    </p>
                                     <p class="notification-text"><?= esc($org['name']) ?></p>
                                     <span class="notification-time"><?= esc($org['submitted_at']) ?></span>
                                 </div>
@@ -55,6 +58,10 @@ if (!empty($pending_organizations)) {
                     <?php else: ?>
                         <div class="notification-empty">No notifications</div>
                     <?php endif; ?>
+                </div>
+                <div class="notification-footer">
+                    <button class="clear-notifications-btn" onclick="markAllNotificationsRead()">Mark all as read</button>
+                    <button class="clear-notifications-btn" style="margin-left: 0.5rem; background:#64748b;" onclick="clearAllNotifications()">Clear notifications</button>
                 </div>
             </div>
         </div>
@@ -85,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Handle notification click - mark as read and navigate
-function handleNotificationClick(orgId, url) {
+function handleNotificationClick(orgId, url, status) {
     // Mark as read via AJAX first, then navigate
     fetch('<?= base_url('admin/notifications/mark-read') ?>', {
         method: 'POST',
@@ -126,8 +133,17 @@ function handleNotificationClick(orgId, url) {
                 }
             }
             
-            // Navigate to the page after updating UI
-            window.location.href = url;
+            // Navigate logic:
+            // Pending: go to pending view
+            // Approved: go to org profile
+            // Rejected: show modal/alert
+            if (status === 'approved') {
+                window.location.href = '<?= base_url('admin/organizations') ?>';
+            } else if (status === 'rejected') {
+                alert('This application has been rejected.');
+            } else {
+                window.location.href = url;
+            }
         } else {
             // Even if marking fails, still navigate
             window.location.href = url;
@@ -168,6 +184,51 @@ function updateNotificationBadge() {
             countSpan.textContent = '0 new';
         }
     }
+}
+
+// Clear all notifications (hide)
+function clearAllNotifications() {
+    fetch('<?= base_url('admin/notifications/clear') ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const list = document.querySelector('.notification-list');
+            if (list) {
+                list.innerHTML = '<div class="notification-empty">No notifications</div>';
+            }
+            const badge = document.getElementById('notificationBadge');
+            const countSpan = document.getElementById('notificationCount');
+            if (badge) badge.style.display = 'none';
+            if (countSpan) countSpan.textContent = '0 new';
+        }
+    })
+    .catch(err => console.error('Error clearing notifications:', err));
+}
+
+// Mark all notifications as read
+function markAllNotificationsRead() {
+    fetch('<?= base_url('admin/notifications/mark-all-read') ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelectorAll('.notification-item').forEach(item => item.classList.remove('unread'));
+            const badge = document.getElementById('notificationBadge');
+            const countSpan = document.getElementById('notificationCount');
+            if (badge) badge.style.display = 'none';
+            if (countSpan) countSpan.textContent = '0 new';
+        }
+    })
+    .catch(err => console.error('Error marking all read:', err));
 }
 </script>
 

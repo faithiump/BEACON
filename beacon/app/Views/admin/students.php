@@ -49,26 +49,26 @@
                                         <th>Course</th>
                                         <th>Status</th>
                                         <th>Joined Orgs</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="studentsTableBody">
                                     <?php if (!empty($students)): ?>
                                         <?php foreach ($students as $student): ?>
                                             <tr>
-                                                <td><?= esc($student['name']) ?></td>
+                                                <td>
+                                                    <a href="javascript:void(0);" onclick="viewStudentDetails(<?= esc($student['id']) ?>, 'students')" style="color:#35283f; font-weight:600; text-decoration:none;">
+                                                        <?= esc($student['name']) ?>
+                                                    </a>
+                                                </td>
                                                 <td><?= esc($student['email']) ?></td>
                                                 <td><?= esc($student['course']) ?></td>
                                                 <td><span class="status-badge active"><?= esc($student['status']) ?></span></td>
                                                 <td><?= esc($student['org_count']) ?></td>
-                                                <td>
-                                                    <button class="btn-action view" onclick="viewStudentDetails(<?= esc($student['id']) ?>, 'students')" title="View"><i class="fas fa-eye"></i> View</button>
-                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
+                                            <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
                                                 No active students found.
                                             </td>
                                         </tr>

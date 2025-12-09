@@ -135,7 +135,8 @@
                             </div>
                         </div>
 
-                        <!-- Mission, Vision, Objectives Section -->
+                        <?php if (!$isPending): ?>
+                        <!-- Mission, Vision, Objectives Section (hidden for pending approvals) -->
                         <div style="margin-bottom: 2.5rem; padding-top: 2rem; border-top: 1px solid #e2e8f0;">
                             <h4 style="display: flex; align-items: center; gap: 0.5rem; margin: 0 0 1.5rem 0; font-size: 1.125rem; font-weight: 600; color: #0f172a;">
                                 <i class="fas fa-bullseye" style="color: #35283f;"></i>
@@ -171,6 +172,7 @@
                                 </div>
                             </div>
                         </div>
+                        <?php endif; ?>
 
                         <!-- Advisor Information Section -->
                         <?php if ($advisor): ?>

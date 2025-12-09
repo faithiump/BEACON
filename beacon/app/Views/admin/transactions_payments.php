@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payments - Admin - BEACON</title>
+    <title>Reservation History - Admin - BEACON</title>
     <?php helper('url'); ?>
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/admin/dashboard.css') ?>" type="text/css">
@@ -34,8 +34,8 @@
                 <div class="content-card">
                     <div class="card-header">
                         <h2>
-                            <i class="fas fa-credit-card"></i>
-                            Completed Payments
+                            <i class="fas fa-history"></i>
+                            Reservation History
                         </h2>
                     </div>
                     <div class="card-body">
@@ -44,13 +44,13 @@
                                 <thead>
                                     <tr>
                                         <th>Student</th>
-                                        <th>Transaction Type</th>
-                                        <th>Product/Service</th>
+                                        <th>Product</th>
                                         <th>Quantity</th>
-                                        <th>Amount</th>
+                                        <th>Total</th>
                                         <th>Payment Method</th>
                                         <th>Organization</th>
-                                        <th>Date</th>
+                                        <th>Updated</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -58,19 +58,23 @@
                                         <?php foreach ($payments as $payment): ?>
                                             <tr>
                                                 <td><?= esc($payment['student_name']) ?></td>
-                                                <td><?= esc($payment['transaction_type']) ?></td>
                                                 <td><?= esc($payment['product_name']) ?></td>
                                                 <td><?= esc($payment['quantity']) ?></td>
                                                 <td>₱<?= esc($payment['amount']) ?></td>
                                                 <td><?= esc($payment['payment_method']) ?></td>
                                                 <td><?= esc($payment['organization_name']) ?></td>
                                                 <td><?= esc($payment['date']) ?></td>
+                                                <td>
+                                                    <span class="status-badge <?= esc($payment['status_class'] ?? 'success') ?>">
+                                                        <?= esc($payment['status_text'] ?? 'Completed') ?>
+                                                    </span>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
                                             <td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">
-                                                No completed payments found.
+                                                No reservation history found.
                                             </td>
                                         </tr>
                                     <?php endif; ?>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Organizations - Admin - BEACON</title>
+    <title>Reservations - Admin - BEACON</title>
     <?php helper('url'); ?>
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/admin/dashboard.css') ?>" type="text/css">
@@ -34,8 +34,8 @@
                 <div class="content-card">
                     <div class="card-header">
                         <h2>
-                            <i class="fas fa-check-circle"></i>
-                            Approved Organizations
+                            <i class="fas fa-clipboard-list"></i>
+                            Student Reservations
                         </h2>
                     </div>
                     <div class="card-body">
@@ -43,34 +43,37 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Organization Name</th>
-                                        <th>Category</th>
+                                        <th>Student</th>
+                                        <th>Student</th>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Total</th>
+                                        <th>Organization</th>
+                                        <th>Requested</th>
                                         <th>Status</th>
-                                        <th>Members</th>
-                                        <th>Events</th>
-                                        <th>Approved Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if (!empty($approved_organizations)): ?>
-                                        <?php foreach ($approved_organizations as $org): ?>
+                                    <?php if (!empty($transactions)): ?>
+                                        <?php foreach ($transactions as $transaction): ?>
                                             <tr>
+                                                <td><?= esc($transaction['student_name']) ?></td>
+                                                <td><?= esc($transaction['product_name']) ?></td>
+                                                <td><?= esc($transaction['quantity']) ?></td>
+                                                <td>₱<?= esc($transaction['amount']) ?></td>
+                                                <td><?= esc($transaction['organization_name']) ?></td>
+                                                <td><?= esc($transaction['date']) ?></td>
                                                 <td>
-                                                    <a href="javascript:void(0);" onclick="viewOrgDetails(<?= esc($org['id']) ?>, 'organizations')" style="color:#35283f; font-weight:600; text-decoration:none;">
-                                                        <?= esc($org['name']) ?>
-                                                    </a>
+                                                    <span class="status-badge <?= esc($transaction['status_class']) ?>">
+                                                        <?= esc($transaction['status_text']) ?>
+                                                    </span>
                                                 </td>
-                                                <td><?= esc($org['category']) ?></td>
-                                                <td><span class="status-badge approved"><?= esc($org['status']) ?></span></td>
-                                                <td><?= number_format($org['member_count']) ?></td>
-                                                <td><?= number_format($org['event_count']) ?></td>
-                                                <td><?= esc($org['approved_date']) ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
-                                                No approved organizations found.
+                                            <td colspan="7" style="text-align: center; padding: 2rem; color: #64748b;">
+                                                No reservations found.
                                             </td>
                                         </tr>
                                     <?php endif; ?>
@@ -82,13 +85,6 @@
             </main>
         </div>
     </div>
-
-    <script>
-        function viewOrgDetails(id, returnTo) {
-            const returnParam = returnTo ? '?return=' + returnTo : '';
-            window.location.href = '<?= base_url('admin/organizations/view') ?>/' + id + returnParam;
-        }
-    </script>
 </body>
 </html>
 
