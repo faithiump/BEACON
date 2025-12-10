@@ -604,7 +604,7 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    background: #64116e;
     color: white;
 }
 
@@ -616,8 +616,7 @@ body {
 /* Forum Create Post Button - Teal/Cyan Style */
 #forumPostsList .btn-primary,
 .forum-posts-list .btn-primary {
-    background: #14b8a6;
-    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+    background: #64116e;
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -639,7 +638,7 @@ body {
 
 #forumPostsList .btn-primary:hover,
 .forum-posts-list .btn-primary:hover {
-    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+    background: #2e0832;
     transform: translateY(-1px);
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25),
                 0 2px 4px rgba(0, 0, 0, 0.35),
@@ -661,7 +660,7 @@ body {
 
 /* Create Post Modal Button Styles */
 #createPostModal .btn-primary {
-    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+    background: #64116e;
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -678,7 +677,7 @@ body {
 }
 
 #createPostModal .btn-primary:hover {
-    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+    background: #64116e;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
 }
