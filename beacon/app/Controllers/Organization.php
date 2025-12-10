@@ -302,9 +302,6 @@ class Organization extends BaseController
      */
     private function getRecentEvents($orgIdOnly = null)
     {
-        if (empty($orgIdOnly)) {
-            return [];
-        }
         $eventModel = new EventModel();
         $organizationModel = new OrganizationModel();
         $userPhotoModel = new UserPhotoModel();
@@ -321,6 +318,7 @@ class Organization extends BaseController
         
         // Get events only from the target organization
         $allEvents = [];
+        $seenEventIds = [];
         foreach ($allOrganizations as $org) {
             if (empty($org) || empty($org['id'])) {
                 continue;
@@ -336,6 +334,9 @@ class Organization extends BaseController
             
             foreach ($orgEvents as $event) {
                 $eventId = $event['event_id'] ?? $event['id'];
+                if (!$eventId || isset($seenEventIds[$eventId])) {
+                    continue; // skip duplicates across orgs
+                }
                 
                 // Update event status in database based on current date/time
                 // Force update to ensure status is current
@@ -448,6 +449,13 @@ class Organization extends BaseController
                     $currentStatus = $expectedStatus;
                 }
                 
+                // Normalize image path
+                $imagePath = null;
+                if (!empty($event['image'])) {
+                    $rawImage = $event['image'];
+                    $imagePath = stripos($rawImage, 'http') === 0 ? $rawImage : 'uploads/events/' . ltrim($rawImage, '/');
+                }
+
                 // Get reaction counts
                 $reactionCounts = $likeModel->getReactionCounts('event', $eventId);
                 
@@ -551,6 +559,8 @@ class Organization extends BaseController
                     'org_id' => $org['id'],
                     'org_name' => $org['organization_name'] ?? ($org['name'] ?? 'Organization'),
                     'org_acronym' => $org['organization_acronym'] ?? ($org['acronym'] ?? 'ORG'),
+                    'org_name_display' => $org['organization_name'] ?? ($org['name'] ?? 'Organization'),
+                    'org_acronym_display' => $org['organization_acronym'] ?? ($org['acronym'] ?? 'ORG'),
                     'org_photo' => $orgPhoto,
                     'title' => $event['event_name'] ?? $event['title'],
                     'description' => $event['description'],
@@ -564,12 +574,13 @@ class Organization extends BaseController
                     'max_attendees' => $event['max_attendees'],
                     'status' => $eventStatus,
                     'is_ongoing' => $isOngoing,
-                    'image' => $event['image'] ?? null,
+                    'image' => $imagePath,
                     'created_at' => $event['created_at'],
                     'reaction_counts' => $reactionCounts,
                     'comment_count' => $commentCount,
                     'interest_count' => $interestCount,
                 ];
+                $seenEventIds[$eventId] = true;
             }
         }
 
@@ -588,21 +599,22 @@ class Organization extends BaseController
      */
     private function getRecentAnnouncements($orgIdOnly = null)
     {
-        if (empty($orgIdOnly)) {
-            return [];
-        }
         $announcementModel = new AnnouncementModel();
         $organizationModel = new OrganizationModel();
         $userPhotoModel = new UserPhotoModel();
         $likeModel = new \App\Models\PostLikeModel();
         $commentModel = new \App\Models\PostCommentModel();
 
-        // Get only the target organization
-        $org = $organizationModel->find($orgIdOnly);
-        $allOrganizations = $org ? [$org] : [];
+        // Get orgs: specific or all active
+        if ($orgIdOnly) {
+            $org = $organizationModel->find($orgIdOnly);
+            $allOrganizations = $org ? [$org] : [];
+        } else {
+            $allOrganizations = $organizationModel->where('is_active', 1)->findAll();
+        }
         
-        // Get announcements from all active organizations
         $allAnnouncements = [];
+        $seenAnnouncementIds = [];
         foreach ($allOrganizations as $org) {
             $orgAnnouncements = $announcementModel->getAnnouncementsByOrg($org['id'], 50);
             
@@ -615,6 +627,9 @@ class Organization extends BaseController
             
             foreach ($orgAnnouncements as $announcement) {
                 $announcementId = $announcement['announcement_id'];
+                if (!$announcementId || isset($seenAnnouncementIds[$announcementId])) {
+                    continue; // skip duplicates across orgs
+                }
                 
                 // Get reaction counts
                 $reactionCounts = $likeModel->getReactionCounts('announcement', $announcementId);
@@ -636,6 +651,7 @@ class Organization extends BaseController
                     'reaction_counts' => $reactionCounts,
                     'comment_count' => $commentCount,
                 ];
+                $seenAnnouncementIds[$announcementId] = true;
             }
         }
 
@@ -1885,10 +1901,10 @@ class Organization extends BaseController
         $forumPostModel = new ForumPostModel();
         $categoryCounts = $forumPostModel->getCategoryCounts();
 
-        // Events and announcements (all orgs)
-        // Pull only this organization's posts to avoid cross-org duplication
-        $recentEvents = $this->getRecentEvents($orgId);
-        $recentAnnouncements = $this->getRecentAnnouncements($orgId);
+        // Events and announcements (all orgs for feed)
+        // Use orgIdOnly=null to load across orgs so ownership stays correct
+        $recentEvents = $this->getRecentEvents(null);
+        $recentAnnouncements = $this->getRecentAnnouncements(null);
 
         // Combined feed
         $allPosts = [];

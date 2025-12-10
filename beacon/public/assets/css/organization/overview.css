@@ -62,6 +62,51 @@
     display: flex;
 }
 
+.image-lightbox {
+    background: rgba(0, 0, 0, 0.85);
+    padding: 1rem;
+}
+
+.image-lightbox-frame {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-lightbox-frame img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    display: block;
+}
+
+.image-lightbox-close {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.image-lightbox-close:hover {
+    background: rgba(0,0,0,0.8);
+    transform: scale(1.05);
+}
+
 .modal {
     background: #fff;
     border-radius: 14px;
@@ -465,15 +510,21 @@
 
 .post-media {
     margin-top: 0.25rem;
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid #e2e8f0;
+    max-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .post-media img {
     width: 100%;
     display: block;
     object-fit: cover;
+    max-height: 320px;
+    margin: 0 auto;
 }
 
 .post-summary {
@@ -535,7 +586,7 @@
 .post-actions button {
     background: transparent;
     border: 1px solid #e2e8f0;
-    padding: 0.55rem 0.65rem;
+    padding: 0.65rem 0.75rem;
     border-radius: 10px;
     font-weight: 700;
     color: #1f2937;
@@ -545,7 +596,11 @@
     gap: 0.45rem;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
+    width: 100%;
 }
+
+.post-actions .like-action { width: 100%; }
+.post-actions .comment-btn { width: 100%; }
 
 .post-actions button i {
     color: #64116e;
@@ -580,22 +635,12 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    transition: opacity 1s ease, visibility 0.1s ease;
     z-index: 10;
 }
 
-.like-action:hover .reaction-popover {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-.reaction-popover:hover {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
+.like-action:hover .reaction-popover,
+.reaction-popover:hover,
 .like-action.open .reaction-popover {
     opacity: 1;
     visibility: visible;
@@ -605,13 +650,18 @@
 .reaction-popover button {
     background: transparent;
     border: none;
-    font-size: 1.1rem;
+    font-size: 1.4rem; /* bigger for visibility */
     cursor: pointer;
-    transition: transform 0.1s ease;
+    transition: transform 0.08s ease;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .reaction-popover button:hover {
-    transform: translateY(-1px) scale(1.05);
+    transform: translateY(-1px) scale(1.1);
 }
 
 .comments-panel {

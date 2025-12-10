@@ -258,6 +258,18 @@ class PostLikeModel extends Model
             }
         } else {
             // Add new reaction
+            // Clean any stray duplicates for this user/post before inserting
+            if ($userType === 'student') {
+                $this->where('student_id', $userId)
+                     ->where('post_type', $postType)
+                     ->where('post_id', $postId)
+                     ->delete();
+            } else {
+                $this->where('organization_id', $userId)
+                     ->where('post_type', $postType)
+                     ->where('post_id', $postId)
+                     ->delete();
+            }
             $data = [
                 'post_type' => $postType,
                 'post_id' => $postId,

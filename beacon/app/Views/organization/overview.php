@@ -103,8 +103,16 @@
                                                 }
                                                 arsort($reactionIcons);
                                                 $topReactions = array_slice(array_keys($reactionIcons), 0, 3);
+                                                $topReactionsList = [];
+                                                foreach ($topReactions as $rKey) {
+                                                    $topReactionsList[] = [
+                                                        'key' => $rKey,
+                                                        'count' => $reactionCounts[$rKey] ?? 0,
+                                                        'emoji' => $reactionEmojis[$rKey] ?? '👍'
+                                                    ];
+                                                }
                                             ?>
-                                            <article class="feed-card <?= $post['type'] ?>">
+                                            <article class="feed-card <?= $post['type'] ?>" data-post-type="<?= esc($postType) ?>" data-post-id="<?= esc($postId) ?>">
                                                 <header class="post-header">
                                                     <div class="post-avatar">
                                                         <?php if (!empty($orgPhoto)): ?>
@@ -146,17 +154,19 @@
                                                         <?php endif; ?>
                                                     </div>
                                                     <?php endif; ?>
-                                                    <?php if (!empty($imageUrl)): ?>
-                                                        <div class="post-media">
+                                                <?php if (!empty($imageUrl)): ?>
+                                                    <div class="post-media">
+                                                        <button type="button" class="post-image-button" data-image="<?= esc($imageUrl) ?>" aria-label="View image">
                                                             <img src="<?= esc($imageUrl) ?>" alt="<?= $title ?>">
-                                                        </div>
-                                                    <?php endif; ?>
+                                                        </button>
+                                                    </div>
+                                                <?php endif; ?>
                                                 </div>
                                                 <div class="post-summary">
                                                     <div class="reaction-stack">
-                                                        <?php foreach ($topReactions as $idx => $rKey): ?>
-                                                            <span class="reaction-pill reaction-<?= esc($rKey) ?>" style="z-index: <?= 5 - $idx ?>;">
-                                                                <?= $reactionEmojis[$rKey] ?? '👍' ?>
+                                                        <?php foreach ($topReactionsList as $idx => $r): ?>
+                                                            <span class="reaction-pill reaction-<?= esc($r['key']) ?>" style="z-index: <?= 5 - $idx ?>;">
+                                                                <?= esc($r['emoji']) ?> <small><?= (int)$r['count'] ?></small>
                                                             </span>
                                                         <?php endforeach; ?>
                                                         <span class="reaction-total"><?= $reactionsTotal ?></span>
@@ -471,6 +481,47 @@
         wireForm('announcementForm');
         wireForm('productForm');
 
+        // Image lightbox
+        const lightboxBackdrop = document.createElement('div');
+        lightboxBackdrop.className = 'modal-backdrop image-lightbox';
+        lightboxBackdrop.id = 'imageLightbox';
+        lightboxBackdrop.innerHTML = `
+            <div class="image-lightbox-frame">
+                <button type="button" class="image-lightbox-close" data-lightbox-close aria-label="Close">&times;</button>
+                <img id="lightboxImg" src="" alt="Post image">
+            </div>
+        `;
+        document.body.appendChild(lightboxBackdrop);
+
+        const closeLightbox = () => {
+            lightboxBackdrop.classList.remove('open');
+            const imgEl = document.getElementById('lightboxImg');
+            if (imgEl) imgEl.src = '';
+        };
+
+        lightboxBackdrop.addEventListener('click', (e) => {
+            if (e.target === lightboxBackdrop || e.target.dataset.lightboxClose !== undefined) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightboxBackdrop.classList.contains('open')) {
+                closeLightbox();
+            }
+        });
+
+        document.querySelectorAll('.post-image-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const src = btn.dataset.image;
+                const imgEl = document.getElementById('lightboxImg');
+                if (src && imgEl) {
+                    imgEl.src = src;
+                    lightboxBackdrop.classList.add('open');
+                }
+            });
+        });
+
         // Comment toggles + submit
         document.querySelectorAll('[data-toggle-comments]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -571,6 +622,22 @@
 
         // Reactions: open on click, keep open while choosing, post reaction
         const likeActions = document.querySelectorAll('.like-action');
+        const hideTimers = new WeakMap();
+        const scheduleClose = (el, delay = 800) => {
+            const existing = hideTimers.get(el);
+            if (existing) clearTimeout(existing);
+            hideTimers.set(el, setTimeout(() => {
+                el.classList.remove('open');
+            }, delay));
+        };
+        const cancelClose = (el) => {
+            const existing = hideTimers.get(el);
+            if (existing) {
+                clearTimeout(existing);
+                hideTimers.delete(el);
+            }
+        };
+
         likeActions.forEach(action => {
             const reactBtn = action.querySelector('button');
             const popover = action.querySelector('.reaction-popover');
@@ -579,15 +646,23 @@
                     e.stopPropagation();
                     likeActions.forEach(a => { if (a !== action) a.classList.remove('open'); });
                     action.classList.toggle('open');
+                    if (action.classList.contains('open')) {
+                        action.dataset.opened = 'true';
+                    }
                 });
+                // Keep popover open briefly after hover out
+                [action, popover].forEach(el => {
+                    el.addEventListener('mouseenter', () => cancelClose(action));
+                    el.addEventListener('mouseleave', () => scheduleClose(action));
+                });
+
                 popover.querySelectorAll('button').forEach(rbtn => {
                     rbtn.addEventListener('click', async (e) => {
                         e.stopPropagation();
                         const reaction = rbtn.title?.toLowerCase() || 'like';
                         const card = action.closest('.feed-card');
-                        const form = card?.querySelector('.comment-form');
-                        const postType = form?.dataset.postType;
-                        const postId = form?.dataset.postId;
+                        const postType = card?.dataset.postType;
+                        const postId = card?.dataset.postId;
                         if (!postType || !postId) return;
                         try {
                             const body = new URLSearchParams({
@@ -596,11 +671,22 @@
                                 reaction: reaction
                             });
                             if (csrfName && csrfValue) body.append(csrfName, csrfValue);
-                            await fetch('<?= base_url('organization/likePost') ?>', {
+                            const res = await fetch('<?= base_url('organization/likePost') ?>', {
                                 method: 'POST',
                                 body
                             });
-                        } catch (_) {}
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok || !data.success) {
+                                alert(data.message || 'Reaction failed.');
+                            } else {
+                                const totalEl = card.querySelector('.reaction-total');
+                                if (totalEl && data.counts) {
+                                    totalEl.textContent = data.counts.total ?? 0;
+                                }
+                            }
+                        } catch (_) {
+                            alert('Reaction failed.');
+                        }
                         action.classList.remove('open');
                     });
                 });
