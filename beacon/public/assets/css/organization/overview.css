@@ -575,6 +575,12 @@
     pointer-events: auto;
 }
 
+.like-action.open .reaction-popover {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
 .reaction-popover button {
     background: transparent;
     border: none;

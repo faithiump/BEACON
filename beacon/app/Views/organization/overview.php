@@ -70,6 +70,12 @@
                                                 $viewsCount = isset($data['views']) ? (int)$data['views'] : null;
                                                 $interestCount = isset($data['interest_count']) ? (int)$data['interest_count'] : null;
                                                 $imagePath = $data['image'] ?? null;
+                                                $imageUrl = null;
+                                                if (!empty($imagePath)) {
+                                                    $imageUrl = (stripos($imagePath, 'http') === 0)
+                                                        ? $imagePath
+                                                        : base_url($imagePath);
+                                                }
                                                 $postId = $post['type'] === 'event' ? ($data['id'] ?? $data['event_id'] ?? null) : ($data['id'] ?? $data['announcement_id'] ?? null);
                                                 $postType = $post['type'];
                                                 $commentKey = $postId ? ($postType . '-' . $postId) : ($postType . '-idx-' . $idx);
@@ -111,9 +117,9 @@
                                                     <?php if (!empty($desc)): ?>
                                                         <p><?= $desc ?></p>
                                                     <?php endif; ?>
-                                                    <?php if (!empty($imagePath)): ?>
+                                                    <?php if (!empty($imageUrl)): ?>
                                                         <div class="post-media">
-                                                            <img src="<?= esc($imagePath) ?>" alt="<?= $title ?>">
+                                                            <img src="<?= esc($imageUrl) ?>" alt="<?= $title ?>">
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
@@ -528,6 +534,52 @@
                     if (submitBtn) submitBtn.disabled = false;
                 }
             });
+        });
+
+        // CSRF for posts
+        const csrfName = '<?= csrf_token() ?>';
+        const csrfValue = '<?= csrf_hash() ?>';
+
+        // Reactions: open on click, keep open while choosing, post reaction
+        const likeActions = document.querySelectorAll('.like-action');
+        likeActions.forEach(action => {
+            const reactBtn = action.querySelector('button');
+            const popover = action.querySelector('.reaction-popover');
+            if (reactBtn && popover) {
+                reactBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    likeActions.forEach(a => { if (a !== action) a.classList.remove('open'); });
+                    action.classList.toggle('open');
+                });
+                popover.querySelectorAll('button').forEach(rbtn => {
+                    rbtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const reaction = rbtn.title?.toLowerCase() || 'like';
+                        const card = action.closest('.feed-card');
+                        const form = card?.querySelector('.comment-form');
+                        const postType = form?.dataset.postType;
+                        const postId = form?.dataset.postId;
+                        if (!postType || !postId) return;
+                        try {
+                            const body = new URLSearchParams({
+                                post_type: postType,
+                                post_id: postId,
+                                reaction: reaction
+                            });
+                            if (csrfName && csrfValue) body.append(csrfName, csrfValue);
+                            await fetch('<?= base_url('organization/likePost') ?>', {
+                                method: 'POST',
+                                body
+                            });
+                        } catch (_) {}
+                        action.classList.remove('open');
+                    });
+                });
+            }
+        });
+
+        document.addEventListener('click', () => {
+            likeActions.forEach(a => a.classList.remove('open'));
         });
     });
     </script>
