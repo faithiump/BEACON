@@ -5,25 +5,27 @@
 
 /* CSS Variables */
 :root {
-    --primary-50: #ecfeff;
-    --primary-100: #cffafe;
-    --primary-200: #a5f3fc;
-    --primary-300: #67e8f9;
-    --primary-400: #22d3ee;
-    --primary-500: #06b6d4;
-    --primary-600: #0891b2;
-    --primary-700: #0e7490;
-    --primary-800: #155e75;
-    --primary-900: #164e63;
+    /* Primary palette (brand) */
+    --primary-50:  #f2e8f5;
+    --primary-100: #e7d3ee;
+    --primary-200: #d3a9df;
+    --primary-300: #b772c5;
+    --primary-400: #9447a8;
+    --primary-500: #64116e; /* core brand */
+    --primary-600: #561061;
+    --primary-700: #430d4b;
+    --primary-800: #2e0934;
+    --primary-900: #1d0522;
     
-    --purple-500: #8b5cf6;
-    --purple-600: #7c3aed;
+    /* Accent tones */
+    --purple-500: #64116e;
+    --purple-600: #561061;
     --emerald-500: #10b981;
     --emerald-600: #059669;
-    --amber-500: #f59e0b;
-    --amber-600: #d97706;
-    --rose-500: #f43f5e;
-    --rose-600: #e11d48;
+    --amber-500: #fbc546; /* accent gold */
+    --amber-600: #d9a532;
+    --rose-500: #b66b58;  /* warm accent */
+    --rose-600: #9d5c4c;
     
     --gray-50: #f8fafc;
     --gray-100: #f1f5f9;
@@ -37,7 +39,7 @@
     --gray-900: #0f172a;
     
     --success: #10b981;
-    --warning: #f59e0b;
+    --warning: #fbc546;
     --error: #ef4444;
     --info: #3b82f6;
     

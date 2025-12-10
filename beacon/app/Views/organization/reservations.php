@@ -24,31 +24,51 @@
                     </div>
                     <div class="card-body">
                         <?php if (!empty($pendingPayments)): ?>
-                        <div class="table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Product</th>
-                                        <th>Qty</th>
-                                        <th>Total</th>
-                                        <th>Status</th>
-                                        <th>Created</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($pendingPayments as $r): ?>
-                                    <tr>
-                                        <td><?= esc($r['student_name'] ?? 'N/A') ?></td>
-                                        <td><?= esc($r['product_name'] ?? 'N/A') ?></td>
-                                        <td><?= number_format($r['quantity'] ?? 0) ?></td>
-                                        <td>₱<?= number_format($r['total_amount'] ?? 0, 2) ?></td>
-                                        <td><span class="status-badge pending"><?= esc($r['status'] ?? 'Pending') ?></span></td>
-                                        <td><?= !empty($r['created_at']) ? date('M d, Y', strtotime($r['created_at'])) : 'N/A' ?></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                        <div class="payments-grid">
+                            <?php foreach ($pendingPayments as $r): ?>
+                                <?php
+                                    $student = $r['student_name'] ?? 'Student';
+                                    $studentId = $r['student_id'] ?? 'N/A';
+                                    $product = $r['product'] ?? $r['product_name'] ?? 'Product';
+                                    $qty = $r['quantity'] ?? 1;
+                                    $amount = $r['amount'] ?? ($r['total_amount'] ?? 0);
+                                    $created = !empty($r['submitted_at'] ?? $r['created_at']) ? date('M d, Y', strtotime($r['submitted_at'] ?? $r['created_at'])) : 'N/A';
+                                    $payMethod = $r['payment_method'] ?? 'N/A';
+                                    $proof = $r['proof_image'] ?? null;
+                                    $initial = strtoupper(substr($student, 0, 1));
+                                ?>
+                                <article class="payment-card">
+                                    <div class="payment-card-header">
+        <div class="payer-info">
+            <div class="payer-avatar">
+                <span><?= esc($initial) ?></span>
+            </div>
+            <div>
+                <h4><?= esc($student) ?></h4>
+                <span>ID: <?= esc($studentId) ?></span>
+                <div class="payment-time"><?= esc($created) ?></div>
+            </div>
+        </div>
+                                        <span class="status-badge pending">Pending</span>
+                                    </div>
+                                    <div class="payment-card-body">
+                                        <div class="payment-product"><i class="fas fa-box"></i> <?= esc($product) ?></div>
+                                        <div class="payment-product"><i class="fas fa-hashtag"></i> Qty: <?= esc($qty) ?></div>
+                                        <div class="payment-product"><i class="fas fa-credit-card"></i> Method: <?= esc($payMethod) ?></div>
+                                        <div class="payment-amount-large">₱<?= number_format($amount, 2) ?></div>
+                                        <?php if (!empty($proof)): ?>
+                                        <div class="payment-proof">
+                                            <img src="<?= esc($proof) ?>" alt="Proof of payment">
+                                            <span>Proof of payment</span>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="payment-card-footer">
+                                        <button type="button" class="btn btn-outline">View Details</button>
+                                        <button type="button" class="btn btn-primary">Confirm</button>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
                         </div>
                         <?php else: ?>
                         <p style="color:#64748b;">No reservations pending.</p>

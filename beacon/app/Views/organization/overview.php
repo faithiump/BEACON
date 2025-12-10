@@ -64,6 +64,13 @@
                                                 $title = esc($data['title'] ?? $data['event_name'] ?? 'Untitled');
                                                 $desc = esc($data['description'] ?? $data['content'] ?? '');
                                                 $dateStr = date('M d, Y', $post['date']);
+                                                $createdAt = $data['created_at'] ?? null;
+                                                $createdLabel = $createdAt ? date('M d, Y g:i A', strtotime($createdAt)) : $dateStr;
+                                                $eventDate = $data['date'] ?? $data['event_date'] ?? null;
+                                                $eventEndDate = $data['end_date'] ?? null;
+                                                $eventTime = $data['time'] ?? null;
+                                                $eventEndTime = $data['end_time'] ?? null;
+                                                $eventLocation = $data['location'] ?? $data['venue'] ?? null;
                                                 $reactionCounts = $data['reaction_counts'] ?? [];
                                                 $reactionsTotal = is_array($reactionCounts) ? array_sum($reactionCounts) : 0;
                                                 $commentsCount = (int)($data['comment_count'] ?? 0);
@@ -76,7 +83,9 @@
                                                         ? $imagePath
                                                         : base_url($imagePath);
                                                 }
-                                                $postId = $post['type'] === 'event' ? ($data['id'] ?? $data['event_id'] ?? null) : ($data['id'] ?? $data['announcement_id'] ?? null);
+                                                $postId = $post['type'] === 'event'
+                                                    ? ($data['event_id'] ?? $data['id'] ?? null)
+                                                    : ($data['announcement_id'] ?? $data['id'] ?? null);
                                                 $postType = $post['type'];
                                                 $commentKey = $postId ? ($postType . '-' . $postId) : ($postType . '-idx-' . $idx);
 
@@ -107,6 +116,7 @@
                                                     <div class="post-author">
                                                         <div class="post-author-name"><?= $orgName ?></div>
                                                         <div class="post-meta"><?= $dateStr ?> • <?= ucfirst(esc($post['type'])) ?></div>
+                                                        <div class="post-date">Posted on <?= esc($createdLabel) ?></div>
                                                     </div>
                                                     <span class="post-badge <?= $post['type'] === 'event' ? 'event' : 'announcement' ?>">
                                                         <?= $post['type'] === 'event' ? 'Event' : 'Announcement' ?>
@@ -116,6 +126,25 @@
                                                     <h4><?= $title ?></h4>
                                                     <?php if (!empty($desc)): ?>
                                                         <p><?= $desc ?></p>
+                                                    <?php endif; ?>
+                                                    <?php if ($post['type'] === 'event'): ?>
+                                                    <div class="event-meta">
+                                                        <?php if ($eventDate): ?>
+                                                            <div><i class="fas fa-calendar-alt"></i> Date: <?= esc(date('M d, Y', strtotime($eventDate))) ?></div>
+                                                        <?php endif; ?>
+                                                        <?php if ($eventEndDate): ?>
+                                                            <div><i class="fas fa-calendar-check"></i> End Date: <?= esc(date('M d, Y', strtotime($eventEndDate))) ?></div>
+                                                        <?php endif; ?>
+                                                        <?php if ($eventTime): ?>
+                                                            <div><i class="fas fa-clock"></i> Time: <?= esc($eventTime) ?></div>
+                                                        <?php endif; ?>
+                                                        <?php if ($eventEndTime): ?>
+                                                            <div><i class="fas fa-hourglass-end"></i> End Time: <?= esc($eventEndTime) ?></div>
+                                                        <?php endif; ?>
+                                                        <?php if ($eventLocation): ?>
+                                                            <div><i class="fas fa-map-marker-alt"></i> Location: <?= esc($eventLocation) ?></div>
+                                                        <?php endif; ?>
+                                                    </div>
                                                     <?php endif; ?>
                                                     <?php if (!empty($imageUrl)): ?>
                                                         <div class="post-media">

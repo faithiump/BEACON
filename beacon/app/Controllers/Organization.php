@@ -302,6 +302,9 @@ class Organization extends BaseController
      */
     private function getRecentEvents($orgIdOnly = null)
     {
+        if (empty($orgIdOnly)) {
+            return [];
+        }
         $eventModel = new EventModel();
         $organizationModel = new OrganizationModel();
         $userPhotoModel = new UserPhotoModel();
@@ -316,9 +319,12 @@ class Organization extends BaseController
             $allOrganizations = $organizationModel->where('is_active', 1)->findAll();
         }
         
-        // Get events from all active organizations
+        // Get events only from the target organization
         $allEvents = [];
         foreach ($allOrganizations as $org) {
+            if (empty($org) || empty($org['id'])) {
+                continue;
+            }
             $orgEvents = $eventModel->getEventsByOrg($org['id']);
             
             // Get organization photo
@@ -543,8 +549,8 @@ class Organization extends BaseController
                 $allEvents[] = [
                     'id' => $eventId,
                     'org_id' => $org['id'],
-                    'org_name' => $org['organization_name'],
-                    'org_acronym' => $org['organization_acronym'],
+                    'org_name' => $org['organization_name'] ?? ($org['name'] ?? 'Organization'),
+                    'org_acronym' => $org['organization_acronym'] ?? ($org['acronym'] ?? 'ORG'),
                     'org_photo' => $orgPhoto,
                     'title' => $event['event_name'] ?? $event['title'],
                     'description' => $event['description'],
@@ -580,16 +586,20 @@ class Organization extends BaseController
     /**
      * Get recent announcements from all active organizations
      */
-    private function getRecentAnnouncements()
+    private function getRecentAnnouncements($orgIdOnly = null)
     {
+        if (empty($orgIdOnly)) {
+            return [];
+        }
         $announcementModel = new AnnouncementModel();
         $organizationModel = new OrganizationModel();
         $userPhotoModel = new UserPhotoModel();
         $likeModel = new \App\Models\PostLikeModel();
         $commentModel = new \App\Models\PostCommentModel();
 
-        // Get all active organizations
-        $allOrganizations = $organizationModel->where('is_active', 1)->findAll();
+        // Get only the target organization
+        $org = $organizationModel->find($orgIdOnly);
+        $allOrganizations = $org ? [$org] : [];
         
         // Get announcements from all active organizations
         $allAnnouncements = [];
@@ -1860,6 +1870,7 @@ class Organization extends BaseController
      */
     private function buildDashboardData()
     {
+        $orgId = $this->session->get('organization_id') ?? null;
         // Ensure uploads directories exist
         $eventsPath = FCPATH . 'uploads/events/';
         $productsPath = FCPATH . 'uploads/products/';
@@ -1874,9 +1885,10 @@ class Organization extends BaseController
         $forumPostModel = new ForumPostModel();
         $categoryCounts = $forumPostModel->getCategoryCounts();
 
-        // Events and announcements
-        $recentEvents = $this->getRecentEvents(null);
-        $recentAnnouncements = $this->getRecentAnnouncements();
+        // Events and announcements (all orgs)
+        // Pull only this organization's posts to avoid cross-org duplication
+        $recentEvents = $this->getRecentEvents($orgId);
+        $recentAnnouncements = $this->getRecentAnnouncements($orgId);
 
         // Combined feed
         $allPosts = [];
@@ -2965,9 +2977,10 @@ class Organization extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $postType = $this->request->getPost('type');
-        $postId = $this->request->getPost('post_id');
-        $reactionType = $this->request->getPost('reaction_type') ?? 'like';
+        // Accept both legacy and new param names
+        $postType = $this->request->getPost('type') ?? $this->request->getPost('post_type');
+        $postId = $this->request->getPost('post_id') ?? $this->request->getPost('id');
+        $reactionType = $this->request->getPost('reaction_type') ?? $this->request->getPost('reaction') ?? 'like';
 
         if (!$postType || !$postId) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
@@ -3250,7 +3263,7 @@ class Organization extends BaseController
         }
         $data = $this->buildDashboardData();
         $data['active_section'] = 'events';
-        return view('organization/dashboard', $data);
+        return view('organization/events', $data);
     }
 
     public function announcements()
@@ -3260,7 +3273,7 @@ class Organization extends BaseController
         }
         $data = $this->buildDashboardData();
         $data['active_section'] = 'announcements';
-        return view('organization/dashboard', $data);
+        return view('organization/announcements', $data);
     }
 
     public function members()
@@ -3270,7 +3283,7 @@ class Organization extends BaseController
         }
         $data = $this->buildDashboardData();
         $data['active_section'] = 'members';
-        return view('organization/dashboard', $data);
+        return view('organization/members', $data);
     }
 
     public function products()
@@ -3280,7 +3293,7 @@ class Organization extends BaseController
         }
         $data = $this->buildDashboardData();
         $data['active_section'] = 'products';
-        return view('organization/dashboard', $data);
+        return view('organization/products', $data);
     }
 
     /**
@@ -3293,7 +3306,7 @@ class Organization extends BaseController
         }
         $data = $this->buildDashboardData();
         $data['active_section'] = 'reservations';
-        return view('organization/dashboard', $data);
+        return view('organization/reservations', $data);
     }
 
     /**
@@ -3306,7 +3319,7 @@ class Organization extends BaseController
         }
         $data = $this->buildDashboardData();
         $data['active_section'] = 'forum';
-        return view('organization/dashboard', $data);
+        return view('organization/forum', $data);
     }
 
     public function processLaunch()
@@ -3975,3 +3988,4 @@ class Organization extends BaseController
         return view('organization/user_profile', $data);
     }
 }
+

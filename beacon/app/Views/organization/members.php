@@ -24,25 +24,43 @@
                     </div>
                     <div class="card-body">
                         <?php if (!empty($recentMembers)): ?>
-                        <div class="table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Joined</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($recentMembers as $m): ?>
-                                    <tr>
-                                        <td><?= esc($m['name'] ?? 'N/A') ?></td>
-                                        <td><?= !empty($m['joined_at']) ? date('M d, Y', strtotime($m['joined_at'])) : 'N/A' ?></td>
-                                        <td><span class="status-badge"><?= esc($m['status'] ?? 'N/A') ?></span></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                        <div class="members-grid">
+                            <?php foreach ($recentMembers as $m): ?>
+                                <?php
+                                    $name = trim($m['name'] ?? 'Member');
+                                    $initial = strtoupper(substr($name, 0, 1));
+                                    $photo = $m['photo'] ?? null;
+                                    $studentId = $m['student_id'] ?? '';
+                                    $course = $m['course'] ?? '';
+                                    $year = $m['year'] ?? '';
+                                    $joined = !empty($m['joined_at']) ? date('M d, Y', strtotime($m['joined_at'])) : 'N/A';
+                                    $status = strtolower($m['status'] ?? 'pending');
+                                    $statusLabel = ucfirst($status);
+                                    $statusClass = in_array($status, ['active','approved']) ? 'active' : ($status === 'pending' ? 'pending' : 'inactive');
+                                ?>
+                                <article class="member-card">
+                                    <div class="member-card-header">
+                                        <div class="member-avatar">
+                                            <?php if (!empty($photo)): ?>
+                                                <img src="<?= esc($photo) ?>" alt="<?= esc($name) ?>">
+                                            <?php else: ?>
+                                                <span><?= esc($initial) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="member-meta">
+                                            <h3><?= esc($name) ?></h3>
+                                            <p><?= esc($studentId ?: 'ID: N/A') ?></p>
+                                        </div>
+                                        <span class="member-status <?= esc($statusClass) ?>"><?= esc($statusLabel) ?></span>
+                                    </div>
+                                    <div class="member-card-body">
+                                        <?php if ($course || $year): ?>
+                                            <div class="member-info"><strong>Course/Year:</strong> <?= esc(trim($course . ' ' . $year)) ?></div>
+                                        <?php endif; ?>
+                                        <div class="member-info"><strong>Joined:</strong> <?= esc($joined) ?></div>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
                         </div>
                         <?php else: ?>
                         <p style="color:#64748b;">No members found.</p>
