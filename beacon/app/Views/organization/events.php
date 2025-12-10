@@ -41,11 +41,18 @@
                                     $displayTitle = trim($rawTitle) !== '' ? $rawTitle : 'Untitled Event';
                                     $rawDesc = trim($event['description'] ?? '');
                                     $shortDesc = strlen($rawDesc) > 140 ? substr($rawDesc, 0, 140) . '…' : $rawDesc;
-                                    $orgName = $event['org_name'] ?? 'Organization';
-                                    $orgAcronym = $event['org_acronym'] ?? '';
+                                    $orgName = $event['org_name_display'] ?? $event['org_name'] ?? $event['organization_name'] ?? 'Organization';
+                                    $orgAcronym = $event['org_acronym_display'] ?? $event['org_acronym'] ?? $event['organization_acronym'] ?? '';
                                     $fullLocation = $event['venue'] ?? $event['location'] ?? 'TBD';
                                     $eventId = $event['id'] ?? null;
                                     $isOwn = $currentOrgId && $eventId && isset($event['org_id']) && ((int)$event['org_id'] === (int)$currentOrgId);
+                                    $imagePath = $event['image'] ?? null;
+                                    $imageUrl = null;
+                                    if (!empty($imagePath)) {
+                                        $imageUrl = (stripos($imagePath, 'http') === 0)
+                                            ? $imagePath
+                                            : base_url($imagePath);
+                                    }
                                 ?>
                                 <div class="event-card"
                                      data-title="<?= esc($displayTitle) ?>"
@@ -61,7 +68,11 @@
                                      data-owned="<?= $isOwn ? '1' : '0' ?>"
                                      data-org-id="<?= esc($event['org_id'] ?? '') ?>">
                                     <div class="event-card-image">
-                                        <div class="event-placeholder"><?= esc($initial) ?></div>
+                                        <?php if (!empty($imageUrl)): ?>
+                                            <img src="<?= esc($imageUrl) ?>" alt="<?= esc($displayTitle) ?>">
+                                        <?php else: ?>
+                                            <div class="event-placeholder"><?= esc($initial) ?></div>
+                                        <?php endif; ?>
                                         <span class="event-status <?= esc($statusClass) ?>"><?= esc($displayStatus) ?></span>
                                     </div>
                                     <div class="event-card-body">
