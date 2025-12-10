@@ -849,6 +849,15 @@ class Student extends BaseController
             }
         }
         
+        // Calculate total paid amount
+        $reservationModel = new ReservationModel();
+        $totalPaid = $reservationModel->selectSum('total_amount')
+            ->where('student_id', $student['id'])
+            ->whereIn('status', ['confirmed', 'completed'])
+            ->get()
+            ->getRow()
+            ->total_amount ?? 0;
+
         // Calculate new announcements count (announcements created in last 7 days)
         $newAnnouncementsCount = 0;
         if (!empty($allAnnouncementsList)) {
@@ -879,6 +888,7 @@ class Student extends BaseController
             'allProducts' => $allProductsList ?? [],
             'eventCount' => $eventCount,
             'orgCount' => $orgCount,
+            'totalPaid' => $totalPaid,
             'newEventsCount' => $newEventsCount, // New events count for navbar badge
             'newAnnouncementsCount' => $newAnnouncementsCount, // New announcements count for navbar badge
             'pageTitle' => 'Student Dashboard'

@@ -18,8 +18,10 @@
             <div class="nav-container">
                 <!-- Logo -->
                 <div class="nav-brand">
-                    <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="nav-logo-img">
-                    <span class="logo-text">BEACON</span>
+                    <img src="<?= base_url('assets/images/beacon-logo-v4.png') ?>" alt="BEACON Logo" class="nav-logo-img">
+                    <a href="<?= base_url('organization/overview') ?>" class="sidebar-logo" id="orgSidebarToggle">
+                        <img src="<?= base_url('assets/images/beacon-logo-text-v1.png') ?>" alt="BEACON" class="logo-icon">
+                    </a>
                 </div>
 
                 <!-- Main Navigation Links -->
@@ -62,10 +64,6 @@
 
                 <!-- Right Side Actions -->
                 <div class="nav-actions">
-                    <div class="search-container">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" class="search-input" id="globalSearch" placeholder="Search...">
-                    </div>
                     
                     <!-- Quick Actions Dropdown -->
                     <div class="quick-actions-wrapper">
@@ -157,6 +155,9 @@
         <div class="mobile-nav" id="mobileNav">
             <div class="mobile-nav-header">
                 <img src="<?= base_url('assets/images/beacon-logo-v3.png') ?>" alt="BEACON Logo" class="nav-logo-img">
+                <a href="<?= base_url('organization/overview') ?>" class="sidebar-logo" id="orgSidebarToggle">
+                    <img src="<?= base_url('assets/images/beacon-logo-text-v1.png') ?>" alt="BEACON" class="logo-icon">
+                </a>
                 <span class="logo-text">BEACON</span>
                 <button class="close-mobile-nav" id="closeMobileNav">
                     <i class="fas fa-times"></i>
@@ -1114,7 +1115,7 @@
 
                 <!-- Forum Section -->
                 <section class="content-section" id="forum">
-                    <div class="section-header" style="text-align: center; justify-content: center;">
+                    <div class="section-header" style="text-align: left; justify-content: left;">
                         <div>
                             <h1 class="section-title">Community Forum</h1>
                             <p class="section-subtitle">Discuss with fellow students and organizations</p>
@@ -1225,7 +1226,7 @@
                                 </div>
                                 <div class="forum-search">
                                     <i class="fas fa-search"></i>
-                                    <input type="text" placeholder="Search posts...">
+                                    <input type="text" id="forumSearchInput" placeholder="Search posts...">
                                 </div>
                             </div>
 
@@ -3626,14 +3627,14 @@
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-calendar" style="color: #06b6d4;"></i>
+                                        <i class="fas fa-calendar" style="color: #64116e;"></i>
                                         <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Start Date</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.date_formatted || 'N/A'}</p>
                                 </div>
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-clock" style="color: #06b6d4;"></i>
+                                        <i class="fas fa-clock" style="color: #64116e;"></i>
                                         <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Start Time</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.time || 'N/A'}</p>
@@ -3641,7 +3642,7 @@
                                 ${event.end_date ? `
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-calendar-check" style="color: #06b6d4;"></i>
+                                        <i class="fas fa-calendar-check" style="color: #64116e;"></i>
                                         <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">End Date</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.end_date_formatted || 'N/A'}</p>
@@ -3650,7 +3651,7 @@
                                 ${event.end_time ? `
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-clock" style="color: #06b6d4;"></i>
+                                        <i class="fas fa-clock" style="color: #64116e;"></i>
                                         <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">End Time</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.end_time || 'N/A'}</p>
@@ -3658,7 +3659,7 @@
                                 ` : ''}
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-map-marker-alt" style="color: #06b6d4;"></i>
+                                        <i class="fas fa-map-marker-alt" style="color: #64116e;"></i>
                                         <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Location</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.location || 'N/A'}</p>
@@ -3671,7 +3672,7 @@
                             html += `
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1.5rem;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-users" style="color: #06b6d4;"></i>
+                                        <i class="fas fa-users" style="color: #64116e;"></i>
                                         <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Attendees</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.current_attendees || 0} / ${event.max_attendees} registered</p>
@@ -3681,7 +3682,7 @@
                             html += `
                                 <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1.5rem;">
                                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-users" style="color: #06b6d4;"></i>
+                                        <i class="fas fa-users" style="color: #64116e;"></i>
                                         <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Attendees</span>
                                     </div>
                                     <p style="color: #64748b; margin: 0; font-size: 0.875rem;">${event.current_attendees || 0} registered</p>
@@ -3693,7 +3694,7 @@
                         html += `
                             <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1.5rem;">
                                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                                    <i class="fas fa-building" style="color: #06b6d4;"></i>
+                                    <i class="fas fa-building" style="color: #64116e;"></i>
                                     <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">Organized by</span>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -5004,6 +5005,69 @@
                 loadForumPosts(category, filter);
             });
         });
+
+        // Forum Search Functionality
+        const forumSearchInput = document.getElementById('forumSearchInput');
+        let forumSearchTimeout;
+
+        if (forumSearchInput) {
+            forumSearchInput.addEventListener('input', function() {
+                clearTimeout(forumSearchTimeout);
+                const query = this.value.trim().toLowerCase();
+
+                // Debounce search to avoid too many filters
+                forumSearchTimeout = setTimeout(() => {
+                    filterForumPosts(query);
+                }, 300);
+            });
+
+            forumSearchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    filterForumPosts('');
+                }
+            });
+        }
+
+        // Filter Forum Posts Based on Search Query
+        function filterForumPosts(query) {
+            const postsList = document.getElementById('forumPostsList');
+            if (!postsList) return;
+
+            const posts = postsList.querySelectorAll('.forum-post');
+            let visibleCount = 0;
+
+            posts.forEach(post => {
+                const title = post.querySelector('.post-title')?.textContent.toLowerCase() || '';
+                const body = post.querySelector('.post-body')?.textContent.toLowerCase() || '';
+                const author = post.querySelector('.author-name')?.textContent.toLowerCase() || '';
+                const category = post.querySelector('.post-category')?.textContent.toLowerCase() || '';
+                const tags = Array.from(post.querySelectorAll('.post-tag')).map(tag => tag.textContent.toLowerCase()).join(' ');
+
+                const searchableContent = title + ' ' + body + ' ' + author + ' ' + category + ' ' + tags;
+
+                if (!query || searchableContent.includes(query)) {
+                    post.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    post.style.display = 'none';
+                }
+            });
+
+            // Show "no results" message if no posts match the search
+            let noResultsMsg = postsList.querySelector('.no-search-results');
+            if (query && visibleCount === 0) {
+                if (!noResultsMsg) {
+                    noResultsMsg = document.createElement('div');
+                    noResultsMsg.className = 'no-search-results';
+                    noResultsMsg.style.cssText = 'text-align: center; padding: 2rem; color: #64748b;';
+                    noResultsMsg.innerHTML = '<i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i><p>No posts found matching "' + query + '"</p><button onclick="document.getElementById(\'forumSearchInput\').value=\'\'; filterForumPosts(\'\')" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">Clear Search</button>';
+                    postsList.appendChild(noResultsMsg);
+                }
+            } else if (noResultsMsg) {
+                noResultsMsg.remove();
+            }
+        }
 
         // Update Category Counts
         function updateCategoryCounts() {
