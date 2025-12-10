@@ -2,6 +2,8 @@
 helper('url');
 $uri = service('uri');
 $segment = $uri->getSegment(2) ?? 'overview';
+// Normalize segment to handle ".php" routes or trailing slashes
+$segment = strtolower(preg_replace('/\.php$/', '', $segment));
 ?>
 <aside class="admin-sidebar" id="orgSidebar">
     <div class="sidebar-header">
@@ -14,7 +16,7 @@ $segment = $uri->getSegment(2) ?? 'overview';
             <li class="nav-item">
                 <a href="<?= base_url('organization/overview') ?>" class="nav-link <?= ($segment === 'overview' || $segment === 'dashboard') ? 'active' : '' ?>">
                     <i class="fas fa-th-large"></i>
-                    <span>Overview</span>
+                    <span>News Feed</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -62,6 +64,7 @@ $segment = $uri->getSegment(2) ?? 'overview';
         </ul>
     </nav>
 </aside>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="<?= base_url('assets/css/admin/sidebar.css') ?>" type="text/css">
 <link rel="stylesheet" href="<?= base_url('assets/css/organization/sidebar.css') ?>" type="text/css">
 <script>

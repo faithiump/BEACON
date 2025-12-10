@@ -1,8 +1,16 @@
 /* Organization Sidebar (mirrors admin sidebar layout) */
 .admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
     width: 260px;
+    height: 100vh;
     background: #ffffff;
-    min-height: 100vh;
+    color: #0f172a;
+    z-index: 1000;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
 }
 .admin-sidebar .nav-menu {
     display: flex;
@@ -20,6 +28,21 @@
     padding: 0.65rem 0.9rem;
     border-radius: 12px;
     color: #0f172a;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    min-height: 44px;
+}
+.admin-sidebar .nav-link span {
+    color: #64116e !important;
+}
+.admin-sidebar .nav-link i,
+.admin-sidebar .nav-link .fa,
+.admin-sidebar .nav-link .fas,
+.admin-sidebar .nav-link .far,
+.admin-sidebar .nav-link .fal,
+.admin-sidebar .nav-link .fab {
+    color: #64116e !important; /* purple icons */
 }
 
 /* Logo hover slow rotate */
@@ -35,22 +58,145 @@
 
 /* Text and icon contrast + hover/active */
 .admin-sidebar .nav-link i {
-    color: #0f172a;
+    color: #b66b58 !important;
+    width: 18px;
+    text-align: center;
 }
 .admin-sidebar .nav-link:hover {
     background: #f1f5f9;
-    color: #0f172a;
+    color: #0f172a !important;
+    min-height: 44px;
 }
-.admin-sidebar .nav-link:hover i {
-    color: #0f172a;
+.admin-sidebar .nav-link:hover i,
+.admin-sidebar .nav-link:hover .fa,
+.admin-sidebar .nav-link:hover .fas,
+.admin-sidebar .nav-link:hover .far,
+.admin-sidebar .nav-link:hover .fal,
+.admin-sidebar .nav-link:hover .fab,
+.admin-sidebar .nav-link:hover span {
+    color: #b66b58 !important;
 }
 .admin-sidebar .nav-link.active {
     background: #e2e8f0;
-    color: #0f172a;
+    color: #0f172a !important;
     font-weight: 700;
 }
-.admin-sidebar .nav-link.active i {
-    color: #0f172a;
+.admin-sidebar .nav-link.active i,
+.admin-sidebar .nav-link.active .fa,
+.admin-sidebar .nav-link.active .fas,
+.admin-sidebar .nav-link.active .far,
+.admin-sidebar .nav-link.active .fal,
+.admin-sidebar .nav-link.active .fab,
+.admin-sidebar .nav-link.active span {
+    color: #b66b58 !important;
+}
+
+/* === Org feed sidebars (moved from organization.css for easier access) === */
+.feed-sidebar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: sticky;
+    top: calc(var(--nav-height, 64px) + 1.5rem);
+    height: fit-content;
+}
+
+.feed-sidebar-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: sticky;
+    top: calc(var(--nav-height, 64px) + 1.5rem);
+    max-height: calc(100vh - var(--nav-height, 64px) - 3rem);
+    overflow-y: auto;
+}
+
+.feed-sidebar-right::-webkit-scrollbar {
+    width: 4px;
+}
+
+.feed-sidebar-right::-webkit-scrollbar-thumb {
+    background: var(--gray-300, #cbd5e1);
+    border-radius: 4px;
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow, 0 4px 6px -1px rgba(0,0,0,0.1));
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-title {
+    font-family: var(--font-display, 'Outfit', sans-serif);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--gray-900, #0f172a);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-title i {
+    color: var(--primary-500, #06b6d4);
+    font-size: 1rem;
+}
+
+.sidebar-header .sidebar-title {
+    margin-bottom: 0;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--gray-100, #f1f5f9);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--primary-600, #0891b2);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.sidebar-link:hover {
+    color: var(--primary-700, #0e7490);
+}
+
+.sidebar-empty,
+.sidebar-empty-full {
+    font-size: 0.8125rem;
+    color: var(--gray-400, #94a3b8);
+    text-align: center;
+}
+
+.sidebar-empty-full {
+    grid-column: 1 / -1;
+    padding: 1rem;
+}
+
+.sidebar-empty-full i {
+    font-size: 2rem;
+    color: var(--gray-300, #cbd5e1);
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-empty-full p {
+    font-size: 0.8125rem;
+    color: var(--gray-500, #64748b);
+    margin-bottom: 0.75rem;
 }
 
 

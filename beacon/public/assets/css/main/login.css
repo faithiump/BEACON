@@ -10,7 +10,7 @@ body {
     color: #f9fafb;
     background-image:
         linear-gradient(135deg, rgba(27, 0, 37, 0.671), rgba(25, 0, 50, 0.62)),
-        url('../images/home-bg-v2.png');
+        url('../../images/home-bg-v2.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

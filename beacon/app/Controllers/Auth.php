@@ -109,7 +109,7 @@ class Auth extends BaseController
                 'photo'                => $photoUrl
             ]);
 
-            return redirect()->to(base_url('organization/dashboard'))->with('success', 'Welcome back!');
+            return redirect()->to(base_url('organization/overview'))->with('success', 'Welcome back!');
         }
 
         return redirect()->back()->withInput()->with('error', 'Invalid role selected.');
@@ -520,7 +520,7 @@ class Auth extends BaseController
                 'google_token'         => $token['access_token']  // Store token for logout
             ]);
         
-            return redirect()->to('/organization/dashboard');
+            return redirect()->to('/organization/overview');
         } else {
             return redirect()->to('/auth/login')
                 ->with('error', 'This Google account is not registered as a student or organization.');

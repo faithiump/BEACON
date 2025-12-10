@@ -13,6 +13,7 @@ use App\Models\ProductModel;
 use App\Models\StudentModel;
 use App\Models\StudentOrganizationMembershipModel;
 use App\Models\UserPhotoModel;
+use App\Models\UserModel;
 use App\Models\ForumPostModel;
 
 class Organization extends BaseController
@@ -3187,14 +3188,9 @@ class Organization extends BaseController
                 'success' => false,
                 'message' => 'An error occurred while posting comment: ' . $e->getMessage()
             ]);
-            $errorMessage = 'Error posting comment: ' . $e->getMessage();
-            // Check if it's a column doesn't exist error
-            if (strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'Unknown column') !== false) {
-                $errorMessage = 'Reply feature not available. Please run the SQL script to add reply support.';
-            }
-            return $this->response->setJSON(['success' => false, 'message' => $errorMessage]);
         }
     }
+
 
     // ==========================================
     // LOGOUT
@@ -3244,8 +3240,7 @@ class Organization extends BaseController
         }
         $data = $this->buildDashboardData();
         $data['active_section'] = 'overview';
-        // Use full dashboard view for overview to restore original UI
-        return view('organization/dashboard', $data);
+        return view('organization/overview', $data);
     }
 
     public function events()
@@ -3819,5 +3814,164 @@ class Organization extends BaseController
                 'message' => 'Error loading category counts'
             ]);
         }
+    }
+
+    /**
+     * Profile view (read-only)
+     */
+    public function profile()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+
+        $data = $this->buildDashboardData();
+        $orgData = $data['organization'] ?? $this->getOrganizationData();
+        $data['organization'] = $orgData;
+        $data['photo'] = $orgData['photo'] ?? null;
+        $data['active_section'] = null;
+
+        return view('organization/profile', $data);
+    }
+
+    /**
+     * Profile edit (form)
+     */
+    public function profileEdit()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+
+        $data = $this->buildDashboardData();
+        $orgData = $data['organization'] ?? $this->getOrganizationData();
+        $data['organization'] = $orgData;
+        $data['photo'] = $orgData['photo'] ?? null;
+        $data['active_section'] = null;
+
+        return view('organization/profile_edit', $data);
+    }
+
+    /**
+     * Update profile (POST)
+     */
+    public function updateProfile()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId) {
+            return redirect()->back()->with('error', 'Organization not found.');
+        }
+
+        $name = trim($this->request->getPost('organization_name'));
+        $acronym = trim($this->request->getPost('organization_acronym'));
+        $email = trim($this->request->getPost('email'));
+        $phone = trim($this->request->getPost('phone'));
+
+        if (empty($name) || empty($acronym)) {
+            return redirect()->back()->withInput()->with('error', 'Name and acronym are required.');
+        }
+
+        $orgModel = new OrganizationModel();
+        $updateData = [
+            'organization_name' => $name,
+            'organization_acronym' => $acronym,
+            'email' => $email,
+            'phone' => $phone,
+        ];
+
+        try {
+            $orgModel->update($orgId, $updateData);
+            // refresh session keys used in topbar/sidebar
+            $this->session->set('organization_name', $name);
+            $this->session->set('organization_acronym', $acronym);
+            $this->session->set('email', $email);
+            $this->session->set('phone', $phone);
+
+            return redirect()->to(base_url('organization/profile'))->with('success', 'Profile updated successfully.');
+        } catch (\Exception $e) {
+            log_message('error', 'Update profile error: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Failed to update profile.');
+        }
+    }
+
+    /**
+     * Search users by name or email (topbar search)
+     */
+    public function searchUsers()
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $query = trim($this->request->getGet('q') ?? $this->request->getGet('query') ?? '');
+        if ($query === '') {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Please enter a search term.']);
+        }
+
+        $userModel = new UserModel();
+        $photoModel = new UserPhotoModel();
+
+        $users = $userModel
+            ->select('id, name, email, role, status')
+            ->groupStart()
+                ->like('name', $query)
+                ->orLike('email', $query)
+            ->groupEnd()
+            ->whereIn('role', ['student', 'organization'])
+            ->limit(8)
+            ->find();
+
+        if (!$users) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'No matching users found.']);
+        }
+
+        $results = [];
+        foreach ($users as $user) {
+            $photo = $photoModel->where('user_id', $user['id'])->first();
+            $results[] = [
+                'id' => $user['id'],
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'role' => $user['role'],
+                'status' => $user['status'],
+                'photo' => $photo && !empty($photo['photo_path']) ? base_url($photo['photo_path']) : null,
+                'profile_url' => base_url('organization/user/' . $user['id']),
+            ];
+        }
+
+        return $this->response->setJSON(['success' => true, 'results' => $results]);
+    }
+
+    /**
+     * View a user profile (read-only) for organization users
+     */
+    public function viewUser($id)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+
+        $userModel = new UserModel();
+        $photoModel = new UserPhotoModel();
+
+        $user = $userModel->find($id);
+        if (!$user) {
+            return redirect()->back()->with('error', 'User not found.');
+        }
+
+        $photo = $photoModel->where('user_id', $user['id'])->first();
+        $photoUrl = $photo && !empty($photo['photo_path']) ? base_url($photo['photo_path']) : null;
+
+        $data = [
+            'user' => $user,
+            'photo' => $photoUrl,
+            'active_section' => null,
+        ];
+
+        return view('organization/user_profile', $data);
     }
 }

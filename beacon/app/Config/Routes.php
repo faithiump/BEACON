@@ -33,6 +33,11 @@ $routes->get('organization/reservations', 'Organization::reservations');
 $routes->get('organization/reservations.php', 'Organization::reservations');
 $routes->get('organization/forum', 'Organization::forum');
 $routes->get('organization/forum.php', 'Organization::forum');
+$routes->get('organization/profile', 'Organization::profile');
+$routes->get('organization/profile/edit', 'Organization::profileEdit');
+$routes->post('organization/profile/edit', 'Organization::updateProfile');
+$routes->get('organization/search-users', 'Organization::searchUsers');
+$routes->get('organization/user/(:num)', 'Organization::viewUser/$1');
 
 // Organization Dashboard routes
 $routes->get('organization/dashboard', 'Organization::dashboard');

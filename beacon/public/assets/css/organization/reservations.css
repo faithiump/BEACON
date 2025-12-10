@@ -1,2 +1,54 @@
 @import url('organization.css');
 
+/* Reservations Page */
+.payments-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+.payment-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+.payment-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--gray-100);
+}
+.payer-info { display: flex; gap: 0.75rem; }
+.payer-avatar {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--purple-500) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 0.875rem;
+}
+.payer-info h4 { font-size: 0.9375rem; font-weight: 600; color: var(--gray-900); }
+.payer-info span { font-size: 0.75rem; color: var(--gray-500); }
+.payment-time { font-size: 0.6875rem; color: var(--gray-400); }
+.payment-card-body { padding: 1.25rem; }
+.payment-product {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.875rem; color: var(--gray-600); margin-bottom: 0.75rem;
+}
+.payment-product i { color: var(--primary-500); }
+.payment-amount-large {
+    font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--success);
+}
+.payment-proof {
+    margin-top: 1rem; text-align: center;
+}
+.payment-proof img {
+    max-width: 100%; max-height: 120px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;
+}
+.payment-proof img:hover { transform: scale(1.02); }
+.payment-proof span {
+    display: block; font-size: 0.6875rem; color: var(--gray-400); margin-top: 0.5rem;
+}
+.payment-card-footer {
+    padding: 1rem 1.25rem; background: var(--gray-50); display: flex; gap: 0.75rem;
+}
+.payment-card-footer .btn { flex: 1; }

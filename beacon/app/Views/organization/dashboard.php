@@ -278,9 +278,9 @@
             
             <!-- Overview Section - Facebook Style Feed -->
             <section id="overview" class="dashboard-section <?= $activeSection === 'overview' ? 'active' : '' ?>" style="<?= $activeSection === 'overview' ? '' : 'display:none;' ?>">
-                <div class="feed-layout">
-                    <!-- Left Sidebar -->
-                    <aside class="feed-sidebar-left">
+                <div class="feed-layout" style="grid-template-columns: 1fr 320px;">
+                    <!-- Left Sidebar (hidden for overview) -->
+                    <aside class="feed-sidebar-left" style="display:none;">
                         <!-- Profile Card -->
                         <div class="profile-card">
                             <div class="profile-cover">
@@ -1795,21 +1795,20 @@
     <script>
         const baseUrl = <?= json_encode(base_url()) ?>;
         
-        // Navigation
-        document.querySelectorAll('.nav-link, .mobile-nav-link, .dropdown-item[data-section]').forEach(link => {
+        // Navigation (only intercept links that declare data-section)
+        document.querySelectorAll('.nav-link[data-section], .mobile-nav-link[data-section], .dropdown-item[data-section]').forEach(link => {
             link.addEventListener('click', function(e) {
-                e.preventDefault();
                 const section = this.dataset.section;
-                if (section) {
-                    switchSection(section);
-                    
-                    // Close mobile nav if open
-                    document.getElementById('mobileNav').classList.remove('active');
-                    document.getElementById('mobileNavOverlay').classList.remove('active');
-                    
-                    // Close dropdown if open
-                    document.getElementById('dropdownMenu').classList.remove('active');
-                }
+                if (!section) return; // no data-section, allow normal navigation
+                e.preventDefault();
+                switchSection(section);
+                
+                // Close mobile nav if open
+                document.getElementById('mobileNav').classList.remove('active');
+                document.getElementById('mobileNavOverlay').classList.remove('active');
+                
+                // Close dropdown if open
+                document.getElementById('dropdownMenu').classList.remove('active');
             });
         });
 

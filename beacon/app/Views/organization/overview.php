@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Organization Overview - BEACON</title>
-    <?php helper('url'); ?>
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/beacon-logo-v4.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/admin/dashboard.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin/sidebar.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin/topbar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/organization/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/organization/topbar.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/organization/organization.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/organization/overview.css') ?>">
 </head>
@@ -18,65 +17,519 @@
         <div class="dashboard-wrapper">
             <?= view('organization/partials/topbar') ?>
             <main class="dashboard-main">
-                <!-- Org profile summary -->
-                <section class="content-card">
-                    <div class="card-header">
-                        <h2>Organization Profile</h2>
-                    </div>
-                    <div class="card-body">
-                        <div style="display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center;">
-                            <div class="profile-badge" style="width:120px; height:120px; border-radius:18px; background:linear-gradient(135deg,#35283f,#4f46e5); display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; font-weight:800;">
-                                <?= strtoupper(substr($organization['acronym'] ?? 'ORG',0,2)) ?>
-                            </div>
-                            <div style="flex:1; min-width:220px;">
-                                <h3 style="margin:0 0 0.35rem 0; font-size:1.4rem; color:#0f172a;"><?= esc($organization['name'] ?? 'Organization') ?></h3>
-                                <p style="margin:0 0 0.35rem 0; color:#475569;"><?= esc($organization['category'] ?? '') ?></p>
-                                <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#475569;">
-                                    <span><i class="fas fa-envelope"></i> <?= esc($organization['email'] ?? '') ?></span>
-                                    <?php if (!empty($organization['phone'])): ?>
-                                    <span><i class="fas fa-phone"></i> <?= esc($organization['phone']) ?></span>
+                <div class="feed-two-col">
+                    <div class="feed-main">
+                        <!-- Create post card -->
+                        <section class="content-card create-card">
+                            <div class="create-header">
+                                <div class="create-avatar">
+                                    <?php
+                                        $orgInitial = strtoupper(substr($organization['acronym'] ?? $organization['name'] ?? 'O', 0, 1));
+                                    ?>
+                                    <?php if (!empty($organization['photo'])): ?>
+                                        <img src="<?= esc($organization['photo']) ?>" alt="<?= esc($organization['name'] ?? 'Organization') ?>">
+                                    <?php else: ?>
+                                        <span><?= esc($orgInitial) ?></span>
                                     <?php endif; ?>
                                 </div>
+                                <button class="create-input" type="button" data-modal-target="announcementModal" aria-label="Create post placeholder">What's on your mind?</button>
                             </div>
-                            <div style="display:flex; gap:1rem; flex-wrap:wrap;">
-                                <div class="stat-pill"><strong><?= number_format($stats['members'] ?? 0) ?></strong><span>Members</span></div>
-                                <div class="stat-pill"><strong><?= number_format($stats['events'] ?? 0) ?></strong><span>Events</span></div>
-                                <div class="stat-pill"><strong><?= number_format($stats['announcements'] ?? 0) ?></strong><span>Announcements</span></div>
+                            <div class="create-actions">
+                                <button class="create-btn event" type="button" data-modal-target="eventModal">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    <span>Event</span>
+                                </button>
+                                <button class="create-btn announcement" type="button" data-modal-target="announcementModal">
+                                    <i class="fas fa-bullhorn"></i>
+                                    <span>Announcement</span>
+                                </button>
+                                <button class="create-btn product" type="button" data-modal-target="productModal">
+                                    <i class="fas fa-box-open"></i>
+                                    <span>Product</span>
+                                </button>
                             </div>
-                        </div>
-                    </div>
-                </section>
+                        </section>
 
-                <!-- Combined feed -->
-                <section class="content-card">
-                    <div class="card-header">
-                        <h2>Recent Activity</h2>
+                        <!-- Combined feed -->
+                        <section class="content-card feed-section">
+                            <?php if (!empty($allPosts)): ?>
+                                <div class="feed-list">
+                                    <?php foreach ($allPosts as $idx => $post): ?>
+                                            <?php
+                                                $data = $post['data'];
+                                                $orgName = esc($data['org_name'] ?? 'Organization');
+                                                $orgAcronym = strtoupper($data['org_acronym'] ?? 'ORG');
+                                                $orgPhoto = $data['org_photo'] ?? null;
+                                                $orgInitial = strtoupper(substr($orgAcronym ?: $orgName, 0, 1) ?: 'O');
+                                                $title = esc($data['title'] ?? $data['event_name'] ?? 'Untitled');
+                                                $desc = esc($data['description'] ?? $data['content'] ?? '');
+                                                $dateStr = date('M d, Y', $post['date']);
+                                                $reactionCounts = $data['reaction_counts'] ?? [];
+                                                $reactionsTotal = is_array($reactionCounts) ? array_sum($reactionCounts) : 0;
+                                                $commentsCount = (int)($data['comment_count'] ?? 0);
+                                                $viewsCount = isset($data['views']) ? (int)$data['views'] : null;
+                                                $interestCount = isset($data['interest_count']) ? (int)$data['interest_count'] : null;
+                                                $imagePath = $data['image'] ?? null;
+                                                $postId = $post['type'] === 'event' ? ($data['id'] ?? $data['event_id'] ?? null) : ($data['id'] ?? $data['announcement_id'] ?? null);
+                                                $postType = $post['type'];
+                                                $commentKey = $postId ? ($postType . '-' . $postId) : ($postType . '-idx-' . $idx);
+
+                                                // Build top reaction icons (up to 3)
+                                                $reactionOrder = ['like','love','care','haha','wow','sad','angry'];
+                                                $reactionEmojis = [
+                                                    'like' => '👍', 'love' => '❤️', 'care' => '🤗',
+                                                    'haha' => '😂', 'wow' => '😮', 'sad' => '😢', 'angry' => '😡'
+                                                ];
+                                                $reactionIcons = [];
+                                                foreach ($reactionOrder as $key) {
+                                                    if (!empty($reactionCounts[$key])) {
+                                                        $reactionIcons[$key] = $reactionCounts[$key];
+                                                    }
+                                                }
+                                                arsort($reactionIcons);
+                                                $topReactions = array_slice(array_keys($reactionIcons), 0, 3);
+                                            ?>
+                                            <article class="feed-card <?= $post['type'] ?>">
+                                                <header class="post-header">
+                                                    <div class="post-avatar">
+                                                        <?php if (!empty($orgPhoto)): ?>
+                                                            <img src="<?= esc($orgPhoto) ?>" alt="<?= $orgName ?>">
+                                                        <?php else: ?>
+                                                            <span><?= esc($orgInitial) ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="post-author">
+                                                        <div class="post-author-name"><?= $orgName ?></div>
+                                                        <div class="post-meta"><?= $dateStr ?> • <?= ucfirst(esc($post['type'])) ?></div>
+                                                    </div>
+                                                    <span class="post-badge <?= $post['type'] === 'event' ? 'event' : 'announcement' ?>">
+                                                        <?= $post['type'] === 'event' ? 'Event' : 'Announcement' ?>
+                                                    </span>
+                                                </header>
+                                                <div class="post-body">
+                                                    <h4><?= $title ?></h4>
+                                                    <?php if (!empty($desc)): ?>
+                                                        <p><?= $desc ?></p>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($imagePath)): ?>
+                                                        <div class="post-media">
+                                                            <img src="<?= esc($imagePath) ?>" alt="<?= $title ?>">
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="post-summary">
+                                                    <div class="reaction-stack">
+                                                        <?php foreach ($topReactions as $idx => $rKey): ?>
+                                                            <span class="reaction-pill reaction-<?= esc($rKey) ?>" style="z-index: <?= 5 - $idx ?>;">
+                                                                <?= $reactionEmojis[$rKey] ?? '👍' ?>
+                                                            </span>
+                                                        <?php endforeach; ?>
+                                                        <span class="reaction-total"><?= $reactionsTotal ?></span>
+                                                    </div>
+                                                    <div class="summary-right">
+                                                        <span class="summary-item" data-comment-count="count-<?= $commentKey ?>"><i class="fas fa-comment-alt"></i> <?= $commentsCount ?></span>
+                                                        <?php if ($viewsCount !== null): ?>
+                                                            <span class="summary-item"><i class="fas fa-eye"></i> <?= $viewsCount ?></span>
+                                                        <?php endif; ?>
+                                                        <?php if ($post['type'] === 'event'): ?>
+                                                            <span class="summary-item"><i class="fas fa-star"></i> <?= $interestCount ?? 0 ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                                <footer class="post-actions">
+                                                    <div class="action like-action">
+                                                        <button type="button"><i class="far fa-thumbs-up"></i> React</button>
+                                                        <div class="reaction-popover">
+                                                            <button type="button" title="Like">👍</button>
+                                                            <button type="button" title="Love">❤️</button>
+                                                            <button type="button" title="Care">🤗</button>
+                                                            <button type="button" title="Haha">😂</button>
+                                                            <button type="button" title="Wow">😮</button>
+                                                            <button type="button" title="Sad">😢</button>
+                                                            <button type="button" title="Angry">😡</button>
+                                                        </div>
+                                                    </div>
+                                                    <?php if ($commentKey): ?>
+                                                    <button type="button" class="comment-btn" data-toggle-comments="<?= $commentKey ?>"><i class="far fa-comment-alt"></i> Comment</button>
+                                                    <?php endif; ?>
+                                                </footer>
+                                                <?php if ($commentKey): ?>
+                                                <div class="comments-panel" id="comments-<?= $commentKey ?>">
+                                                    <div class="comments-list">
+                                                        <?php if (!empty($data['comments'])): ?>
+                                                            <?php foreach ($data['comments'] as $comment): ?>
+                                                                <div class="comment-item">
+                                                                    <div class="comment-author"><?= esc($comment['user_name'] ?? 'User') ?></div>
+                                                                    <div class="comment-text"><?= esc($comment['content'] ?? '') ?></div>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <div class="comment-empty">No comments yet.</div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <form class="comment-form" data-post-type="<?= $postType ?>" data-post-id="<?= $postId ?>">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="post_type" value="<?= $postType ?>">
+                                                        <input type="hidden" name="post_id" value="<?= $postId ?>">
+                                                        <input type="text" name="content" placeholder="Write a comment..." required>
+                                                        <button type="submit">Post</button>
+                                                    </form>
+                                                </div>
+                                                <?php endif; ?>
+                                            </article>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <p style="color:#64748b;">No recent activity.</p>
+                            <?php endif; ?>
+                        </section>
                     </div>
-                    <div class="card-body">
-                        <?php if (!empty($allPosts)): ?>
-                            <div class="feed-list">
-                                <?php foreach ($allPosts as $post): ?>
-                                    <div class="feed-item">
-                                        <div class="feed-icon <?= $post['type'] === 'event' ? 'event' : 'announcement' ?>">
-                                            <i class="fas <?= $post['type'] === 'event' ? 'fa-calendar-alt' : 'fa-bullhorn' ?>"></i>
-                                        </div>
-                                        <div class="feed-content">
-                                            <h4><?= esc($post['data']['title'] ?? $post['data']['event_name'] ?? 'Untitled') ?></h4>
-                                            <p class="feed-meta"><?= esc($post['type']) ?> • <?= date('M d, Y', $post['date']) ?></p>
-                                            <?php if (!empty($post['data']['description'])): ?>
-                                                <p class="feed-desc"><?= esc($post['data']['description']) ?></p>
+
+                    <aside class="feed-right">
+                        <section class="content-card">
+                            <div class="card-header" style="justify-content: space-between; align-items: center;">
+                                <h2 style="margin:0;">Our Products</h2>
+                                <a class="btn primary" style="padding:0.4rem 0.7rem; font-size:0.9rem;" href="<?= base_url('organization/products') ?>">+ Add</a>
+                            </div>
+                            <div class="card-body" style="display:flex; flex-direction:column; gap:1rem;">
+                                <?php if (!empty($products)): ?>
+                                    <div class="product-card-mini">
+                                        <div class="product-thumb"></div>
+                                        <div class="product-info">
+                                            <div class="product-name"><?= esc($products[0]['name'] ?? '') ?></div>
+                                            <?php if (!empty($products[0]['price'])): ?>
+                                                <div class="product-price">₱<?= esc($products[0]['price']) ?></div>
                                             <?php endif; ?>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
+                                    <a class="text-link" href="<?= base_url('organization/products') ?>">View all products <i class="fas fa-arrow-right"></i></a>
+                                <?php else: ?>
+                                    <p style="color:#64748b;">No products yet.</p>
+                                <?php endif; ?>
                             </div>
-                        <?php else: ?>
-                            <p style="color:#64748b;">No recent activity.</p>
-                        <?php endif; ?>
-                    </div>
-                </section>
+                        </section>
+
+                        <section class="content-card">
+                            <div class="card-header">
+                                <h2 style="margin:0;">Member Requests</h2>
+                            </div>
+                            <div class="card-body">
+                                <p style="color:#64748b; margin:0;">No pending requests</p>
+                                <a class="text-link" href="<?= base_url('organization/members') ?>">Manage members <i class="fas fa-arrow-right"></i></a>
+                            </div>
+                        </section>
+                    </aside>
+                </div>
             </main>
         </div>
     </div>
+
+    <!-- Event Modal -->
+    <div class="modal-backdrop" id="eventModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Create Event</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <form class="modal-body" id="eventForm" action="<?= base_url('organization/createEvent') ?>" method="post" enctype="multipart/form-data">
+                <?= csrf_field() ?>
+                <div class="form-grid">
+                    <label>
+                        <span>Title</span>
+                        <input type="text" name="title" required>
+                    </label>
+                    <label>
+                        <span>Date</span>
+                        <input type="date" name="date" required>
+                    </label>
+                    <label>
+                        <span>Time</span>
+                        <input type="time" name="time" required>
+                    </label>
+                    <label>
+                        <span>End Date</span>
+                        <input type="date" name="end_date">
+                    </label>
+                    <label>
+                        <span>End Time</span>
+                        <input type="time" name="end_time">
+                    </label>
+                    <label>
+                        <span>Location</span>
+                        <input type="text" name="location" required>
+                    </label>
+                    <label>
+                        <span>Audience</span>
+                        <select name="audience_type">
+                            <option value="all">All</option>
+                            <option value="department">Department</option>
+                            <option value="specific_students">Specific Students</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Department Access (optional)</span>
+                        <input type="text" name="department_access" placeholder="e.g. CICT">
+                    </label>
+                    <label>
+                        <span>Max Attendees</span>
+                        <input type="number" name="max_attendees" min="0" placeholder="Optional">
+                    </label>
+                    <label class="full">
+                        <span>Description</span>
+                        <textarea name="description" rows="3" required></textarea>
+                    </label>
+                    <label class="full">
+                        <span>Image</span>
+                        <input type="file" name="image" accept="image/*">
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn ghost" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn primary">Create Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div class="modal-backdrop" id="announcementModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Create Announcement</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <form class="modal-body" id="announcementForm" action="<?= base_url('organization/createAnnouncement') ?>" method="post">
+                <?= csrf_field() ?>
+                <div class="form-grid">
+                    <label class="full">
+                        <span>Title</span>
+                        <input type="text" name="title" required>
+                    </label>
+                    <label class="full">
+                        <span>Content</span>
+                        <textarea name="content" rows="3" required></textarea>
+                    </label>
+                    <label>
+                        <span>Priority</span>
+                        <select name="priority">
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn ghost" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn primary">Post Announcement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal-backdrop" id="productModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Create Product</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <form class="modal-body" id="productForm" action="<?= base_url('organization/createProduct') ?>" method="post" enctype="multipart/form-data">
+                <?= csrf_field() ?>
+                <div class="form-grid">
+                    <label>
+                        <span>Name</span>
+                        <input type="text" name="name" required>
+                    </label>
+                    <label>
+                        <span>Price</span>
+                        <input type="number" name="price" step="0.01" min="0" required>
+                    </label>
+                    <label>
+                        <span>Stock</span>
+                        <input type="number" name="stock" min="0" required>
+                    </label>
+                    <label>
+                        <span>Sizes (comma-separated)</span>
+                        <input type="text" name="sizes" placeholder="S,M,L">
+                    </label>
+                    <label class="full">
+                        <span>Description</span>
+                        <textarea name="description" rows="3"></textarea>
+                    </label>
+                    <label class="full">
+                        <span>Image</span>
+                        <input type="file" name="image" accept="image/*">
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn ghost" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn primary">Add Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const openButtons = document.querySelectorAll('[data-modal-target]');
+        const closeButtons = document.querySelectorAll('[data-modal-close]');
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('open');
+        }
+        function closeModal(modal) {
+            modal.classList.remove('open');
+        }
+
+        openButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-modal-target');
+                if (target) openModal(target);
+            });
+        });
+
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modal = btn.closest('.modal-backdrop');
+                if (modal) closeModal(modal);
+            });
+        });
+
+        backdrops.forEach(bd => {
+            bd.addEventListener('click', (e) => {
+                if (e.target === bd) closeModal(bd);
+            });
+        });
+
+        // AJAX submit to keep page context
+        function wireForm(formId) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const modal = form.closest('.modal-backdrop');
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    const res = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) {
+                        alert(data.message || 'Failed to submit. Please try again.');
+                    } else {
+                        // refresh to show new entry
+                        window.location.reload();
+                    }
+                } catch (err) {
+                    alert('Request failed. Please try again.');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (modal) closeModal(modal);
+                }
+            });
+        }
+
+        wireForm('eventForm');
+        wireForm('announcementForm');
+        wireForm('productForm');
+
+        // Comment toggles + submit
+        document.querySelectorAll('[data-toggle-comments]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-toggle-comments');
+                const panel = document.getElementById('comments-' + targetId);
+                if (panel) {
+                    const wasOpen = panel.classList.contains('open');
+                    panel.classList.toggle('open');
+                    if (!wasOpen) {
+                        // Lazy-load comments from backend
+                        const form = panel.querySelector('.comment-form');
+                        const postType = form?.dataset.postType;
+                        const postId = form?.dataset.postId;
+                        if (postType && postId && !panel.dataset.loaded) {
+                            fetch(`<?= base_url('organization/getComments') ?>?post_type=${encodeURIComponent(postType)}&post_id=${encodeURIComponent(postId)}`)
+                                .then(res => res.json().catch(() => ({})))
+                                .then(data => {
+                                    if (data?.success && Array.isArray(data.comments)) {
+                                        const list = panel.querySelector('.comments-list');
+                                        if (list) {
+                                            list.innerHTML = '';
+                                            if (data.comments.length === 0) {
+                                                list.innerHTML = '<div class="comment-empty">No comments yet.</div>';
+                                            } else {
+                                                data.comments.forEach(c => {
+                                                    const item = document.createElement('div');
+                                                    item.className = 'comment-item';
+                                                    const name = (c.user_name || 'User').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                                                    const body = (c.content || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                                                    item.innerHTML = `<div class="comment-author">${name}</div><div class="comment-text">${body}</div>`;
+                                                    list.appendChild(item);
+                                                });
+                                                const countTarget = document.querySelector(`[data-comment-count="count-${targetId}"]`);
+                                                if (countTarget) {
+                                                    countTarget.innerHTML = `<i class="fas fa-comment-alt"></i> ${data.comments.length}`;
+                                                }
+                                            }
+                                        }
+                                        panel.dataset.loaded = 'true';
+                                    }
+                                })
+                                .catch(() => {});
+                        }
+                        const input = panel.querySelector('input[name="content"]');
+                        if (input) input.focus();
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.comment-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    const res = await fetch('<?= base_url('organization/comment') ?>', {
+                        method: 'POST',
+                        body: new FormData(form),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) {
+                        alert(data.message || 'Failed to post comment.');
+                    } else {
+                        const list = form.closest('.comments-panel')?.querySelector('.comments-list');
+                        if (list) {
+                            const empty = list.querySelector('.comment-empty');
+                            if (empty) empty.remove();
+                            const item = document.createElement('div');
+                            item.className = 'comment-item';
+                            item.innerHTML = `
+                                <div class="comment-author">${(data.comment?.user_name || 'You')}</div>
+                                <div class="comment-text">${(data.comment?.content || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                            `;
+                            list.appendChild(item);
+                        }
+                        const countTarget = form.closest('.feed-card')?.querySelector('[data-comment-count]');
+                        if (countTarget) {
+                            const parts = countTarget.textContent.trim().split(/\s+/);
+                            const num = parseInt(parts.pop(), 10);
+                            const newNum = isNaN(num) ? 1 : num + 1;
+                            countTarget.innerHTML = `<i class="fas fa-comment-alt"></i> ${newNum}`;
+                            countTarget.dataset.loaded = 'true';
+                        }
+                        form.reset();
+                    }
+                } catch (err) {
+                    alert('Request failed. Please try again.');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            });
+        });
+    });
+    </script>
 </body>
 </html>
