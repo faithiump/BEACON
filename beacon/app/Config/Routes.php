@@ -75,7 +75,7 @@ $routes->get('organization/getPosts', 'Organization::getPosts');
 $routes->post('organization/createPost', 'Organization::createPost');
 
 // Organization Members
-$routes->get('organization/members', 'Organization::viewMembers');
+$routes->get('organization/members', 'Organization::members');
 $routes->post('organization/members/manage', 'Organization::manageMembers');
 
 // Organization Products

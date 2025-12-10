@@ -926,63 +926,51 @@
                     </div>
                 </div>
 
-                <div class="members-table-container">
-                    <table class="data-table" id="membersTable">
-                        <thead>
-                            <tr>
-                                <th>Member</th>
-                                <th>Student ID</th>
-                                <th>Course & Year</th>
-                                <th>Status</th>
-                                <th>Joined</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if(!empty($recentMembers)): ?>
-                                <?php foreach($recentMembers as $member): ?>
-                                <tr data-status="<?= $member['status'] ?>">
-                                    <td>
-                                        <div class="member-cell">
-                                            <?php if(!empty($member['photo'])): ?>
-                                                <img src="<?= esc($member['photo']) ?>" alt="<?= esc($member['name']) ?>" class="member-avatar small" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
-                                            <?php else: ?>
-                                                <div class="member-avatar small"><?= strtoupper(substr($member['name'], 0, 1)) ?></div>
-                                            <?php endif; ?>
-                                            <div>
-                                                <strong><?= esc($member['name']) ?></strong>
-                                                <span><?= esc($member['email']) ?></span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><?= esc($member['student_id']) ?></td>
-                                    <td><?= esc($member['course']) ?> - <?= $member['year'] ?></td>
-                                    <td>
-                                        <span class="status-badge <?= $member['status'] ?>"><?= ucfirst($member['status']) ?></span>
-                                    </td>
-                                    <td><?= date('M d, Y', strtotime($member['applied_at'])) ?></td>
-                                    <td>
-                                        <?php if($member['status'] === 'pending'): ?>
-                                        <div class="action-buttons">
-                                            <button class="btn-icon success" onclick="manageMember(<?= $member['id'] ?>, 'approve')">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn-icon danger" onclick="manageMember(<?= $member['id'] ?>, 'reject')">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                        <?php else: ?>
-                                        <button class="btn-icon danger" onclick="manageMember(<?= $member['id'] ?>, 'remove')">
-                                            <i class="fas fa-user-minus"></i>
-                                        </button>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                <?php if(!empty($recentMembers)): ?>
+                <div class="members-grid">
+                    <?php foreach($recentMembers as $member): ?>
+                        <?php
+                            $name = trim($member['name'] ?? 'Member');
+                            $initial = strtoupper(substr($name, 0, 1));
+                            $photo = $member['photo'] ?? null;
+                            $studentId = $member['student_id'] ?? 'ID: N/A';
+                            $course = $member['course'] ?? '';
+                            $year = $member['year'] ?? '';
+                            $joined = !empty($member['applied_at']) ? date('M d, Y', strtotime($member['applied_at'])) : 'N/A';
+                            $status = strtolower($member['status'] ?? 'pending');
+                            $statusClass = in_array($status, ['active','approved']) ? 'active' : ($status === 'pending' ? 'pending' : 'inactive');
+                        ?>
+                        <article class="member-card">
+                            <div class="member-card-header">
+                                <div class="member-avatar">
+                                    <?php if (!empty($photo)): ?>
+                                        <img src="<?= esc($photo) ?>" alt="<?= esc($name) ?>">
+                                    <?php else: ?>
+                                        <span><?= esc($initial) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="member-meta">
+                                    <h3><?= esc($name) ?></h3>
+                                    <p><?= esc($studentId) ?></p>
+                                </div>
+                                <span class="member-status <?= esc($statusClass) ?>"><?= ucfirst(esc($status)) ?></span>
+                            </div>
+                            <div class="member-card-body">
+                                <?php if ($course || $year): ?>
+                                    <div class="member-info"><strong>Course/Year:</strong> <?= esc(trim($course . ' ' . $year)) ?></div>
+                                <?php endif; ?>
+                                <div class="member-info"><strong>Joined:</strong> <?= esc($joined) ?></div>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
                 </div>
+                <?php else: ?>
+                <div class="empty-state-large">
+                    <i class="fas fa-users"></i>
+                    <h3>No Members</h3>
+                    <p>Invite members to your organization to see them here.</p>
+                </div>
+                <?php endif; ?>
             </section>
 
             <!-- Products Section -->
