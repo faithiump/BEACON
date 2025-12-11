@@ -55,12 +55,6 @@ $segment = strtolower(preg_replace('/\.php$/', '', $segment));
                     <span>Forum</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="<?= base_url('organization/logout') ?>" class="nav-link">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </li>
         </ul>
     </nav>
 </aside>
