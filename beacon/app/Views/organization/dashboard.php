@@ -1009,7 +1009,7 @@
                                     <span class="stock <?= $product['stock'] == 0 ? 'danger' : ($product['stock'] <= 10 ? 'warning' : '') ?>">Stock: <?= $product['stock'] ?></span>
                                 </div>
                                 <div class="product-stats">
-                                    <span><i class="fas fa-shopping-cart"></i> <?= $product['sold'] ?> sold</span>
+                                    <span><i class="fas fa-shopping-cart"></i> <?= $product['sold'] ?> reserved</span>
                                 </div>
                             </div>
                             <div class="product-footer">
