@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 03, 2025 at 05:06 PM
+-- Generation Time: Dec 11, 2025 at 11:51 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -68,6 +68,19 @@ INSERT INTO `admin` (`id`, `username`, `password`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `admin_notification_views`
+--
+
+CREATE TABLE `admin_notification_views` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `admin_id` int(11) UNSIGNED NOT NULL,
+  `application_id` int(11) UNSIGNED NOT NULL,
+  `viewed_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `announcements`
 --
 
@@ -88,9 +101,9 @@ CREATE TABLE `announcements` (
 --
 
 INSERT INTO `announcements` (`announcement_id`, `org_id`, `title`, `content`, `priority`, `views`, `is_pinned`, `created_at`, `updated_at`) VALUES
-(3, 7, 'stress week', 'stress  na si mariel hehehe', 'high', 230, 0, '2025-11-27 08:07:26', '2025-12-04 00:05:20'),
-(4, 7, 'success', 'yeheyyyyyyyyyyyyyyyyyyy', 'high', 13, 0, '2025-12-03 22:54:37', '2025-12-04 00:05:21'),
-(5, 7, '-[0p[]', '[]\r\n\\]\'\r\n;\r\niloilo', 'normal', 11, 0, '2025-12-03 23:06:28', '2025-12-04 00:05:22');
+(3, 7, 'stress week', 'stress  na si mariel hehehe', 'high', 237, 0, '2025-11-27 08:07:26', '2025-12-11 18:25:19'),
+(4, 7, 'success', 'yeheyyyyyyyyyyyyyyyyyyy', 'high', 20, 0, '2025-12-03 22:54:37', '2025-12-11 18:25:19'),
+(5, 7, '-[0p[]', '[]\r\n\\]\'\r\n;\r\niloilo', 'normal', 18, 0, '2025-12-03 23:06:28', '2025-12-11 18:25:20');
 
 -- --------------------------------------------------------
 
@@ -211,6 +224,29 @@ INSERT INTO `forum_posts` (`id`, `student_id`, `organization_id`, `author_type`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `migrations`
+--
+
+CREATE TABLE `migrations` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `version` varchar(255) NOT NULL,
+  `class` varchar(255) NOT NULL,
+  `group` varchar(255) NOT NULL,
+  `namespace` varchar(255) NOT NULL,
+  `time` int(11) NOT NULL,
+  `batch` int(11) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `migrations`
+--
+
+INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`, `batch`) VALUES
+(1, '2025-12-11-000000', 'App\\Database\\Migrations\\AddCurrentOfficers', 'default', 'App', 1765440142, 1);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `organizations`
 --
 
@@ -227,6 +263,7 @@ CREATE TABLE `organizations` (
   `objectives` text NOT NULL,
   `contact_email` varchar(255) NOT NULL,
   `contact_phone` varchar(20) NOT NULL,
+  `current_officers` int(11) UNSIGNED NOT NULL DEFAULT 0,
   `current_members` int(11) UNSIGNED NOT NULL DEFAULT 0,
   `is_active` tinyint(1) UNSIGNED NOT NULL DEFAULT 1,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
@@ -237,8 +274,8 @@ CREATE TABLE `organizations` (
 -- Dumping data for table `organizations`
 --
 
-INSERT INTO `organizations` (`id`, `user_id`, `organization_name`, `organization_acronym`, `organization_type`, `organization_category`, `founding_date`, `mission`, `vision`, `objectives`, `contact_email`, `contact_phone`, `current_members`, `is_active`, `created_at`, `updated_at`) VALUES
-(7, 12, 'Junior Philippine Student Council', 'JPCS', 'academic', 'departmental', '2025-11-27', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'marhernandez@my.cspc.edu.ph', '09512741049', 0, 1, '2025-11-27 15:39:58', '2025-11-27 11:35:12');
+INSERT INTO `organizations` (`id`, `user_id`, `organization_name`, `organization_acronym`, `organization_type`, `organization_category`, `founding_date`, `mission`, `vision`, `objectives`, `contact_email`, `contact_phone`, `current_officers`, `current_members`, `is_active`, `created_at`, `updated_at`) VALUES
+(7, 12, 'Junior Philippine Student Council', 'JPCS', 'academic', 'departmental', '2025-11-27', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'marhernandez@my.cspc.edu.ph', '09512741049', 2, 1, 1, '2025-11-27 15:39:58', '2025-12-11 18:34:33');
 
 -- --------------------------------------------------------
 
@@ -262,7 +299,7 @@ CREATE TABLE `organization_advisors` (
 --
 
 INSERT INTO `organization_advisors` (`id`, `application_id`, `name`, `email`, `phone`, `department`, `created_at`, `updated_at`) VALUES
-(12, 6, 'Irene Espeleta', '', '12345678901', 'ccs', '2025-11-27 15:37:12', '2025-11-27 11:30:36');
+(12, 6, 'Irene Espeleta', 'irene@gmail.com', '12345678901', 'ccs', '2025-11-27 15:37:12', '2025-12-11 18:20:14');
 
 -- --------------------------------------------------------
 
@@ -284,6 +321,7 @@ CREATE TABLE `organization_applications` (
   `contact_email` varchar(255) NOT NULL,
   `password_hash` varchar(255) DEFAULT NULL,
   `contact_phone` varchar(20) NOT NULL,
+  `current_officers` int(11) UNSIGNED NOT NULL DEFAULT 0,
   `current_members` int(11) UNSIGNED NOT NULL,
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
   `admin_notes` text DEFAULT NULL,
@@ -298,8 +336,8 @@ CREATE TABLE `organization_applications` (
 -- Dumping data for table `organization_applications`
 --
 
-INSERT INTO `organization_applications` (`id`, `organization_name`, `organization_acronym`, `organization_type`, `organization_category`, `department`, `founding_date`, `mission`, `vision`, `objectives`, `contact_email`, `password_hash`, `contact_phone`, `current_members`, `status`, `admin_notes`, `reviewed_by`, `reviewed_at`, `submitted_at`, `created_at`, `updated_at`) VALUES
-(6, 'Junior Philippine Student Council', 'JPCS', 'academic', 'departmental', 'ccs', '2025-11-27', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'marhernandez@my.cspc.edu.ph', '$2y$10$OACU9Nam4G8kT5THBecXmOybSvtg.SWNWnaRygu2aVK9pu6Mg1Ody', '09512741049', 5, 'approved', NULL, 1, '2025-11-27 07:39:58', '2025-11-27 07:37:12', '2025-11-27 15:37:12', '2025-11-27 15:39:58');
+INSERT INTO `organization_applications` (`id`, `organization_name`, `organization_acronym`, `organization_type`, `organization_category`, `department`, `founding_date`, `mission`, `vision`, `objectives`, `contact_email`, `password_hash`, `contact_phone`, `current_officers`, `current_members`, `status`, `admin_notes`, `reviewed_by`, `reviewed_at`, `submitted_at`, `created_at`, `updated_at`) VALUES
+(6, 'Junior Philippine Student Council', 'JPCS', 'academic', 'departmental', 'ccs', '2025-11-27', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'The mission of our organization is to create a supportive and engaging environment where students can grow, connect, and discover their full potential. We aim to empower every member by offering meaningful programs, activities, and opportunities that build confidence, leadership, and a strong sense of community. Through collaboration and service, we strive to make a positive impact both within the campus and beyond.', 'marhernandez@my.cspc.edu.ph', '$2y$10$OACU9Nam4G8kT5THBecXmOybSvtg.SWNWnaRygu2aVK9pu6Mg1Ody', '09512741049', 0, 5, 'approved', NULL, 1, '2025-11-27 07:39:58', '2025-11-27 07:37:12', '2025-11-27 15:37:12', '2025-11-27 15:39:58');
 
 -- --------------------------------------------------------
 
@@ -371,7 +409,7 @@ CREATE TABLE `organization_officers` (
 --
 
 INSERT INTO `organization_officers` (`id`, `application_id`, `position`, `name`, `email`, `phone`, `student_id`, `created_at`, `updated_at`) VALUES
-(6, 6, 'President', 'Deanne Pandes', '', '45453234567', '2310020234', '2025-11-27 15:37:12', '2025-11-27 11:30:36');
+(6, 6, 'President', 'Deanne Pandes', 'depandes@gmail.com', '45453234567', '2310020234', '2025-11-27 15:37:12', '2025-12-11 18:18:13');
 
 -- --------------------------------------------------------
 
@@ -485,7 +523,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`product_id`, `org_id`, `product_name`, `description`, `price`, `stock`, `sold`, `sizes`, `image`, `status`, `created_at`, `updated_at`) VALUES
-(3, 7, 'SZSDDS', 'DFGDGFDGRTRE', 0.05, 1, 1, 'S', NULL, 'low_stock', '2025-12-02 19:22:31', '2025-12-03 22:20:10'),
+(3, 7, 'SZSDDS', 'DFGDGFDGRTRE', 0.05, 5, 1, 'S', NULL, 'low_stock', '2025-12-02 19:22:31', '2025-12-11 17:21:15'),
 (4, 7, 'hkjh', 'hkjhkjgk', 1.00, 2, 1, 'S', NULL, 'low_stock', '2025-12-02 20:39:54', '2025-12-03 21:38:55');
 
 -- --------------------------------------------------------
@@ -565,7 +603,8 @@ CREATE TABLE `student_organization_memberships` (
 --
 
 INSERT INTO `student_organization_memberships` (`id`, `student_id`, `org_id`, `status`, `joined_at`, `updated_at`) VALUES
-(7, 3, 7, 'pending', '2025-11-28 03:21:43', '2025-11-28 03:21:43');
+(7, 3, 7, 'pending', '2025-11-28 03:21:43', '2025-11-28 03:21:43'),
+(8, 4, 7, 'active', '2025-12-11 18:34:33', '2025-12-11 18:34:33');
 
 -- --------------------------------------------------------
 
@@ -643,19 +682,6 @@ CREATE TABLE `user_profiles` (
 INSERT INTO `user_profiles` (`id`, `user_id`, `firstname`, `middlename`, `lastname`, `birthday`, `gender`, `phone`, `address_id`, `created_at`, `updated_at`) VALUES
 (3, 7, 'Deanne', 'Faith', 'Pandes', '2025-11-26', 'female', '12345678901', 3, '2025-11-25 16:18:35', '2025-11-28 03:20:57'),
 (4, 8, 'irene', 'buendia', 'espeleta', '2025-11-26', 'female', '09512736322', 4, '2025-11-26 12:28:42', '2025-11-26 16:55:54');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `admin_notification_views`
---
-
-CREATE TABLE `admin_notification_views` (
-  `id` int(11) UNSIGNED NOT NULL,
-  `admin_id` int(11) UNSIGNED NOT NULL,
-  `application_id` int(11) UNSIGNED NOT NULL,
-  `viewed_at` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indexes for dumped tables
@@ -737,6 +763,12 @@ ALTER TABLE `forum_posts`
   ADD KEY `idx_category` (`category`),
   ADD KEY `idx_created_at` (`created_at`),
   ADD KEY `idx_is_pinned` (`is_pinned`);
+
+--
+-- Indexes for table `migrations`
+--
+ALTER TABLE `migrations`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `organizations`
@@ -931,6 +963,12 @@ ALTER TABLE `forum_posts`
   MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT for table `migrations`
+--
+ALTER TABLE `migrations`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `organizations`
 --
 ALTER TABLE `organizations`
@@ -1000,7 +1038,7 @@ ALTER TABLE `students`
 -- AUTO_INCREMENT for table `student_organization_memberships`
 --
 ALTER TABLE `student_organization_memberships`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -1025,122 +1063,10 @@ ALTER TABLE `user_profiles`
 --
 
 --
--- Constraints for table `admin_notification_views`
---
-ALTER TABLE `admin_notification_views`
-  ADD CONSTRAINT `fk_admin_notification_views_admin` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_admin_notification_views_application` FOREIGN KEY (`application_id`) REFERENCES `organization_applications` (`id`) ON DELETE CASCADE;
-
---
 -- Constraints for table `announcements`
 --
 ALTER TABLE `announcements`
   ADD CONSTRAINT `fk_announcements_organization` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `events`
---
-ALTER TABLE `events`
-  ADD CONSTRAINT `fk_events_organization` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `event_attendees`
---
-ALTER TABLE `event_attendees`
-  ADD CONSTRAINT `fk_event_attendees_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_event_attendees_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `event_interests`
---
-ALTER TABLE `event_interests`
-  ADD CONSTRAINT `fk_event_interests_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_event_interests_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `forum_posts`
---
-ALTER TABLE `forum_posts`
-  ADD CONSTRAINT `fk_forum_posts_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_forum_posts_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `organizations`
---
-ALTER TABLE `organizations`
-  ADD CONSTRAINT `fk_organizations_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `organization_advisors`
---
-ALTER TABLE `organization_advisors`
-  ADD CONSTRAINT `fk_organization_advisors_application` FOREIGN KEY (`application_id`) REFERENCES `organization_applications` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `organization_files`
---
-ALTER TABLE `organization_files`
-  ADD CONSTRAINT `fk_organization_files_application` FOREIGN KEY (`application_id`) REFERENCES `organization_applications` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `organization_follows`
---
-ALTER TABLE `organization_follows`
-  ADD CONSTRAINT `fk_org_follows_org` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_org_follows_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `organization_officers`
---
-ALTER TABLE `organization_officers`
-  ADD CONSTRAINT `fk_organization_officers_application` FOREIGN KEY (`application_id`) REFERENCES `organization_applications` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `post_comments`
---
-ALTER TABLE `post_comments`
-  ADD CONSTRAINT `fk_comments_parent` FOREIGN KEY (`parent_comment_id`) REFERENCES `post_comments` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_post_comments_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `products`
---
-ALTER TABLE `products`
-  ADD CONSTRAINT `fk_products_organization` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `reservations`
---
-ALTER TABLE `reservations`
-  ADD CONSTRAINT `reservations_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `reservations_ibfk_2` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `reservations_ibfk_3` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE;
-
---
--- Constraints for table `students`
---
-ALTER TABLE `students`
-  ADD CONSTRAINT `fk_students_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `student_organization_memberships`
---
-ALTER TABLE `student_organization_memberships`
-  ADD CONSTRAINT `fk_memberships_organization` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_memberships_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `user_photos`
---
-ALTER TABLE `user_photos`
-  ADD CONSTRAINT `fk_user_photos_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `user_profiles`
---
-ALTER TABLE `user_profiles`
-  ADD CONSTRAINT `fk_user_profiles_address` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_user_profiles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
