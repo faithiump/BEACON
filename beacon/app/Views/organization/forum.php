@@ -21,8 +21,8 @@
                 <div class="content-card">
                     <div class="card-header">
                         <div>
-                            <h2>Forum</h2>
-                            <p class="section-subtitle">Share updates, ask questions, and engage with your members</p>
+                            <h2>Community Forum</h2>
+                            <p class="section-subtitle">Discuss with fellow students and organizations</p>
                         </div>
                     </div>
                     <div class="card-body">
@@ -85,16 +85,7 @@
                                     <h4 class="forum-sidebar-title"><i class="fas fa-fire"></i> Trending Topics</h4>
                                     <ul class="trending-list">
                                         <li class="trending-item">
-                                            <span class="trending-rank">#1</span>
-                                            <span class="trending-topic">University Week 2025</span>
-                                        </li>
-                                        <li class="trending-item">
-                                            <span class="trending-rank">#2</span>
-                                            <span class="trending-topic">Enrollment Tips</span>
-                                        </li>
-                                        <li class="trending-item">
-                                            <span class="trending-rank">#3</span>
-                                            <span class="trending-topic">Org Recruitment</span>
+                                            <span class="trending-topic" style="text-align: center; width: 100%; color: #6b7280; font-style: italic;">Loading trending topics...</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -225,7 +216,7 @@
 
         // Initialize forum when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Load initial forum posts
+            // Load initial forum posts (which will also calculate trending topics)
             loadForumPosts();
 
             // Set up forum tab click handlers
@@ -253,7 +244,7 @@
                     const category = activeCategoryTab ? activeCategoryTab.getAttribute('data-category') : 'all';
                     const filter = this.getAttribute('data-filter');
 
-                    // Load posts with new filter
+                    // Load posts with new filter (will recalculate trending topics)
                     loadForumPosts(category, filter);
                 });
             });
@@ -274,7 +265,7 @@
                     const filter = activeFilterTab ? activeFilterTab.getAttribute('data-filter') : 'latest';
                     const category = this.getAttribute('data-category');
 
-                    // Load posts with new category
+                    // Load posts with new category (will recalculate trending topics)
                     loadForumPosts(category, filter);
                 });
             });
@@ -359,6 +350,9 @@
                     if (data.success && data.posts && data.posts.length > 0) {
                         console.log('Displaying posts...');
                         displayForumPosts(data.posts);
+
+                        // Calculate trending topics from loaded posts
+                        calculateTrendingTopics(data.posts);
                     } else {
                         console.log('No posts found');
                         postsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64116e;"><i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i><p>No posts found. Be the first to post!</p><button class="btn-primary" onclick="openCreatePostModal()" style="margin-top: 1rem;"><i class="fas fa-plus"></i> Create Post</button></div>';
@@ -368,6 +362,99 @@
                     console.error('Error loading posts:', error);
                     postsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-circle"></i><p>Error loading posts: ' + error.message + '</p><button onclick="loadForumPosts(\'' + category + '\', \'' + filter + '\')" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button></div>';
                 });
+        }
+
+        // Calculate trending topics from posts data
+        function calculateTrendingTopics(posts) {
+            console.log('Calculating trending topics from', posts.length, 'posts');
+
+            const tagData = {};
+
+            posts.forEach(post => {
+                // Get tags from post
+                const tags = post.tags_array || post.tags || [];
+
+                // If no tags array, try to extract from content
+                let processedTags = tags;
+                if (processedTags.length === 0 && post.content) {
+                    const hashtagRegex = /#(\w+)/g;
+                    const matches = post.content.match(hashtagRegex);
+                    if (matches) {
+                        processedTags = matches.map(tag => tag.substring(1)); // Remove # prefix
+                    }
+                }
+
+                // Get reaction count
+                let reactionCount = 0;
+                if (post.reaction_counts && typeof post.reaction_counts === 'object') {
+                    reactionCount = Object.values(post.reaction_counts).reduce((sum, count) => sum + (parseInt(count) || 0), 0);
+                } else if (post.reaction_count) {
+                    reactionCount = parseInt(post.reaction_count) || 0;
+                } else if (post.reactions) {
+                    reactionCount = parseInt(post.reactions) || 0;
+                }
+
+                console.log('Post:', post.title, 'Tags:', processedTags, 'Reactions:', reactionCount);
+
+                // Count tags
+                processedTags.forEach(tag => {
+                    const tagName = tag.toString().trim().toLowerCase();
+                    if (tagName) {
+                        if (!tagData[tagName]) {
+                            tagData[tagName] = { reactions: 0, frequency: 0 };
+                        }
+                        tagData[tagName].reactions += reactionCount;
+                        tagData[tagName].frequency += 1;
+                    }
+                });
+            });
+
+            console.log('Tag data collected:', tagData);
+
+            // Sort tags by reactions, then frequency
+            const sortedTags = Object.entries(tagData)
+                .sort(([,a], [,b]) => {
+                    if (a.reactions !== b.reactions) {
+                        return b.reactions - a.reactions;
+                    }
+                    return b.frequency - a.frequency;
+                })
+                .slice(0, 4); // Top 4
+
+            console.log('Sorted trending topics:', sortedTags);
+
+            // Update trending topics display
+            updateTrendingTopicsDisplay(sortedTags);
+        }
+
+        // Update trending topics in the sidebar
+        function updateTrendingTopicsDisplay(trendingTopics) {
+            const trendingList = document.querySelector('.trending-list');
+            if (!trendingList) {
+                console.error('Trending list not found');
+                return;
+            }
+
+            if (trendingTopics.length === 0) {
+                trendingList.innerHTML = '<li class="trending-item"><span class="trending-topic" style="text-align: center; width: 100%; color: #6b7280; font-style: italic;">No trending topics yet</span></li>';
+                return;
+            }
+
+            let html = '';
+            trendingTopics.forEach(([topic, data], index) => {
+                const displayTopic = topic.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                html += `
+                    <li class="trending-item">
+                        <span class="trending-rank">#${index + 1}</span>
+                        <div class="trending-content">
+                            <span class="trending-topic">${displayTopic}</span>
+                            <span class="trending-reactions">${data.reactions} <i class="fas fa-heart"></i></span>
+                        </div>
+                    </li>
+                `;
+            });
+
+            trendingList.innerHTML = html;
         }
 
         // Display forum posts

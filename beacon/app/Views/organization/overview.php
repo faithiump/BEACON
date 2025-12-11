@@ -165,19 +165,28 @@
                                                 <div class="post-summary">
                                                     <div class="reaction-stack">
                                                         <?php foreach ($topReactionsList as $idx => $r): ?>
-                                                            <span class="reaction-pill reaction-<?= esc($r['key']) ?>" style="z-index: <?= 5 - $idx ?>;">
-                                                                <?= esc($r['emoji']) ?> <small><?= (int)$r['count'] ?></small>
+                                                            <span class="reaction-emoji reaction-<?= esc($r['key']) ?>">
+                                                                <?= esc($r['emoji']) ?>
                                                             </span>
                                                         <?php endforeach; ?>
                                                         <span class="reaction-total"><?= $reactionsTotal ?></span>
                                                     </div>
-                                                    <div class="summary-right">
-                                                        <span class="summary-item" data-comment-count="count-<?= $commentKey ?>"><i class="fas fa-comment-alt"></i> <?= $commentsCount ?></span>
+                                                    <div class="summary-stats">
+                                                        <span class="stats-item" data-comment-count="count-<?= $commentKey ?>">
+                                                            <i class="fas fa-comment-alt"></i>
+                                                            <span class="stats-count"><?= $commentsCount ?></span>
+                                                        </span>
                                                         <?php if ($viewsCount !== null): ?>
-                                                            <span class="summary-item"><i class="fas fa-eye"></i> <?= $viewsCount ?></span>
+                                                            <span class="stats-item">
+                                                                <i class="fas fa-eye"></i>
+                                                                <span class="stats-count"><?= $viewsCount ?></span>
+                                                            </span>
                                                         <?php endif; ?>
                                                         <?php if ($post['type'] === 'event'): ?>
-                                                            <span class="summary-item"><i class="fas fa-star"></i> <?= $interestCount ?? 0 ?></span>
+                                                            <span class="stats-item">
+                                                                <i class="fas fa-star"></i>
+                                                                <span class="stats-count"><?= $interestCount ?? 0 ?></span>
+                                                            </span>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
@@ -233,13 +242,33 @@
                     <aside class="feed-right">
                         <section class="content-card">
                             <div class="card-header" style="justify-content: space-between; align-items: center;">
-                                <h2 style="margin:0;">Our Products</h2>
-                                <a class="btn primary" style="padding:0.4rem 0.7rem; font-size:0.9rem;" href="<?= base_url('organization/products') ?>">+ Add</a>
+                                <h4 style="margin:0;font-size:20px;color:black">Our Products</h4>
+                                <button class="btn primary" type="button" data-modal-target="productModal" style="padding:0.6rem 0.9rem; font-size:0.8rem;">
+                                    + Add
+                                </button>
                             </div>
                             <div class="card-body" style="display:flex; flex-direction:column; gap:1rem;">
                                 <?php if (!empty($products)): ?>
                                     <div class="product-card-mini">
-                                        <div class="product-thumb"></div>
+                                        <div class="product-thumb">
+                                            <?php
+                                            $productImage = $products[0]['image'] ?? null;
+                                            if (!empty($productImage) && trim($productImage) !== ''): ?>
+                                                <?php
+                                                $imageUrl = (stripos($productImage, 'http') === 0 || stripos($productImage, '//') === 0)
+                                                    ? $productImage
+                                                    : base_url('uploads/products/' . $productImage);
+                                                ?>
+                                                <img src="<?= esc($imageUrl) ?>" alt="<?= esc($products[0]['name'] ?? 'Product') ?>" class="product-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="product-placeholder" style="display: none;">
+                                                    <i class="fas fa-box-open"></i>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="product-placeholder">
+                                                    <i class="fas fa-box-open"></i>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
                                         <div class="product-info">
                                             <div class="product-name"><?= esc($products[0]['name'] ?? '') ?></div>
                                             <?php if (!empty($products[0]['price'])): ?>
@@ -256,7 +285,7 @@
 
                         <section class="content-card">
                             <div class="card-header">
-                                <h2 style="margin:0;">Member Requests</h2>
+                            <h4 style="margin:0;font-size:20px;color:black">Member Requests</h4>
                             </div>
                             <div class="card-body">
                                 <p style="color:#64748b; margin:0;">No pending requests</p>
@@ -402,7 +431,12 @@
                     </label>
                     <label class="full">
                         <span>Image</span>
-                        <input type="file" name="image" accept="image/*">
+                        <div class="image-upload-container">
+                            <input type="file" name="image" accept="image/*" id="productImage">
+                            <div class="image-preview" id="productImagePreview" style="display: none;">
+                                <img id="previewImg" src="" alt="Product preview" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 10px; border: 2px solid #e5e7eb;">
+                            </div>
+                        </div>
                     </label>
                 </div>
                 <div class="modal-actions">
@@ -444,6 +478,58 @@
         backdrops.forEach(bd => {
             bd.addEventListener('click', (e) => {
                 if (e.target === bd) closeModal(bd);
+            });
+        });
+
+        // Image preview functionality
+        const productImageInput = document.getElementById('productImage');
+        const productImagePreview = document.getElementById('productImagePreview');
+        const previewImg = document.getElementById('previewImg');
+
+        if (productImageInput) {
+            productImageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file type
+                    if (!file.type.match('image.*')) {
+                        alert('Please select a valid image file.');
+                        this.value = '';
+                        return;
+                    }
+
+                    // Validate file size (5MB limit)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB.');
+                        this.value = '';
+                        return;
+                    }
+
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        productImagePreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // Hide preview if no file selected
+                    productImagePreview.style.display = 'none';
+                    previewImg.src = '';
+                }
+            });
+        }
+
+        // Reset image preview when modal closes
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modal = btn.closest('.modal-backdrop');
+                if (modal && modal.id === 'productModal') {
+                    setTimeout(() => {
+                        if (productImageInput) productImageInput.value = '';
+                        if (productImagePreview) productImagePreview.style.display = 'none';
+                        if (previewImg) previewImg.src = '';
+                    }, 300);
+                }
             });
         });
 
@@ -678,11 +764,6 @@
                             const data = await res.json().catch(() => ({}));
                             if (!res.ok || !data.success) {
                                 alert(data.message || 'Reaction failed.');
-                            } else {
-                                const totalEl = card.querySelector('.reaction-total');
-                                if (totalEl && data.counts) {
-                                    totalEl.textContent = data.counts.total ?? 0;
-                                }
                             }
                         } catch (_) {
                             alert('Reaction failed.');

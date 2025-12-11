@@ -48,6 +48,7 @@ $routes->get('organization/events', 'Organization::viewEvents');
 $routes->get('organization/events/get/(:num)', 'Organization::getEvent/$1');
 $routes->get('organization/department-students', 'Organization::getDepartmentStudents');
 $routes->post('organization/events/create', 'Organization::createEvent');
+$routes->get('organization/events/edit/(:num)', 'Organization::editEvent/$1');
 $routes->post('organization/events/update/(:num)', 'Organization::updateEvent/$1');
 $routes->post('organization/events/delete/(:num)', 'Organization::deleteEvent/$1');
 $routes->get('organization/events/attendees/(:num)', 'Organization::viewEventAttendees/$1');

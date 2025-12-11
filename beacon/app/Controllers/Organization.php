@@ -1314,15 +1314,15 @@ class Organization extends BaseController
     /**
      * Update event
      */
-    public function updateEvent($id = null)
+    public function editEvent($id = null)
     {
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
-            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
         }
 
         $orgId = $this->session->get('organization_id');
         if (!$orgId || !$id) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+            return redirect()->to(base_url('organization/events'))->with('error', 'Invalid event ID');
         }
 
         $eventModel = new EventModel();
@@ -1330,7 +1330,42 @@ class Organization extends BaseController
 
         // Verify event belongs to organization
         if (!$event || $event['org_id'] != $orgId) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Event not found or unauthorized']);
+            return redirect()->to(base_url('organization/events'))->with('error', 'Event not found or unauthorized');
+        }
+
+        $data = $this->buildDashboardData();
+        $data['active_section'] = 'events';
+        $data['event'] = $event;
+
+        return view('organization/edit_event', $data);
+    }
+
+    public function updateEvent($id = null)
+    {
+        if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'organization') {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+            }
+            return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
+        }
+
+        $orgId = $this->session->get('organization_id');
+        if (!$orgId || !$id) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+            }
+            return redirect()->to(base_url('organization/events'))->with('error', 'Invalid event ID');
+        }
+
+        $eventModel = new EventModel();
+        $event = $eventModel->find($id);
+
+        // Verify event belongs to organization
+        if (!$event || $event['org_id'] != $orgId) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Event not found or unauthorized']);
+            }
+            return redirect()->to(base_url('organization/events'))->with('error', 'Event not found or unauthorized');
         }
 
         // Prepare update data
@@ -1431,17 +1466,23 @@ class Organization extends BaseController
         }
 
         if (empty($updateData)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'No data to update']);
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'No data to update']);
+            }
+            return redirect()->to(base_url('organization/events'))->with('error', 'No data to update');
         }
 
         // Update in database
         if (!$eventModel->update($id, $updateData)) {
             $errors = $eventModel->errors();
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to update event',
-                'errors' => $errors
-            ]);
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to update event',
+                    'errors' => $errors
+                ]);
+            }
+            return redirect()->to(base_url('organization/events'))->with('error', 'Failed to update event');
         }
 
         // Update event status based on new date/time values
@@ -1449,10 +1490,15 @@ class Organization extends BaseController
         date_default_timezone_set(config('App')->appTimezone);
         $eventModel->updateEventStatus($id);
 
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Event updated successfully'
-        ]);
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Event updated successfully'
+            ]);
+        }
+
+        // For regular form submissions, redirect to events page with success message
+        return redirect()->to(base_url('organization/events'))->with('success', 'Event updated successfully');
     }
 
     /**
@@ -3278,6 +3324,11 @@ class Organization extends BaseController
             return redirect()->to(base_url('auth/login'))->with('error', 'Please login as an organization.');
         }
         $data = $this->buildDashboardData();
+
+        // Debug: Check events
+        log_message('debug', 'Events page - Org ID: ' . ($this->session->get('organization_id') ?? 'null'));
+        log_message('debug', 'Events page - Recent events count: ' . count($data['recentEvents'] ?? []));
+
         $data['active_section'] = 'events';
         return view('organization/events', $data);
     }
