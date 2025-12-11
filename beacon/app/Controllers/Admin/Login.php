@@ -845,9 +845,14 @@ class Login extends BaseController
                 'objectives' => $application['objectives'],
                 'contact_email' => $application['contact_email'],
                 'contact_phone' => $application['contact_phone'],
+                'current_officers' => $application['current_officers'] ?? $application['current_members'],
                 'current_members' => $application['current_members'],
                 'is_active' => 1
             ];
+            $orgFields = $db->getFieldNames('organizations');
+            if ($orgFields) {
+                $orgData = array_intersect_key($orgData, array_flip($orgFields));
+            }
             $orgBuilder = $db->table('organizations');
             $existingOrg = $orgBuilder->where('organization_name', $application['organization_name'])->get()->getRowArray();
 

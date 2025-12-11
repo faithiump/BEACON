@@ -27,6 +27,20 @@ class Organization extends BaseController
     }
 
     /**
+     * Filter payload keys to only existing columns in a table.
+     */
+    private function filterTableFields(string $table, array $data): array
+    {
+        $db = \Config\Database::connect();
+        $fields = $db->getFieldNames($table);
+        if (!$fields) {
+            return $data;
+        }
+        $allowed = array_flip($fields);
+        return array_intersect_key($data, $allowed);
+    }
+
+    /**
      * Organization Dashboard (renders overview content/layout)
      */
     public function dashboard($activeSection = null)
@@ -63,6 +77,7 @@ class Organization extends BaseController
                 'vision' => '',
                 'founding_date' => '',
                 'objectives' => '',
+                'current_officers' => 0,
                 'current_members' => 0,
                 'status' => 'active',
                 'advisor_name' => '',
@@ -160,6 +175,7 @@ class Organization extends BaseController
                 'vision' => $organization['vision'] ?? '',
                 'founding_date' => $organization['founding_date'] ?? '',
                 'objectives' => $organization['objectives'] ?? '',
+                'current_officers' => $organization['current_officers'] ?? $organization['current_members'] ?? 0,
                 'current_members' => $organization['current_members'] ?? 0,
                 'status' => $organization['is_active'] ? 'active' : 'inactive',
                 'advisor_name' => $advisor['name'] ?? '',
@@ -188,6 +204,7 @@ class Organization extends BaseController
             'vision' => '',
             'founding_date' => '',
             'objectives' => '',
+                'current_officers' => 0,
             'current_members' => 0,
             'status' => 'active',
             'advisor_name' => '',
@@ -242,11 +259,6 @@ class Organization extends BaseController
                 
                 $totalMembers = count($activeMembers);
                 $pendingMembers = count($pendingMembersList);
-                
-                // Update organization member count if it's different
-                if ($organization['current_members'] != $totalMembers) {
-                    $orgModel->update($orgId, ['current_members' => $totalMembers]);
-                }
                 
                 // Get followers count
                 $followModel = new \App\Models\OrganizationFollowModel();
@@ -1694,8 +1706,9 @@ class Organization extends BaseController
             'organization_category' => strtolower(str_replace(' ', '_', $this->request->getPost('category') ?? '')),
             'founding_date' => $this->request->getPost('founding_date'),
             'objectives' => $this->request->getPost('objectives'),
-            'current_members' => (int)$this->request->getPost('current_members'),
+            'current_officers' => (int)($this->request->getPost('current_officers') ?? $this->request->getPost('current_members')),
         ];
+        $data = $this->filterTableFields('organizations', $data);
         
         // Update department in organization_applications table
         $department = $this->request->getPost('department');
@@ -3470,10 +3483,12 @@ class Organization extends BaseController
             'primary_officer_email' => $this->request->getPost('primary_officer_email'),
             'primary_officer_phone' => $this->request->getPost('primary_officer_phone'),
             'primary_officer_student_id' => $this->request->getPost('primary_officer_student_id'),
+            'current_officers' => $this->request->getPost('current_official_officers'),
             'current_members' => $this->request->getPost('current_official_officers'),
             'status' => 'pending',
             'submitted_at' => date('Y-m-d H:i:s')
         ];
+        $applicationData = $this->filterTableFields('organization_applications', $applicationData);
         // Start database transaction
         $db = \Config\Database::connect();
         
@@ -3562,6 +3577,7 @@ class Organization extends BaseController
                 'contact_email' => $this->request->getPost('contact_email'),
                 'contact_phone' => $this->request->getPost('contact_phone'),
                 'password_hash' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
+                'current_officers' => (int)$this->request->getPost('current_official_officers'),
                 'current_members' => (int)$this->request->getPost('current_official_officers'),
                 'status' => 'pending',
                 'submitted_at' => date('Y-m-d H:i:s')
@@ -3965,7 +3981,7 @@ class Organization extends BaseController
         $vision = trim($this->request->getPost('vision'));
         $objectives = trim($this->request->getPost('objectives'));
         $foundingDate = $this->request->getPost('founding_date');
-        $currentMembers = $this->request->getPost('current_members');
+        $currentOfficers = $this->request->getPost('current_officers') ?? $this->request->getPost('current_members');
         $advisorName = trim($this->request->getPost('advisor_name'));
         $advisorPhone = trim($this->request->getPost('advisor_phone'));
         $advisorDepartment = trim($this->request->getPost('advisor_department'));
@@ -3996,8 +4012,11 @@ class Organization extends BaseController
             'vision' => $vision,
             'objectives' => $objectives,
             'founding_date' => $foundingDate ?: null,
-            'current_members' => is_numeric($currentMembers) ? (int)$currentMembers : null,
+            // store officers in both fields to keep legacy usages aligned
+            'current_officers' => is_numeric($currentOfficers) ? (int)$currentOfficers : null,
+            'current_members' => is_numeric($currentOfficers) ? (int)$currentOfficers : null,
         ];
+        $updateData = $this->filterTableFields('organizations', $updateData);
 
         // Handle profile photo upload
         $photo = $this->request->getFile('photo');

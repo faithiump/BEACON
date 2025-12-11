@@ -1330,8 +1330,8 @@
                                 <textarea name="objectives" class="form-input" rows="3"><?= esc($organization['objectives'] ?? '') ?></textarea>
                             </div>
                             <div class="form-group">
-                                <label>Current Number of Members</label>
-                                <input type="number" name="current_members" value="<?= esc($organization['current_members'] ?? '') ?>" class="form-input">
+                                <label>Current Number of Officers</label>
+                                <input type="number" name="current_officers" value="<?= esc($organization['current_officers'] ?? $organization['current_members'] ?? '') ?>" class="form-input">
                             </div>
                             <div class="form-group">
                                 <label>Contact Email</label>

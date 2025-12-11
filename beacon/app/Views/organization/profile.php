@@ -85,6 +85,16 @@
                         <h2>Organization Profile</h2>
                     </div>
                     <div class="card-body">
+                        <?php if (session()->getFlashdata('success')): ?>
+                            <div class="alert alert-success" style="margin-bottom:1rem; border-radius:10px; padding:0.75rem 1rem; background:#ecfdf3; color:#166534; border:1px solid #bbf7d0;">
+                                <?= esc(session()->getFlashdata('success')) ?>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (session()->getFlashdata('error')): ?>
+                            <div class="alert alert-error" style="margin-bottom:1rem; border-radius:10px; padding:0.75rem 1rem; background:#fef2f2; color:#b91c1c; border:1px solid #fecdd3;">
+                                <?= esc(session()->getFlashdata('error')) ?>
+                            </div>
+                        <?php endif; ?>
                         <?php
                             $org = $organization ?? [];
                             $orgName = $org['organization_name'] ?? $org['name'] ?? 'Organization';
@@ -136,6 +146,10 @@
                                     <h3>Details</h3>
                                 </div>
                                 <div class="card-body" style="gap:0.75rem;">
+                                    <div class="meta-row">
+                                        <span class="meta-label">Current Number of Officers</span>
+                                        <span class="meta-value"><?= esc($org['current_officers'] ?? $org['current_members'] ?? '—') ?></span>
+                                    </div>
                                     <div class="meta-row">
                                         <span class="meta-label">Department</span>
                                         <span class="meta-value"><?= esc($org['department'] ?? '—') ?></span>

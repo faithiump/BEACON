@@ -64,6 +64,16 @@
                         <h2>Edit Organization Profile</h2>
                     </div>
                     <div class="card-body">
+                        <?php if (session()->getFlashdata('success')): ?>
+                            <div class="alert alert-success" style="margin-bottom:1rem; border-radius:10px; padding:0.75rem 1rem; background:#ecfdf3; color:#166534; border:1px solid #bbf7d0;">
+                                <?= esc(session()->getFlashdata('success')) ?>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (session()->getFlashdata('error')): ?>
+                            <div class="alert alert-error" style="margin-bottom:1rem; border-radius:10px; padding:0.75rem 1rem; background:#fef2f2; color:#b91c1c; border:1px solid #fecdd3;">
+                                <?= esc(session()->getFlashdata('error')) ?>
+                            </div>
+                        <?php endif; ?>
                         <?php
                             $org = $organization ?? [];
                             $orgName = $org['organization_name'] ?? $org['name'] ?? '';
@@ -76,7 +86,7 @@
                             $vision = $org['vision'] ?? '';
                             $objectives = $org['objectives'] ?? '';
                             $foundingDate = $org['founding_date'] ?? '';
-                            $currentMembers = $org['current_members'] ?? '';
+                            $currentOfficers = $org['current_officers'] ?? ($org['current_members'] ?? '');
                             $advisorName = $org['advisor_name'] ?? '';
                             $advisorEmail = $org['advisor_email'] ?? '';
                             $advisorPhone = $org['advisor_phone'] ?? '';
@@ -120,6 +130,7 @@
                         </div>
                         <form action="<?= base_url('organization/profile/edit') ?>" method="post" class="form-grid" enctype="multipart/form-data">
                             <?= csrf_field() ?>
+                            <?= csrf_field() ?>
                             <input type="file" id="photo" name="photo" accept="image/*" style="display:none;">
                             <div class="form-group" style="grid-column: 1 / -1; margin-top:0.25rem;">
                                 <h3 style="margin:0; font-size:1.05rem; color:#0f172a;">Organization Information</h3>
@@ -154,7 +165,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="current_members">Current Number of Officers</label>
-                                <input type="number" min="0" id="current_members" name="current_members" value="<?= esc($currentMembers) ?>">
+                                <input type="number" min="0" id="current_members" name="current_officers" value="<?= esc($currentOfficers) ?>">
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
                                 <label for="mission">Mission</label>

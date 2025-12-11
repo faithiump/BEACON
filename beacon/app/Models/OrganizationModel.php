@@ -24,6 +24,7 @@ class OrganizationModel extends Model
         'email',
         'contact_email',
         'contact_phone',
+        'current_officers',
         'current_members',
         'is_active'
     ];
