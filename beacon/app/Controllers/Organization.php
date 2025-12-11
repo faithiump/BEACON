@@ -12,6 +12,7 @@ use App\Models\AnnouncementModel;
 use App\Models\ProductModel;
 use App\Models\StudentModel;
 use App\Models\StudentOrganizationMembershipModel;
+use App\Models\ReservationModel;
 use App\Models\UserPhotoModel;
 use App\Models\UserModel;
 use App\Models\ForumPostModel;
@@ -693,6 +694,23 @@ class Organization extends BaseController
         $productModel = new ProductModel();
         $products = $productModel->getProductsByOrg($orgId, 10);
 
+        // Precompute reserved counts by product (pending/confirmed/completed)
+        $reservationModel = new ReservationModel();
+        $reservedRows = $reservationModel
+            ->select('product_id, SUM(quantity) as qty')
+            ->where('org_id', $orgId)
+            ->groupStart()
+                ->where('status', 'pending')
+                ->orWhere('status', 'confirmed')
+                ->orWhere('status', 'completed')
+            ->groupEnd()
+            ->groupBy('product_id')
+            ->findAll();
+        $reservedMap = [];
+        foreach ($reservedRows as $row) {
+            $reservedMap[$row['product_id']] = (int)($row['qty'] ?? 0);
+        }
+
         // Transform database format to view format
         $formattedProducts = [];
         foreach ($products as $product) {
@@ -710,6 +728,7 @@ class Organization extends BaseController
                 'description' => $product['description'] ?? '',
                 'price' => (float)$product['price'],
                 'stock' => (int)$product['stock'],
+                'reserved' => $reservedMap[$product['product_id']] ?? 0,
                 'sold' => (int)($product['sold'] ?? 0),
                 'sizes' => $product['sizes'] ? explode(',', $product['sizes']) : null,
                 'image' => $product['image'] ?? null,
@@ -2286,6 +2305,7 @@ class Organization extends BaseController
             'description' => $createdProduct['description'] ?? '',
             'price' => (float)$createdProduct['price'],
             'stock' => (int)$createdProduct['stock'],
+            'reserved' => 0,
             'sold' => (int)($createdProduct['sold'] ?? 0),
             'sizes' => $createdProduct['sizes'] ? explode(',', $createdProduct['sizes']) : null,
             'image' => $createdProduct['image'] ?? null,
