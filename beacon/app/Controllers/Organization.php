@@ -96,8 +96,13 @@ class Organization extends BaseController
             $userPhotoModel = new UserPhotoModel();
             $userPhoto = $userPhotoModel->where('user_id', $organization['user_id'])->first();
             $photoUrl = null;
+            $photoPath = null;
             if ($userPhoto && !empty($userPhoto['photo_path'])) {
-                $photoUrl = base_url($userPhoto['photo_path']);
+                $photoPath = $userPhoto['photo_path'];
+                $photoUrl = base_url($photoPath);
+                // keep session in sync for topbar/sidebar
+                $this->session->set('org_logo', $photoPath);
+                $this->session->set('organization_logo', $photoPath);
             }
             
             // Get advisor through organization application
@@ -3895,22 +3900,96 @@ class Organization extends BaseController
             return redirect()->back()->with('error', 'Organization not found.');
         }
 
+        $orgModel = new OrganizationModel();
+        $organization = $orgModel->find($orgId);
+        if (!$organization) {
+            return redirect()->back()->with('error', 'Organization not found.');
+        }
+
         $name = trim($this->request->getPost('organization_name'));
         $acronym = trim($this->request->getPost('organization_acronym'));
-        $email = trim($this->request->getPost('email'));
         $phone = trim($this->request->getPost('phone'));
+        $contactPhone = trim($this->request->getPost('contact_phone'));
+        $mission = trim($this->request->getPost('mission'));
+        $vision = trim($this->request->getPost('vision'));
+        $objectives = trim($this->request->getPost('objectives'));
+        $foundingDate = $this->request->getPost('founding_date');
+        $currentMembers = $this->request->getPost('current_members');
+        $advisorName = trim($this->request->getPost('advisor_name'));
+        $advisorPhone = trim($this->request->getPost('advisor_phone'));
+        $advisorDepartment = trim($this->request->getPost('advisor_department'));
+        $advisorEmail = $organization['advisor_email'] ?? '';
+
+        $officerPosition = trim($this->request->getPost('officer_position'));
+        $officerName = trim($this->request->getPost('officer_name'));
+        $officerPhone = trim($this->request->getPost('officer_phone'));
+        $officerStudentId = trim($this->request->getPost('officer_student_id'));
+        $officerEmail = $organization['officer_email'] ?? '';
+
+        // Preserve email/contact email (locked)
+        $email = $organization['email'] ?? ($this->session->get('email') ?? '');
+        $contactEmail = $organization['contact_email'] ?? $email;
 
         if (empty($name) || empty($acronym)) {
             return redirect()->back()->withInput()->with('error', 'Name and acronym are required.');
         }
 
-        $orgModel = new OrganizationModel();
         $updateData = [
             'organization_name' => $name,
             'organization_acronym' => $acronym,
             'email' => $email,
+            'contact_email' => $contactEmail,
             'phone' => $phone,
+            'contact_phone' => $contactPhone,
+            'mission' => $mission,
+            'vision' => $vision,
+            'objectives' => $objectives,
+            'founding_date' => $foundingDate ?: null,
+            'current_members' => is_numeric($currentMembers) ? (int)$currentMembers : null,
         ];
+
+        // Handle profile photo upload
+        $photo = $this->request->getFile('photo');
+        if ($photo && $photo->isValid() && !$photo->hasMoved()) {
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!in_array($photo->getMimeType(), $allowedTypes)) {
+                return redirect()->back()->withInput()->with('error', 'Please upload a valid image (JPG, PNG, or GIF).');
+            }
+            if ($photo->getSize() > 5 * 1024 * 1024) { // 5MB
+                return redirect()->back()->withInput()->with('error', 'Image must be 5MB or smaller.');
+            }
+
+            $userId = $this->session->get('user_id');
+            $newName = 'org_' . $userId . '_' . time() . '.' . $photo->getExtension();
+            $uploadPath = FCPATH . 'uploads/profiles/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+
+            $photo->move($uploadPath, $newName);
+            $photoPath = 'uploads/profiles/' . $newName;
+
+            // Save to user_photos table and clean up old file if exists
+            $userPhotoModel = new UserPhotoModel();
+            $existingPhoto = $userPhotoModel->where('user_id', $userId)->first();
+            if ($existingPhoto && !empty($existingPhoto['photo_path'])) {
+                $oldFile = FCPATH . $existingPhoto['photo_path'];
+                if (is_file($oldFile)) {
+                    @unlink($oldFile);
+                }
+                $userPhotoModel->update($existingPhoto['id'], ['photo_path' => $photoPath]);
+            } else {
+                $userPhotoModel->insert([
+                    'user_id' => $userId,
+                    'photo_path' => $photoPath
+                ]);
+            }
+
+            // update session for topbar/sidebar usage
+            $this->session->set('org_logo', $photoPath);
+            $this->session->set('organization_logo', $photoPath);
+            $this->session->set('photo', base_url($photoPath));
+        }
 
         try {
             $orgModel->update($orgId, $updateData);
@@ -3919,6 +3998,54 @@ class Organization extends BaseController
             $this->session->set('organization_acronym', $acronym);
             $this->session->set('email', $email);
             $this->session->set('phone', $phone);
+
+            // Update advisor/officer using application link
+            $db = \Config\Database::connect();
+            $application = $db->table('organization_applications')
+                ->where('organization_name', $organization['organization_name'])
+                ->where('status', 'approved')
+                ->get()
+                ->getRowArray();
+
+            if ($application) {
+                // Advisor
+                $advisorModel = new OrganizationAdvisorModel();
+                $existingAdvisor = $advisorModel->where('application_id', $application['id'])->first();
+                $advisorData = [
+                    'name' => $advisorName,
+                    'email' => $advisorEmail,
+                    'phone' => $advisorPhone,
+                    'department' => $advisorDepartment
+                ];
+                if ($existingAdvisor) {
+                    $advisorModel->update($existingAdvisor['id'], $advisorData);
+                } else {
+                    $advisorData['application_id'] = $application['id'];
+                    $advisorModel->insert($advisorData);
+                }
+
+                // Officer
+                $officerModel = new OrganizationOfficerModel();
+                $existingOfficer = $officerModel->where('application_id', $application['id'])
+                    ->where('position', 'President')
+                    ->first();
+                if (!$existingOfficer) {
+                    $existingOfficer = $officerModel->where('application_id', $application['id'])->first();
+                }
+                $officerData = [
+                    'position' => $officerPosition,
+                    'name' => $officerName,
+                    'email' => $officerEmail,
+                    'phone' => $officerPhone,
+                    'student_id' => $officerStudentId,
+                    'application_id' => $application['id']
+                ];
+                if ($existingOfficer) {
+                    $officerModel->update($existingOfficer['id'], $officerData);
+                } else {
+                    $officerModel->insert($officerData);
+                }
+            }
 
             return redirect()->to(base_url('organization/profile'))->with('success', 'Profile updated successfully.');
         } catch (\Exception $e) {

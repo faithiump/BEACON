@@ -9,6 +9,29 @@
     <link rel="stylesheet" href="<?= base_url('assets/css/organization/sidebar.css') ?>" type="text/css">
     <link rel="stylesheet" href="<?= base_url('assets/css/organization/topbar.css') ?>" type="text/css">
     <style>
+        /* Align content beside fixed sidebar */
+        .dashboard-container {
+            display: flex;
+            padding-left: 260px;
+            background: #f8fafc;
+        }
+        .dashboard-wrapper {
+            flex: 1;
+            min-height: 100vh;
+            padding: 80px 24px 32px;
+        }
+        .dashboard-main {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        @media (max-width: 992px) {
+            .dashboard-container {
+                padding-left: 0;
+            }
+            .dashboard-wrapper {
+                padding: 80px 16px 24px;
+            }
+        }
         .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
         .profile-card { display: flex; gap: 1rem; align-items: center; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
         .profile-avatar-lg {
@@ -28,6 +51,26 @@
         .meta-label { font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.02em; }
         .meta-value { font-size: 1rem; font-weight: 700; color: #0f172a; }
         .actions { margin-top: 1rem; }
+        .btn-edit-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            color: #0f172a;
+            background: #fff;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-edit-outline i { color: #64116e; }
+        .btn-edit-outline:hover {
+            border-color: #64116e;
+            color: #64116e;
+            box-shadow: 0 6px 18px rgba(100, 17, 110, 0.12);
+            transform: translateY(-1px);
+        }
         .section-card { padding: 1rem; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
     </style>
 </head>
@@ -66,7 +109,9 @@
                                     <span class="badge status"><?= isset($org['status']) ? esc(ucfirst($org['status'])) : 'Active' ?></span>
                                 </div>
                                 <div class="actions">
-                                    <a class="btn primary" href="<?= base_url('organization/profile/edit') ?>">Edit Profile</a>
+                                    <a class="btn-edit-outline" href="<?= base_url('organization/profile/edit') ?>">
+                                        <i class="fas fa-pen"></i> Edit Profile
+                                    </a>
                                 </div>
                             </div>
                         </div>
