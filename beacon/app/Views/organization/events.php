@@ -18,6 +18,21 @@
         <div class="dashboard-wrapper">
             <?= view('organization/partials/topbar') ?>
             <main class="dashboard-main">
+                <!-- Flash Messages -->
+                <?php if (session()->getFlashdata('success')): ?>
+                <div class="alert alert-success" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;">
+                    <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
+                    <?= esc(session()->getFlashdata('success')) ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (session()->getFlashdata('error')): ?>
+                <div class="alert alert-error" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
+                    <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+                    <?= esc(session()->getFlashdata('error')) ?>
+                </div>
+                <?php endif; ?>
+
                 <div class="content-card">
                     <div class="card-header">
                         <h2>Events</h2>
@@ -116,8 +131,8 @@
                 <p id="modalDescription"></p>
             </div>
             <div class="event-modal-footer">
-                <button type="button" class="btn btn-danger" id="modalDeleteBtn" style="display:none;">Delete / Cancel Event</button>
-                <button type="button" class="btn btn-secondary" data-close>Close</button>
+                <button type="button" class="btn btn-danger" id="modalDeleteBtn" style="display:none;">Delete Event</button>
+                <button type="button" class="btn btn-primary" id="modalEditBtn" style="display:none;">Edit Event</button>
             </div>
         </div>
     </div>
@@ -133,15 +148,18 @@
         const statusEl = document.getElementById('modalStatus');
         const descEl = document.getElementById('modalDescription');
         const deleteBtn = document.getElementById('modalDeleteBtn');
+        const editBtn = document.getElementById('modalEditBtn');
         const deleteUrlBase = "<?= base_url('organization/events/delete/') ?>";
+        const editUrlBase = "<?= base_url('organization/events/edit/') ?>";
         const currentOrgId = "<?= esc(session()->get('organization_id') ?? '') ?>";
         let currentEventId = null;
 
         const openModal = (card) => {
             // reset state every open
             deleteBtn.style.display = 'none';
+            editBtn.style.display = 'none';
             deleteBtn.disabled = false;
-            deleteBtn.textContent = 'Delete / Cancel Event';
+            deleteBtn.textContent = 'Delete Event';
             currentEventId = null;
 
             const get = (key) => card.dataset[key] || '';
@@ -162,6 +180,7 @@
             const canDelete = owned && currentEventId && currentOrgId && eventOrgId && (currentOrgId === eventOrgId);
             if (canDelete) {
                 deleteBtn.style.display = 'inline-flex';
+                editBtn.style.display = 'inline-flex';
             }
             modal.classList.add('open');
             modal.setAttribute('aria-hidden', 'false');
@@ -184,7 +203,7 @@
 
         deleteBtn.addEventListener('click', () => {
             if (!currentEventId) return;
-            if (!confirm('Delete/Cancel this event?')) return;
+            if (!confirm('Delete this event?')) return;
             deleteBtn.disabled = true;
             deleteBtn.textContent = 'Deleting...';
             fetch(deleteUrlBase + currentEventId, { method: 'POST' })
@@ -199,8 +218,13 @@
                 .catch(() => alert('Failed to delete event.'))
                 .finally(() => {
                     deleteBtn.disabled = false;
-                    deleteBtn.textContent = 'Delete / Cancel Event';
+                    deleteBtn.textContent = 'Delete Event';
                 });
+        });
+
+        editBtn.addEventListener('click', () => {
+            if (!currentEventId) return;
+            window.location.href = editUrlBase + currentEventId;
         });
 
         document.addEventListener('keydown', (e) => {
@@ -212,4 +236,3 @@
     </script>
 </body>
 </html>
-
