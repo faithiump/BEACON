@@ -253,13 +253,11 @@ class Organization extends BaseController
             $organization = $orgModel->find($orgId);
             
             if ($organization) {
-                // Count active and pending members using membership table
+                // Count members including inactive (pending excluded from display)
                 $membershipModel = new StudentOrganizationMembershipModel();
-                $activeMembers = $membershipModel->getActiveMemberships($orgId);
-                $pendingMembersList = $membershipModel->getPendingMemberships($orgId);
-                
-                $totalMembers = count($activeMembers);
-                $pendingMembers = count($pendingMembersList);
+                $nonPendingMembers = $membershipModel->getNonPendingMemberships($orgId);
+                $totalMembers = count($nonPendingMembers);
+                $pendingMembers = 0;
                 
                 // Get followers count
                 $followModel = new \App\Models\OrganizationFollowModel();
@@ -787,11 +785,8 @@ class Organization extends BaseController
 
         $membershipModel = new StudentOrganizationMembershipModel();
         
-        // Get recent members (both active and pending)
-        $allMemberships = array_merge(
-            $membershipModel->getActiveMemberships($orgId),
-            $membershipModel->getPendingMemberships($orgId)
-        );
+        // Get recent members (active + inactive; pending excluded)
+        $allMemberships = $membershipModel->getNonPendingMemberships($orgId);
         
         // Sort by joined_at descending and limit to 10
         usort($allMemberships, function($a, $b) {
@@ -2130,8 +2125,7 @@ class Organization extends BaseController
                     $membershipModel->update($membershipId, ['status' => 'active']);
                     
                     // Update organization member count
-                    $activeMembers = $membershipModel->getActiveMemberships($orgId);
-                    $orgModel->update($orgId, ['current_members' => count($activeMembers)]);
+                    $orgModel->update($orgId, ['current_members' => $membershipModel->countNonPendingMemberships($orgId)]);
                     
                     $message = 'Member approved successfully';
                     break;
@@ -2147,8 +2141,7 @@ class Organization extends BaseController
                     $membershipModel->update($membershipId, ['status' => 'inactive']);
                     
                     // Update organization member count
-                    $activeMembers = $membershipModel->getActiveMemberships($orgId);
-                    $orgModel->update($orgId, ['current_members' => count($activeMembers)]);
+                    $orgModel->update($orgId, ['current_members' => $membershipModel->countNonPendingMemberships($orgId)]);
                     
                     $message = 'Member removed from organization';
                     break;
@@ -2911,23 +2904,27 @@ class Organization extends BaseController
         $membershipModel = new StudentOrganizationMembershipModel();
         $db = \Config\Database::connect();
 
-        $totalMembers = count($membershipModel->getActiveMemberships($orgId));
+        $totalMembers = $membershipModel->countNonPendingMemberships($orgId);
         $newMembers = $db->table('student_organization_memberships')
             ->where('org_id', $orgId)
-            ->where('status', 'active')
+            ->where('status !=', 'pending')
             ->where('joined_at >=', $startDate)
             ->where('joined_at <=', $endDate)
             ->countAllResults();
 
-        $activeMembers = $totalMembers;
-        $inactiveMembers = 0; // Can be calculated if inactive status is tracked
+        // Derive active/inactive split
+        $activeMembers = $db->table('student_organization_memberships')
+            ->where('org_id', $orgId)
+            ->where('status', 'active')
+            ->countAllResults();
+        $inactiveMembers = $totalMembers - $activeMembers;
 
         // Get members by course/department
         $membersByCourse = $db->table('student_organization_memberships')
             ->select('students.department, COUNT(*) as count')
             ->join('students', 'students.id = student_organization_memberships.student_id')
             ->where('student_organization_memberships.org_id', $orgId)
-            ->where('student_organization_memberships.status', 'active')
+            ->where('student_organization_memberships.status !=', 'pending')
             ->groupBy('students.department')
             ->get()
             ->getResultArray();

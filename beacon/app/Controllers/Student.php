@@ -33,6 +33,61 @@ class Student extends BaseController
     }
 
     /**
+     * Auto-enroll student to organizations that match their department.
+     * Officers remain manual; this only affects member records.
+     */
+    private function autoJoinDepartmentOrganizations(array $student, StudentOrganizationMembershipModel $membershipModel): void
+    {
+        $studentDept = trim((string)($student['department'] ?? ''));
+        if ($studentDept === '') {
+            return;
+        }
+
+        $db = \Config\Database::connect();
+        // Find active orgs whose approved application has the same department
+        $orgRows = $db->table('organization_applications oa')
+            ->select('o.id as org_id')
+            ->join('organizations o', 'o.organization_name = oa.organization_name')
+            ->where('oa.status', 'approved')
+            ->where('o.is_active', 1)
+            ->where('oa.department', $studentDept)
+            ->get()
+            ->getResultArray();
+
+        if (empty($orgRows)) {
+            return;
+        }
+
+        $orgModel = new OrganizationModel();
+        foreach ($orgRows as $org) {
+            $orgId = $org['org_id'] ?? null;
+            if (!$orgId) {
+                continue;
+            }
+            $existing = $membershipModel->hasMembership($student['id'], $orgId);
+            $madeActive = false;
+
+            if (!$existing) {
+                // Create active membership
+                $membershipModel->insert([
+                    'student_id' => $student['id'],
+                    'org_id' => $orgId,
+                    'status' => 'active'
+                ]);
+                $madeActive = true;
+            } elseif (($existing['status'] ?? '') !== 'active') {
+                $membershipModel->update($existing['id'], ['status' => 'active']);
+                $madeActive = true;
+            }
+
+            if ($madeActive) {
+                // Sync current_members based on non-pending count (active + inactive)
+                $orgModel->update($orgId, ['current_members' => $membershipModel->countNonPendingMemberships($orgId)]);
+            }
+        }
+    }
+
+    /**
      * Check if student is logged in
      */
     private function checkAuth()
@@ -94,6 +149,9 @@ class Student extends BaseController
         $followedOrgs = []; // Initialize followed organizations array
 
         if ($student) {
+            // Auto-enroll to orgs with matching department
+            $this->autoJoinDepartmentOrganizations($student, $membershipModel);
+
             // Get all organizations the student has joined (active only for posts)
             $memberships = $membershipModel->getStudentOrganizations($student['id']);
             $orgCount = count($memberships);
@@ -858,6 +916,12 @@ class Student extends BaseController
             ->getRow()
             ->total_amount ?? 0;
 
+        // Count total reservations (all statuses)
+        $reservationCountModel = new ReservationModel();
+        $reservationCount = $reservationCountModel
+            ->where('student_id', $student['id'])
+            ->countAllResults();
+
         // Calculate new announcements count (announcements created in last 7 days)
         $newAnnouncementsCount = 0;
         if (!empty($allAnnouncementsList)) {
@@ -888,6 +952,7 @@ class Student extends BaseController
             'allProducts' => $allProductsList ?? [],
             'eventCount' => $eventCount,
             'orgCount' => $orgCount,
+            'reservationCount' => $reservationCount,
             'totalPaid' => $totalPaid,
             'newEventsCount' => $newEventsCount, // New events count for navbar badge
             'newAnnouncementsCount' => $newAnnouncementsCount, // New announcements count for navbar badge

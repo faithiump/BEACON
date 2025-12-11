@@ -243,8 +243,8 @@
                                         <span class="sstat-text">ORGS</span>
                                     </div>
                                     <div class="student-stat">
-                                        <span class="sstat-num">₱0</span>
-                                        <span class="sstat-text">PAID</span>
+                                        <span class="sstat-num"><?= $reservationCount ?? 0 ?></span>
+                                        <span class="sstat-text">RESERVED</span>
                                     </div>
                                 </div>
                                 <div class="student-profile-actions">

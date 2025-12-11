@@ -719,31 +719,7 @@
                         <!-- Member Requests -->
                         <div class="sidebar-card">
                             <h4 class="sidebar-title"><i class="fas fa-user-plus"></i> Member Requests</h4>
-                            <?php 
-                            $pendingMembers = array_filter($recentMembers ?? [], fn($m) => $m['status'] === 'pending');
-                            if(!empty($pendingMembers)): ?>
-                                <?php foreach(array_slice($pendingMembers, 0, 3) as $member): ?>
-                                <div class="member-request-item">
-                                    <div class="mr-avatar">
-                                        <?= strtoupper(substr($member['name'], 0, 1)) ?>
-                                    </div>
-                                    <div class="mr-info">
-                                        <span class="mr-name"><?= esc($member['name']) ?></span>
-                                        <span class="mr-course"><?= esc($member['course']) ?></span>
-                                    </div>
-                                    <div class="mr-actions">
-                                        <button class="mr-btn approve" onclick="manageMember(<?= $member['id'] ?>, 'approve')">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button class="mr-btn reject" onclick="manageMember(<?= $member['id'] ?>, 'reject')">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <p class="sidebar-empty">No pending requests</p>
-                            <?php endif; ?>
+                            <p class="sidebar-empty">No pending requests</p>
                             <a href="#members" class="sidebar-link" onclick="switchSection('members')">Manage members <i class="fas fa-arrow-right"></i></a>
                         </div>
 

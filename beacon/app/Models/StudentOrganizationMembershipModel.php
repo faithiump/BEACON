@@ -93,12 +93,7 @@ class StudentOrganizationMembershipModel extends Model
      */
     public function getPendingMemberships($orgId)
     {
-        return $this->select('student_organization_memberships.*, students.student_id, students.user_id, students.course, students.year_level, user_profiles.firstname, user_profiles.lastname')
-            ->join('students', 'students.id = student_organization_memberships.student_id')
-            ->join('user_profiles', 'user_profiles.user_id = students.user_id')
-            ->where('student_organization_memberships.org_id', $orgId)
-            ->where('student_organization_memberships.status', 'pending')
-            ->findAll();
+        return [];
     }
 
     /**
@@ -112,6 +107,29 @@ class StudentOrganizationMembershipModel extends Model
             ->where('student_organization_memberships.org_id', $orgId)
             ->where('student_organization_memberships.status', 'active')
             ->findAll();
+    }
+
+    /**
+     * Get all non-pending memberships (active or inactive)
+     */
+    public function getNonPendingMemberships($orgId)
+    {
+        return $this->select('student_organization_memberships.*, students.student_id, students.user_id, students.course, students.year_level, user_profiles.firstname, user_profiles.lastname')
+            ->join('students', 'students.id = student_organization_memberships.student_id')
+            ->join('user_profiles', 'user_profiles.user_id = students.user_id')
+            ->where('student_organization_memberships.org_id', $orgId)
+            ->where('student_organization_memberships.status !=', 'pending')
+            ->findAll();
+    }
+
+    /**
+     * Count all non-pending memberships
+     */
+    public function countNonPendingMemberships($orgId)
+    {
+        return $this->where('org_id', $orgId)
+            ->where('status !=', 'pending')
+            ->countAllResults();
     }
 }
 
